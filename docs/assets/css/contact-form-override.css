@@ -1,0 +1,66 @@
+/* Force contact form to display properly */
+.form-wrapper,
+.form-wrapper form,
+.form-wrapper .field-list,
+.form-wrapper .form-item {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure privacy checkbox is visible */
+#privacy-consent {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 20px 0 !important;
+}
+
+#privacy-consent > div {
+    display: flex !important;
+    align-items: flex-start !important;
+}
+
+#privacy-consent input[type="checkbox"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    width: auto !important;
+    margin-right: 10px !important;
+    margin-top: 3px !important;
+}
+
+#privacy-consent label {
+    display: inline-block !important;
+    visibility: visible !important;
+    font-weight: normal !important;
+    cursor: pointer !important;
+    flex: 1 !important;
+}
+
+/* Ensure all form fields are styled properly */
+.form-wrapper input[type="text"],
+.form-wrapper input[type="email"],
+.form-wrapper input[type="tel"],
+.form-wrapper textarea {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    padding: 10px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+}
+
+.form-wrapper textarea {
+    min-height: 120px !important;
+}
+
+.form-wrapper button[type="submit"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Hide honeypot */
+input[name="_gotcha"] {
+    display: none !important;
+}
