@@ -41,9 +41,13 @@
             e.preventDefault();
             
             // Calculate the target position
+            // The original scrolls to the actual content area, past the duplicated header
             const targetPosition = targetContent.getBoundingClientRect().top + window.pageYOffset;
             const headerHeight = document.getElementById('header') ? document.getElementById('header').offsetHeight : 0;
-            const scrollToPosition = targetPosition - headerHeight;
+            // Add extra offset to scroll further down into the content (matching bounder.io)
+            // This skips past the duplicate title/description that appears at the top of the content section
+            const additionalOffset = 200; // Adjust to skip the duplicate header area
+            const scrollToPosition = targetPosition - headerHeight + additionalOffset;
             
             // Smooth scroll to the target
             window.scrollTo({
