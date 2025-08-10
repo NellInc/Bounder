@@ -104,12 +104,20 @@
     // Run after DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', ensureFormIntegrity);
+    } else {
+        // DOM is already loaded
+        ensureFormIntegrity();
     }
     
+    // Run when window loads completely
+    window.addEventListener('load', ensureFormIntegrity);
+    
     // Run after delays to catch any dynamic changes
+    setTimeout(ensureFormIntegrity, 100);
     setTimeout(ensureFormIntegrity, 500);
     setTimeout(ensureFormIntegrity, 1000);
     setTimeout(ensureFormIntegrity, 2000);
+    setTimeout(ensureFormIntegrity, 3000);
     
     // Monitor for changes
     const observer = new MutationObserver(function(mutations) {
