@@ -147,6 +147,34 @@ button[type="submit"]:hover {
   text-decoration: none;
 }
 </style>
+
+<!-- Mobile Navigation Fix -->
+<link rel="stylesheet" href="assets/css/mobile-nav-fix.css?v=6">
+
+<!-- Fix desktop navigation on contact page -->
+<style>
+@media only screen and (min-width: 769px) {
+    /* Hide the default Squarespace navigation that's showing incorrectly */
+    .Header-nav {
+        display: none !important;
+    }
+    
+    /* Add simple contact link in top right */
+    .Header-inner::after {
+        content: 'Contact';
+        position: absolute;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-family: futura-pt, proxima-nova, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+}
+</style>
 </head>
 
 <body id="collection-552e5e65e4b0f9821c1cc0be" class="transparent-header enable-nav-button nav-button-style-solid nav-button-corner-style-pill banner-button-style-solid banner-button-corner-style-pill banner-slideshow-controls-arrows meta-priority-date hide-entry-author hide-list-entry-footer hide-blog-sidebar center-navigation--info hide-site-info" data-controller="BodyClassController">
@@ -264,5 +292,6 @@ button[type="submit"]:hover {
   <!-- Only load our custom scripts, no Squarespace scripts -->
   <script src="assets/js/external-links.js"></script>
   <script src="assets/js/cookie-banner.js"></script>
+  <script src="assets/js/mobile-contact.js"></script>
 </body>
 </html>

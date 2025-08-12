@@ -1,0 +1,77 @@
+/* Mobile Navigation Fix - Hide broken navigation elements */
+
+/* Hide ALL navigation elements on mobile */
+@media only screen and (max-width: 768px) {
+    /* Hide hamburger menu */
+    #mobileMenu,
+    .icon-menu {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Hide mobile navigation panel */
+    #mobileNav,
+    #mobileNav * {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Hide desktop navigation */
+    #desktopNav,
+    #desktopNav *,
+    .main-nav,
+    .nav-wrapper,
+    nav.main-nav,
+    nav.main-nav *,
+    .Header-nav,
+    .Header-nav-inner,
+    .Header-nav-item {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Clean header layout - just show logo centered */
+    .title-nav-wrapper {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 20px !important;
+        position: relative !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Center the logo */
+    .site-title {
+        margin: 0 auto !important;
+        text-align: center !important;
+    }
+    
+    /* Style for mobile navigation bar added by JS */
+    .mobile-nav-bar {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 10px 20px;
+        border-radius: 25px;
+        z-index: 10000;
+    }
+    
+    .mobile-nav-bar a {
+        color: #fff !important;
+        text-decoration: none !important;
+        font-family: futura-pt, proxima-nova, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
+    
+    .mobile-nav-bar a:hover {
+        opacity: 0.7;
+    }
+}
