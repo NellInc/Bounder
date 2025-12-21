@@ -1,0 +1,31 @@
+name: Update Footer Year
+
+on:
+  schedule:
+    - cron: '15 0 1 1 *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-year:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Get current year
+        id: year
+        run: echo "CURRENT_YEAR=$(date +%Y)" >> $GITHUB_OUTPUT
+      
+      - name: Update footer year
+        run: |
+          YEAR=${{ steps.year.outputs.CURRENT_YEAR }}
+          # Pattern matches "Bounder.io 2014-YYYY" and updates YYYY to current year
+          find . -name "*.html" -exec sed -i -E "s/(Bounder\.io 2014-)[0-9]{4}/\1$YEAR/g" {} \;
+      
+      - name: Commit if changed
+        run: |
+          git diff --quiet || (git config user.email "github-actions[bot]@users.noreply.github.com" && git config user.name "github-actions[bot]" && git add -A && git commit -m "chore: Update footer year to ${{ steps.year.outputs.CURRENT_YEAR }}" && git push)
