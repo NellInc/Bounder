@@ -1,101 +1,62 @@
-# Bounder.io - Static Site Clone
+# Bounder website
 
-This repository contains a static HTML clone of the Bounder.io website, converted from Squarespace to run on GitHub Pages.
+This repository contains the public website for [bounder.io](https://www.bounder.io/).
 
-## 📁 Project Structure
+Bounder began as a drone-geofencing project and is being revived as an open reference architecture for trustworthy physical interlocks. The website presents that current purpose, the original experiment, the integration model, verified software status, and explicit hardware limitations.
 
-- `/bounder_clone` - Main website directory containing all HTML pages and assets
-  - `index.html` - Homepage
-  - `contact.html` - Contact page
-  - `privacy.html` - Privacy Policy
-  - `terms.html` - Terms & Conditions (originally `/new-page`)
-  - `/assets` - All CSS, JavaScript, and image assets
-  - `CNAME` - Custom domain configuration for GitHub Pages
-  - `.nojekyll` - Prevents Jekyll processing
+## Canonical site
 
-- `/screenshots` - Visual comparison between original and cloned site
-- `/Backport` - Original backup files
-- `Squarespace-Wordpress-Export-07-26-2025.xml` - Source XML export from Squarespace
+The root directory is the canonical website:
 
-## 🚀 Deployment to GitHub Pages
+| File | Purpose |
+|---|---|
+| `index.html` | Project positioning, architecture, applications, maturity, and contribution path |
+| `contact.html` | Formspree-backed contact route |
+| `privacy.html` | Current website privacy notice |
+| `terms.html` | Website and research-software terms |
+| `404.html` | GitHub Pages error page |
+| `styles.css` | Shared responsive design system |
+| `sitemap.xml` and `robots.txt` | Search discovery |
+| `CNAME` | `www.bounder.io` custom domain |
 
-### Method 1: Direct Deployment (Recommended)
-1. Push this repository to GitHub
-2. Go to Settings → Pages
-3. Set Source to "Deploy from a branch"
-4. Select branch: `main` (or your default branch)
-5. Select folder: `/bounder_clone`
-6. Click Save
+The `docs/` directory is the preserved Squarespace-era clone. It is a legacy snapshot, not the source for new content. GitHub Pages should deploy `main` from `/`.
 
-The site will be available at:
-- Custom domain: `http://bounder.io` (if CNAME is configured)
-- GitHub Pages URL: `https://[your-username].github.io/Bounder/bounder_clone`
+## Preview
 
-### Method 2: Using GitHub Actions
-You can also set up GitHub Actions for automatic deployment when you push changes.
-
-## 🛠️ Development Scripts
-
-### Install Dependencies
 ```bash
-npm install
+python3 -m http.server 8000
 ```
 
-### Parse XML Content
+Open `http://127.0.0.1:8000/`.
+
+## Validation
+
 ```bash
-npm run parse-xml
+# Deterministic design lint. Triage results rather than bulk-fixing.
+npx impeccable detect index.html
+npx impeccable detect contact.html
+npx impeccable detect privacy.html
+npx impeccable detect terms.html
+npx impeccable detect 404.html
 ```
 
-### Scrape Live Site
-```bash
-npm run scrape
-```
+Before publishing, verify desktop and mobile layouts, keyboard focus, one `<h1>` per page, local links and fragments, external images, console errors, and the contact success state without submitting the form.
 
-### Full Build
-```bash
-npm run build
-```
+## Project code
 
-### Verify Clone
-```bash
-node verify-clone.mjs
-```
+The revived interlock and historical drone code live in [NellWatson/Bounder](https://github.com/NellWatson/Bounder). This site is maintained separately so the public presentation and physical-control code retain clear boundaries.
 
-## 📋 Features
+## Deployment
 
-- ✅ All main pages converted from Squarespace
-- ✅ Assets downloaded and linked locally
-- ✅ Responsive design preserved
-- ✅ Contact forms (structure preserved, backend integration needed)
-- ✅ GitHub Pages ready
+GitHub Pages serves the `main` branch over HTTPS with the custom domain in `CNAME`. After a deployment, verify both `https://www.bounder.io/` and `https://bounder.io/`, the custom 404 page, and the canonical metadata.
 
-## ⚠️ Notes
+### Design-lint triage
 
-- Contact forms are preserved but require backend integration (e.g., Formspree, Netlify Forms)
-- Some Typekit fonts may not load due to licensing restrictions
-- Newsletter signup requires email service integration
-- Analytics and tracking scripts have been preserved but may need updating
-
-## 🔧 Customization
-
-To modify the site:
-1. Edit HTML files directly in `/bounder_clone`
-2. Update styles in the embedded CSS or external stylesheets
-3. Modify navigation links as needed
-4. Add or remove pages by creating new HTML files
-
-## 📊 Verification
-
-Screenshots comparing the original and cloned site are available in the `/screenshots` directory for quality assurance.
-
-## 📞 Support
-
-For issues or questions about the clone, please open an issue in this repository.
-
-## 📄 License
-
-The Bounder technology has been released as free and open source under the MIT License.
-
----
-
-*This static clone was created to preserve the Bounder.io website content and make it available on GitHub Pages.*
+The root-page lint reports contrast warnings where it resolves white text
+against the document background instead of the dark hero, safety, and footer
+containers. Browser inspection confirms those combinations render on dark
+backgrounds. Its padding warnings likewise treat full-bleed section backgrounds
+as content borders even though their children have constrained insets. The 404
+type warning counts the small wordmark dot as a separate typographic step. These
+are recorded detector limitations, not bulk-suppressed rules. Real layout,
+broken-image, and interactive-target findings remain release blockers.

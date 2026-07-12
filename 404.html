@@ -1,184 +1,20 @@
-<!DOCTYPE html>
-<html lang="en-US">
-
+<!doctype html>
+<html lang="en-GB">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Page Not Found — Bounder</title>
-  <meta name="description" content="The page you're looking for could not be found.">
-  <link rel="canonical" href="https://www.bounder.io/404.html">
-
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      font-family: proxima-nova, "Helvetica Neue", Helvetica, Arial, sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      color: #fff;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      min-height: 100vh;
-    }
-
-    .site-header {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 9999;
-      background: transparent;
-    }
-
-    .header-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 30px 60px;
-      max-width: 100%;
-    }
-
-    .site-title {
-      margin: 0;
-      line-height: 1;
-    }
-
-    .site-title a {
-      display: block;
-    }
-
-    .site-title img {
-      height: 40px;
-      width: auto;
-      display: block;
-    }
-
-    .header-nav a {
-      color: #fff;
-      text-decoration: none;
-      font-family: futura-pt, sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      transition: opacity 0.3s ease;
-    }
-
-    .header-nav a:hover {
-      opacity: 0.7;
-    }
-
-    .error-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .error-code {
-      font-size: 120px;
-      font-weight: 700;
-      letter-spacing: -5px;
-      margin-bottom: 20px;
-      opacity: 0.9;
-    }
-
-    .error-title {
-      font-size: 28px;
-      font-weight: 600;
-      margin-bottom: 15px;
-    }
-
-    .error-message {
-      font-size: 18px;
-      opacity: 0.8;
-      margin-bottom: 40px;
-      max-width: 500px;
-    }
-
-    .home-link {
-      display: inline-block;
-      padding: 15px 40px;
-      background: #fff;
-      color: #1a1a2e;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .home-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-
-    @media (max-width: 768px) {
-      .header-wrapper {
-        padding: 20px 30px;
-      }
-
-      .site-title img {
-        height: 30px;
-      }
-
-      .error-code {
-        font-size: 80px;
-      }
-
-      .error-title {
-        font-size: 22px;
-      }
-
-      .error-message {
-        font-size: 16px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .header-wrapper {
-        padding: 15px 20px;
-      }
-
-      .site-title img {
-        height: 25px;
-      }
-
-      .error-code {
-        font-size: 60px;
-      }
-    }
-  </style>
+  <title>Page not found | Bounder</title>
+  <meta name="description" content="The requested Bounder page could not be found.">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="styles.css">
 </head>
-
-<body>
-  <header class="site-header">
-    <div class="header-wrapper">
-      <h1 class="site-title">
-        <a href="index.html">
-          <img src="images/logo.png" alt="Bounder">
-        </a>
-      </h1>
-      <nav class="header-nav">
-        <a href="contact.html">CONTACT</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="error-container">
-    <div class="error-code">404</div>
-    <h2 class="error-title">Page Not Found</h2>
-    <p class="error-message">The page you're looking for doesn't exist or has been moved.</p>
-    <a href="index.html" class="home-link">Back to Home</a>
+<body class="error-page">
+  <main class="error-main">
+    <a class="wordmark" href="index.html">BOUNDER<span aria-hidden="true">●</span></a>
+    <p class="error-code" aria-hidden="true">404</p>
+    <h1>That boundary moved.</h1>
+    <p>The page you requested does not exist or has a new location.</p>
+    <a class="button button-primary" href="index.html">Return home <span aria-hidden="true">→</span></a>
   </main>
 </body>
-
 </html>
