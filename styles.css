@@ -80,31 +80,19 @@ button, a {
 
 .wordmark {
   display: inline-flex;
-  gap: 0.58rem;
   align-items: center;
   color: inherit;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
   text-decoration: none;
 }
 
-.brand-mark {
+.brand-lockup {
   display: inline-block;
   flex: 0 0 auto;
-  width: 1.48rem;
-  height: 1.48rem;
+  width: 7.3rem;
+  height: 1.32rem;
   background: currentColor;
-  mask: url("assets/bounder-mark.svg") center / contain no-repeat;
-  -webkit-mask: url("assets/bounder-mark.svg") center / contain no-repeat;
-}
-
-.wordmark::after {
-  width: 0.38rem;
-  height: 0.38rem;
-  background: var(--signal);
-  border-radius: 999px;
-  content: "";
+  mask: url("assets/bounder-wordmark.svg") center / contain no-repeat;
+  -webkit-mask: url("assets/bounder-wordmark.svg") center / contain no-repeat;
 }
 
 .visually-hidden {
