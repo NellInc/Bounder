@@ -32,3 +32,13 @@ test("the custom Bounder lockup is integrated into the shared wordmark", () => {
   assert.match(simulatorHtml, /class="brand-lockup"/);
   assert.match(styles, /mask: url\("assets\/bounder-wordmark\.svg"\)/);
 });
+
+test("Creed Space Fleet control is visible, interactive, and evidence backed", () => {
+  assert.match(simulatorHtml, /Creed Space Fleet/);
+  assert.match(simulatorHtml, /data-action="fleet"/);
+  assert.match(simulatorHtml, /data-fleet-nodes/);
+  assert.match(simulatorScript, /fleetDrones = Array\.from/);
+  assert.match(simulatorScript, /bounder-fleet-evidence\.v1\.json/);
+  assert.match(simulatorScript, /fleetMode = !fleetMode/);
+  assert.match(simulatorStyles, /\.fleet-control-panel\.is-active/);
+});

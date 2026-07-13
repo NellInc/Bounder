@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bounder.io/contracts/creedspace-bounder-profile-v1.schema.json",
+  "title": "Creed Space Bounder Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "ttl_seconds", "constraints"],
+  "properties": {
+    "version": { "const": "creedspace-bounder-profile/v1" },
+    "ttl_seconds": { "type": "integer", "minimum": 30, "maximum": 3600 },
+    "constraints": { "$ref": "#/$defs/constraints" }
+  },
+  "$defs": {
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_actions"],
+      "properties": {
+        "allowed_actions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["land", "loiter", "rtl"] }
+        },
+        "require_gps_fix": { "type": "boolean", "default": false },
+        "require_outside_exclusion_zones": { "type": "boolean", "default": false },
+        "min_battery_percent": { "type": "number", "minimum": 0, "maximum": 100, "default": 0 },
+        "max_altitude_metres": { "type": "number", "minimum": 0, "default": 0 },
+        "required_mettle_tier": { "enum": ["", "bronze", "silver", "gold", "platinum"], "default": "" },
+        "max_evidence_age_seconds": { "type": "integer", "minimum": 0, "maximum": 604800, "default": 0 },
+        "min_civilian_distance_metres": { "type": "number", "minimum": 0, "default": 0 },
+        "min_friendly_distance_metres": { "type": "number", "minimum": 0, "default": 0 },
+        "require_outside_protected_sites": { "type": "boolean", "default": false },
+        "require_outside_humanitarian_corridors": { "type": "boolean", "default": false },
+        "max_wind_speed_metres_per_second": { "type": "number", "minimum": 0, "default": 0 },
+        "min_visibility_metres": { "type": "number", "minimum": 0, "default": 0 }
+      }
+    }
+  }
+}

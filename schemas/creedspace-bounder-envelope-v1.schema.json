@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bounder.io/contracts/creedspace-bounder-envelope-v1.schema.json",
+  "title": "Creed Space Bounder Signed Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["envelope_version", "algorithm", "payload", "signature", "public_key_id"],
+  "properties": {
+    "envelope_version": { "const": "creedspace-bounder-envelope/v1" },
+    "algorithm": { "const": "Ed25519" },
+    "payload": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "contentMediaType": "application/json",
+      "description": "Exact UTF-8 bytes of creedspace-bounder-policy/v1. The signature covers the decoded bytes without reserialization."
+    },
+    "signature": { "type": "string", "contentEncoding": "base64" },
+    "public_key_id": { "type": "string", "minLength": 1, "maxLength": 128 }
+  }
+}

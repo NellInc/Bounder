@@ -83,6 +83,12 @@
   font-size: 1rem;
 }
 
+.workbench-actions {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+
 .sim-control,
 .scenario-button {
   color: inherit;
@@ -103,6 +109,7 @@
 }
 
 .sim-control:hover,
+.sim-control[aria-pressed="true"],
 .scenario-button:hover,
 .scenario-button[aria-pressed="true"] {
   color: var(--ink);
@@ -141,6 +148,138 @@
 
 .scenario-button:nth-child(n+6) {
   border-top: 0;
+}
+
+.fleet-control-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(430px, 1.2fr);
+  gap: 1.1rem 2rem;
+  margin: 0 0 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line-light);
+  background: linear-gradient(120deg, rgba(179, 235, 117, 0.075), rgba(255, 255, 255, 0.025));
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.fleet-control-panel.is-active {
+  border-color: var(--signal);
+  background: linear-gradient(120deg, rgba(179, 235, 117, 0.15), rgba(255, 255, 255, 0.035));
+}
+
+.fleet-kicker {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fleet-control-panel > div:first-child strong {
+  display: block;
+  max-width: 390px;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.65rem);
+  line-height: 1.3;
+}
+
+.fleet-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--line-light);
+}
+
+.fleet-metrics div {
+  min-width: 0;
+  padding: 0.72rem;
+  background: #20241e;
+}
+
+.fleet-metrics dt,
+.fleet-metrics dd {
+  margin: 0;
+}
+
+.fleet-metrics dt {
+  color: rgba(255, 255, 255, 0.48);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fleet-metrics dd {
+  margin-top: 0.32rem;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fleet-nodes {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(11, minmax(64px, 1fr));
+  gap: 0.35rem;
+}
+
+.fleet-node {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.12rem 0.38rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.48rem;
+  border: 1px solid var(--line-light);
+  font-family: var(--font-mono);
+}
+
+.fleet-node i {
+  grid-row: 1 / 3;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 0 3px rgba(179, 235, 117, 0.12);
+}
+
+.fleet-node.is-held i {
+  background: var(--safety);
+  box-shadow: 0 0 0 3px rgba(255, 107, 69, 0.12);
+}
+
+.fleet-node b,
+.fleet-node small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fleet-node b {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.fleet-node small {
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.5rem;
+}
+
+.fleet-contract-links {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.56);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+.fleet-contract-links a {
+  color: var(--signal);
 }
 
 .simulator-grid {
@@ -493,6 +632,8 @@
   .scenario-controls { grid-template-columns: repeat(2, 1fr); }
   .scenario-button:nth-child(odd) { border-left: 1px solid var(--line-light); }
   .scenario-button:nth-child(n+3) { border-top: 0; }
+  .fleet-control-panel { grid-template-columns: 1fr; }
+  .fleet-nodes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .decision-panel {
     grid-template-areas: "header" "rules" "actuation" "receipt";
     grid-template-columns: 1fr;
@@ -507,7 +648,11 @@
   .simulator-intro { grid-template-columns: 1fr; }
   .simulator-intro aside { grid-column: 1; }
   .workbench-heading { grid-template-columns: 1fr; gap: 1.5rem; align-items: flex-start; }
+  .workbench-actions { width: 100%; }
+  .workbench-actions .sim-control { flex: 1; }
   .scenario-controls { grid-template-columns: 1fr 1fr; }
+  .fleet-metrics { grid-template-columns: 1fr 1fr; }
+  .fleet-nodes { grid-template-columns: 1fr 1fr; }
   .simulator-stage { aspect-ratio: 4 / 3; }
   .stage-legend { right: auto; left: 1rem; flex-direction: column; gap: 0.4rem; }
   .rules-context-grid { grid-template-columns: 1fr; }

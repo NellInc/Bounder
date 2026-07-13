@@ -33,3 +33,21 @@ test("simulator consumes same-origin receipts and vendored Three.js", async () =
   await readFile(new URL("vendor/three/LICENSE", root), "utf8");
   await readFile(new URL("vendor/three/three.core.min.js", root), "utf8");
 });
+
+test("fleet evidence covers every simulated guardian and stays protective", async () => {
+  const evidence = JSON.parse(await readFile(new URL("data/bounder-fleet-evidence.v1.json", root), "utf8"));
+  assert.equal(evidence.version, "bounder-fleet-evidence/v1");
+  assert.equal(evidence.fleet_id, "relief-fleet");
+  assert.equal(evidence.summary.devices, 11);
+  assert.equal(evidence.summary.passed, 11);
+  assert.equal(evidence.summary.allowed + evidence.summary.blocked, 11);
+  assert.equal(new Set(evidence.devices.map(({ device_id }) => device_id)).size, 11);
+  for (const device of evidence.devices) {
+    assert.equal(device.passed, true);
+    assert.equal(device.fleet_audit.action_type, "physical_interlock");
+    assert.match(device.fleet_audit.input_hash, /^[0-9a-f]{64}$/);
+    assert.ok(["loiter", "rtl", "land"].includes(device.receipt.action));
+  }
+  const serialized = JSON.stringify(evidence);
+  assert.doesNotMatch(serialized, /"target"|"weapon"|"engage"|"payload"/i);
+});

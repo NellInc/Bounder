@@ -13,7 +13,10 @@ const reasonElement = root.querySelector(".decision-reason");
 const adapterOutput = root.querySelector(".adapter-output");
 const receiptSource = root.querySelector(".receipt-source");
 const receiptFields = Object.fromEntries([...root.querySelectorAll("[data-receipt]")].map((element) => [element.dataset.receipt, element]));
+const fleetFields = Object.fromEntries([...root.querySelectorAll("[data-fleet]")].map((element) => [element.dataset.fleet, element]));
+const fleetNodes = root.querySelector("[data-fleet-nodes]");
 const playButton = root.querySelector("[data-action='play']");
+const fleetButton = root.querySelector("[data-action='fleet']");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const css = getComputedStyle(document.documentElement);
@@ -574,6 +577,15 @@ bounderEnvelope.rotation.x = Math.PI / 2;
 bounderEnvelope.position.y = -0.28;
 drone.add(bounderEnvelope);
 
+const fleetDrones = Array.from({ length: 6 }, (_, index) => {
+  const guardian = drone.clone(true);
+  guardian.scale.setScalar(0.82 - index * 0.018);
+  guardian.visible = false;
+  guardian.userData.guardianIndex = index + 2;
+  scene.add(guardian);
+  return guardian;
+});
+
 const curves = Object.fromEntries(Object.entries(ROUTE_WAYPOINTS).map(([name, waypoints]) => [
   name,
   new THREE.CatmullRomCurve3(waypoints.map(([x, y, z]) => new THREE.Vector3(x, y, z)), false, "centripetal", 0.35)
@@ -657,6 +669,8 @@ const expectedScenarioIDs = Object.keys(scenarioPresentation);
 const validRules = new Set(["all", ...[...root.querySelectorAll(".rule-stack li")].map((item) => item.dataset.rule)]);
 let receiptBundle;
 let receiptsByScenario = new Map();
+let fleetEvidence;
+let fleetMode = false;
 
 const validateReceiptBundle = (bundle) => {
   if (!bundle || bundle.version !== "bounder-receipt-bundle/v1" || bundle.engine !== "bounder-io/interlock" || !Array.isArray(bundle.receipts)) {
@@ -696,6 +710,58 @@ const loadReceiptBundle = async () => {
   stage.dataset.receiptEngine = bundle.engine;
   stage.dataset.receiptCount = String(receipts.size);
   stage.dataset.receiptsReady = "true";
+};
+
+const validateFleetEvidence = (evidence) => {
+  if (!evidence || evidence.version !== "bounder-fleet-evidence/v1" || evidence.fleet_id !== "relief-fleet") {
+    throw new Error("fleet evidence metadata is invalid");
+  }
+  if (!evidence.summary || evidence.summary.devices !== 11 || evidence.summary.passed !== 11 || evidence.summary.allowed + evidence.summary.blocked !== 11 || typeof evidence.policy_profile !== "string" || !Array.isArray(evidence.devices) || evidence.devices.length !== 11) {
+    throw new Error("fleet evidence summary is invalid");
+  }
+  const deviceIDs = new Set();
+  for (const device of evidence.devices) {
+    if (!device?.passed || typeof device.device_id !== "string" || typeof device.scenario !== "string" || typeof device.receipt?.code !== "string" || typeof device.receipt.allowed !== "boolean") {
+      throw new Error("fleet device evidence is invalid");
+    }
+    if (deviceIDs.has(device.device_id)) throw new Error("fleet device evidence is duplicated");
+    deviceIDs.add(device.device_id);
+  }
+  return evidence;
+};
+
+const renderFleetEvidence = (evidence) => {
+  fleetFields.name.textContent = evidence.fleet_id;
+  fleetFields.devices.textContent = `${evidence.summary.devices} verified`;
+  fleetFields.policy.textContent = evidence.policy_profile;
+  fleetFields.policy.title = evidence.policy_profile;
+  fleetFields.evidence.textContent = `${evidence.summary.allowed} allow · ${evidence.summary.blocked} hold`;
+  const fragment = document.createDocumentFragment();
+  for (const device of evidence.devices) {
+    const node = document.createElement("span");
+    node.className = `fleet-node ${device.receipt.allowed ? "is-allowed" : "is-held"}`;
+    node.setAttribute("role", "listitem");
+    node.title = `${device.device_id}: ${device.scenario} · ${device.receipt.code}`;
+    const marker = document.createElement("i");
+    marker.setAttribute("aria-hidden", "true");
+    const label = document.createElement("b");
+    label.textContent = device.device_id.replace("bounder-", "");
+    const code = document.createElement("small");
+    code.textContent = device.receipt.code.replaceAll("_", " ");
+    node.append(marker, label, code);
+    fragment.append(node);
+  }
+  fleetNodes.replaceChildren(fragment);
+  stage.dataset.fleetEvidenceVersion = evidence.version;
+  stage.dataset.fleetGuardians = String(evidence.summary.devices);
+  stage.dataset.fleetReady = "true";
+};
+
+const loadFleetEvidence = async () => {
+  const response = await fetch("./data/bounder-fleet-evidence.v1.json", { cache: "no-cache", credentials: "same-origin" });
+  if (!response.ok) throw new Error(`fleet evidence request failed with ${response.status}`);
+  fleetEvidence = validateFleetEvidence(await response.json());
+  renderFleetEvidence(fleetEvidence);
 };
 
 let selectedScenario = "safe";
@@ -789,6 +855,17 @@ const update = (delta, elapsed) => {
   drone.position.copy(point);
   drone.position.y += Math.sin(elapsed * 0.004) * 0.045;
   drone.rotation.y = Math.atan2(nextPoint.x - point.x, nextPoint.z - point.z);
+  for (let index = 0; index < fleetDrones.length; index += 1) {
+    const guardian = fleetDrones[index];
+    guardian.visible = fleetMode;
+    if (!fleetMode) continue;
+    const guardianProgress = Math.max(0, progress - (index + 1) * 0.055);
+    const guardianPoint = curves[selectedScenario].getPointAt(guardianProgress);
+    const guardianNext = curves[selectedScenario].getPointAt(Math.min(guardianProgress + 0.008, 1));
+    guardian.position.copy(guardianPoint);
+    guardian.position.y += Math.sin(elapsed * 0.003 + index) * 0.04;
+    guardian.rotation.y = Math.atan2(guardianNext.x - guardianPoint.x, guardianNext.z - guardianPoint.z);
+  }
   for (const rotor of rotors) rotor.rotation.z += delta * 12;
   ambientClouds.position.x = Math.sin(elapsed * 0.00008) * 0.55;
   if (weatherGroup.visible) {
@@ -839,6 +916,14 @@ playButton.addEventListener("click", () => {
   playButton.textContent = playing ? "Pause simulation" : "Play simulation";
   playButton.setAttribute("aria-pressed", String(!playing));
 });
+fleetButton.addEventListener("click", () => {
+  if (!fleetEvidence) return;
+  fleetMode = !fleetMode;
+  fleetButton.textContent = fleetMode ? "Single guardian" : "Show fleet";
+  fleetButton.setAttribute("aria-pressed", String(fleetMode));
+  root.querySelector(".fleet-control-panel").classList.toggle("is-active", fleetMode);
+  if (!fleetMode) for (const guardian of fleetDrones) guardian.visible = false;
+});
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) playing = false;
 });
@@ -853,8 +938,10 @@ new ResizeObserver(reportEmbeddedHeight).observe(document.body);
 const showReceiptLoadFailure = () => {
   playing = false;
   playButton.disabled = true;
+  fleetButton.disabled = true;
   for (const button of root.querySelectorAll("[data-scenario]")) button.disabled = true;
   stage.dataset.receiptsReady = "false";
+  stage.dataset.fleetReady = "false";
   receiptSource.textContent = "Receipt fixture unavailable";
   phaseElement.textContent = "Simulation paused";
   statusCode.textContent = "fixture_unavailable";
@@ -868,8 +955,9 @@ const showReceiptLoadFailure = () => {
 const bootstrap = async () => {
   playButton.disabled = true;
   try {
-    await loadReceiptBundle();
+    await Promise.all([loadReceiptBundle(), loadFleetEvidence()]);
     playButton.disabled = false;
+    fleetButton.disabled = false;
     selectScenario("safe");
   } catch (error) {
     console.error("Bounder receipt bundle failed closed", error);

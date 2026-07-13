@@ -54,7 +54,10 @@
           <h2 id="workbench-title">Test the interlock.</h2>
           <p class="workbench-summary">Change one condition at a time. Watch the same request move from permitted to held as the local evidence changes.</p>
         </div>
-        <button class="sim-control sim-play" type="button" data-action="play" aria-pressed="false">Pause simulation</button>
+        <div class="workbench-actions">
+          <button class="sim-control sim-fleet" type="button" data-action="fleet" aria-pressed="false" disabled>Show fleet</button>
+          <button class="sim-control sim-play" type="button" data-action="play" aria-pressed="false">Pause simulation</button>
+        </div>
       </div>
 
       <div class="scenario-controls" role="group" aria-label="Choose a simulation scenario">
@@ -69,6 +72,21 @@
         <button class="scenario-button" type="button" data-scenario="link" aria-pressed="false">Lost link</button>
         <button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false">Policy replay</button>
       </div>
+
+      <section class="fleet-control-panel" aria-labelledby="fleet-control-title">
+        <div>
+          <span class="fleet-kicker">Creed Space Fleet</span>
+          <strong id="fleet-control-title">One signed protective rule, locally enforced by every guardian.</strong>
+        </div>
+        <dl class="fleet-metrics">
+          <div><dt>Fleet</dt><dd data-fleet="name">Loading</dd></div>
+          <div><dt>Guardians</dt><dd data-fleet="devices">Loading</dd></div>
+          <div><dt>Policy</dt><dd data-fleet="policy">Loading</dd></div>
+          <div><dt>Evidence</dt><dd data-fleet="evidence">Loading</dd></div>
+        </dl>
+        <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder guardian outcomes"></div>
+        <p class="fleet-contract-links"><a href="data/bounder-fleet-evidence.v1.json">Fleet evidence</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a></p>
+      </section>
 
       <div class="simulator-grid">
         <div class="simulator-stage">
@@ -96,6 +114,7 @@
             <p class="decision-reason">Checking signed authority and local operating conditions.</p>
           </div>
           <ol class="rule-stack" aria-label="Evaluated rule stack">
+            <li data-rule="fleet"><span>Fleet signature and device binding</span><strong>PASS</strong></li>
             <li data-rule="authority"><span>Signed authority</span><strong>PASS</strong></li>
             <li data-rule="civilian"><span>Civilian protection</span><strong>PASS</strong></li>
             <li data-rule="friendly"><span>Friendly-force separation</span><strong>PASS</strong></li>
@@ -153,7 +172,7 @@
       </div>
       <div class="simulator-boundary-note">
         <strong>Demonstrator, not deployment assurance.</strong>
-        <p>The displayed decisions come from deterministic Go interlock receipts published with their JSON schema. Real deployments still require lawful authority, expert review, reliable sensing, rigorous verification, and human accountability. Bounder is not certified safety software or an engagement system.</p>
+        <p>The displayed decisions come from deterministic Go interlock receipts and a signed Fleet contract published with their JSON schemas. Bounder is a simulation-only reference, not certified safety software or an engagement system.</p>
       </div>
     </section>
   </main>
