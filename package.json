@@ -1,0 +1,8 @@
+{
+  "name": "bounder-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-force-exit tests/*.test.js"
+  }
+}

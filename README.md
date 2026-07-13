@@ -13,6 +13,8 @@ The root directory is the canonical website:
 | `index.html` | Project positioning, architecture, applications, maturity, and contribution path |
 | `simulator.html` | Interactive 3D demonstration of local interlock decisions and protection rules |
 | `simulator.js` and `simulator.css` | Three.js scene, scenario logic, accessibility, and responsive simulator presentation |
+| `simulator-world.js` | Town geometry, named building footprints, and collision-checkable route waypoints |
+| `tests/simulator-world.test.js` | Building-clearance and world-data invariants |
 | `contact.html` | Formspree-backed contact route |
 | `privacy.html` | Current website privacy notice |
 | `terms.html` | Website and research-software terms |
@@ -35,6 +37,9 @@ Open `http://127.0.0.1:8000/`.
 ## Validation
 
 ```bash
+# Route and building-clearance invariants.
+node --test --test-force-exit tests/simulator-world.test.js
+
 # Deterministic design lint. Triage results rather than bulk-fixing.
 npx impeccable detect index.html
 npx impeccable detect simulator.html
