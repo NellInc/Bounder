@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.bounder.io/schemas/bounder.receipt.v1.schema.json",
+  "title": "Bounder decision receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "scenario", "rule", "decision_source", "signature_verified",
+    "allowed", "code", "reason", "action", "subject", "policy_id", "issuer",
+    "sequence", "evaluated_at", "policy_hash", "evidence", "state", "adapter"
+  ],
+  "properties": {
+    "version": { "const": "bounder-receipt/v1" },
+    "scenario": { "type": "string", "minLength": 1 },
+    "rule": { "type": "string", "minLength": 1 },
+    "decision_source": { "enum": ["bounder-io/interlock", "bounder-io/adapter"] },
+    "signature_verified": { "type": "boolean" },
+    "allowed": { "type": "boolean" },
+    "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "reason": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "subject": { "type": "string", "minLength": 1 },
+    "policy_id": { "type": "string", "minLength": 1 },
+    "issuer": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "evaluated_at": { "type": "string", "format": "date-time" },
+    "policy_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tier", "session_id", "auditor", "auditor_key_id", "verified_at", "age_seconds"],
+      "properties": {
+        "tier": { "enum": ["bronze", "silver", "gold", "platinum"] },
+        "session_id": { "type": "string", "minLength": 1 },
+        "auditor": { "type": "string", "minLength": 1 },
+        "auditor_key_id": { "type": "string", "minLength": 1 },
+        "verified_at": { "type": "string", "format": "date-time" },
+        "age_seconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gps_fix", "battery_percent", "altitude_metres", "inside_exclusion_zone",
+        "civilian_distance_metres", "friendly_distance_metres", "inside_protected_site",
+        "inside_humanitarian_corridor", "wind_speed_metres_per_second", "visibility_metres"
+      ],
+      "properties": {
+        "gps_fix": { "type": "boolean" },
+        "battery_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "altitude_metres": { "type": "number", "minimum": 0 },
+        "inside_exclusion_zone": { "type": "boolean" },
+        "civilian_distance_metres": { "type": "number", "minimum": 0 },
+        "friendly_distance_metres": { "type": "number", "minimum": 0 },
+        "inside_protected_site": { "type": "boolean" },
+        "inside_humanitarian_corridor": { "type": "boolean" },
+        "wind_speed_metres_per_second": { "type": "number", "minimum": 0 },
+        "visibility_metres": { "type": "number", "minimum": 0 }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command_authorized", "command_sent", "output"],
+      "properties": {
+        "command_authorized": { "type": "boolean" },
+        "command_sent": { "const": false },
+        "output": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

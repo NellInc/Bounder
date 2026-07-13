@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.bounder.io/schemas/bounder.receipt-bundle.v1.schema.json",
+  "title": "Bounder decision receipt bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "engine", "generated_at", "receipts"],
+  "properties": {
+    "version": { "const": "bounder-receipt-bundle/v1" },
+    "engine": { "const": "bounder-io/interlock" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "receipts": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": { "$ref": "bounder.receipt.v1.schema.json" }
+    }
+  }
+}

@@ -1,5 +1,5 @@
-import * as THREE from "https://esm.sh/three@0.180.0";
-import { OrbitControls } from "https://esm.sh/three@0.180.0/examples/jsm/controls/OrbitControls.js?deps=three@0.180.0";
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/OrbitControls.js";
 import { BUILDING_SPECS, ROUTE_WAYPOINTS, WORLD_BOUNDS } from "./simulator-world.js";
 
 const root = document.querySelector(".simulator-workbench");
@@ -11,6 +11,8 @@ const outcomeElement = root.querySelector(".decision-outcome");
 const decisionCode = root.querySelector(".decision-code");
 const reasonElement = root.querySelector(".decision-reason");
 const adapterOutput = root.querySelector(".adapter-output");
+const receiptSource = root.querySelector(".receipt-source");
+const receiptFields = Object.fromEntries([...root.querySelectorAll("[data-receipt]")].map((element) => [element.dataset.receipt, element]));
 const playButton = root.querySelector("[data-action='play']");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -552,67 +554,62 @@ const showRoute = (curve) => {
   scene.add(routeGlow, routeLine, routeWaypoints);
 };
 
-const scenarios = {
-  safe: {
-    stop: 1, failRule: null, code: "allowed", outcome: "Monitoring",
-    initial: "All reviewed constraints currently pass.",
-    denied: "The complete route remained inside its signed operating envelope.",
-    output: "LOITER mode permitted in SITL"
-  },
-  civilian: {
-    stop: 0.94, failRule: "civilian", code: "civilian_proximity", outcome: "Denied",
-    initial: "The route is approaching an active civilian-protection buffer.",
-    denied: "Civilian proximity violates the signed minimum separation. No new movement command is sent.",
-    output: "Hold outside civilian buffer"
-  },
-  friendly: {
-    stop: 0.94, failRule: "friendly", code: "friendly_force_proximity", outcome: "Denied",
-    initial: "Authenticated friendly presence is inside the planned route corridor.",
-    denied: "Friendly-force separation fails. Bounder prevents the blue-on-blue risk from reaching the adapter.",
-    output: "Hold outside friendly separation"
-  },
-  protected: {
-    stop: 0.94, failRule: "protected", code: "protected_site", outcome: "Denied",
-    initial: "The route is approaching a declared protected-site boundary.",
-    denied: "The protected-site rule fails locally. The simulated autopilot receives no new state change.",
-    output: "Hold outside protected site"
-  },
-  humanitarian: {
-    stop: 0.94, failRule: "humanitarian", code: "humanitarian_corridor_protected", outcome: "Denied",
-    initial: "The route is approaching an active humanitarian movement corridor.",
-    denied: "The protected humanitarian corridor is occupied. Bounder denies the route change and preserves separation.",
-    output: "Hold outside humanitarian corridor"
-  },
-  altitude: {
-    stop: 0.57, failRule: "operating", code: "altitude_above_maximum", outcome: "Denied",
-    initial: "Local altitude is being compared with the signed flight ceiling.",
-    denied: "The requested climb exceeds the signed altitude ceiling. The adapter receives no climb authority.",
-    output: "Maintain permitted altitude"
-  },
-  weather: {
-    stop: 0.48, failRule: "weather", code: "weather_outside_envelope", outcome: "Denied",
-    initial: "Visibility and wind observations are approaching the permitted envelope.",
-    denied: "Observed weather is outside the signed operating envelope. Bounder denies the route continuation.",
-    output: "Hold for weather recovery"
-  },
-  window: {
-    stop: 0.22, failRule: "operating", code: "operating_window_closed", outcome: "Denied",
-    initial: "The requested state change is being checked against its authorized time window.",
-    denied: "The operating window is closed. A valid route cannot create authority outside its approved time.",
-    output: "Await authorized window"
-  },
-  link: {
-    stop: 0.3, failRule: "link", code: "transport_unavailable", outcome: "Denied",
-    initial: "Bounder is monitoring heartbeat and telemetry freshness.",
-    denied: "The trusted link is unavailable. New authority is denied while the adapter retains its engineered safe state.",
-    output: "No new adapter authority"
-  },
-  replay: {
-    stop: 0, failRule: "authority", code: "policy_replay", outcome: "Denied",
-    initial: "The supplied policy sequence was already accepted.",
-    denied: "Replay verification fails before route evaluation. No MAVLink state change is attempted.",
-    output: "No command sent"
+const scenarioPresentation = Object.freeze({
+  safe: { stop: 1, initial: "All reviewed constraints currently pass." },
+  civilian: { stop: 0.94, initial: "The route is approaching an active civilian-protection buffer." },
+  friendly: { stop: 0.94, initial: "Authenticated friendly presence is inside the planned route corridor." },
+  protected: { stop: 0.94, initial: "The route is approaching a declared protected-site boundary." },
+  humanitarian: { stop: 0.94, initial: "The route is approaching an active humanitarian movement corridor." },
+  altitude: { stop: 0.57, initial: "Local altitude is being compared with the signed flight ceiling." },
+  weather: { stop: 0.48, initial: "Visibility and wind observations are approaching the permitted envelope." },
+  window: { stop: 0.22, initial: "The requested state change is being checked against its authorized time window." },
+  link: { stop: 0.3, initial: "Bounder is monitoring heartbeat and telemetry freshness." },
+  replay: { stop: 0, initial: "The supplied policy sequence was already accepted." }
+});
+
+const expectedScenarioIDs = Object.keys(scenarioPresentation);
+const validRules = new Set(["all", ...[...root.querySelectorAll(".rule-stack li")].map((item) => item.dataset.rule)]);
+let receiptBundle;
+let receiptsByScenario = new Map();
+
+const validateReceiptBundle = (bundle) => {
+  if (!bundle || bundle.version !== "bounder-receipt-bundle/v1" || bundle.engine !== "bounder-io/interlock" || !Array.isArray(bundle.receipts)) {
+    throw new Error("receipt bundle metadata is invalid");
   }
+  if (bundle.receipts.length !== expectedScenarioIDs.length) throw new Error("receipt bundle scenario count is invalid");
+  const receipts = new Map();
+  for (const receipt of bundle.receipts) {
+    if (!receipt || receipt.version !== "bounder-receipt/v1" || !expectedScenarioIDs.includes(receipt.scenario)) {
+      throw new Error("receipt scenario or version is invalid");
+    }
+    if (receipts.has(receipt.scenario) || !validRules.has(receipt.rule)) throw new Error("receipt scenario or rule is duplicated or unknown");
+    if (typeof receipt.allowed !== "boolean" || typeof receipt.code !== "string" || typeof receipt.reason !== "string") {
+      throw new Error("receipt decision is invalid");
+    }
+    if (typeof receipt.signature_verified !== "boolean" || !/^sha256:[0-9a-f]{64}$/.test(receipt.policy_hash)) {
+      throw new Error("receipt provenance is invalid");
+    }
+    if (!receipt.adapter || receipt.adapter.command_sent !== false || typeof receipt.adapter.output !== "string") {
+      throw new Error("receipt adapter state is invalid");
+    }
+    if ((receipt.scenario === "safe") !== receipt.allowed) throw new Error("receipt allow set is invalid");
+    receipts.set(receipt.scenario, receipt);
+  }
+  if (expectedScenarioIDs.some((name) => !receipts.has(name))) throw new Error("receipt bundle is incomplete");
+  return receipts;
+};
+
+const loadReceiptBundle = async () => {
+  const response = await fetch("./data/bounder-receipts.v1.json", { cache: "no-cache", credentials: "same-origin" });
+  if (!response.ok) throw new Error(`receipt bundle request failed with ${response.status}`);
+  const bundle = await response.json();
+  const receipts = validateReceiptBundle(bundle);
+  receiptBundle = bundle;
+  receiptsByScenario = receipts;
+  stage.dataset.receiptBundleVersion = bundle.version;
+  stage.dataset.receiptEngine = bundle.engine;
+  stage.dataset.receiptCount = String(receipts.size);
+  stage.dataset.receiptsReady = "true";
 };
 
 let selectedScenario = "safe";
@@ -620,6 +617,7 @@ let progress = 0;
 let playing = !reduceMotion;
 let lastTime = 0;
 let deniedTime = 0;
+let currentReceipt;
 
 const setRuleState = (failedRule, triggered) => {
   for (const item of root.querySelectorAll(".rule-stack li")) {
@@ -630,19 +628,45 @@ const setRuleState = (failedRule, triggered) => {
   }
 };
 
-const setDecision = (scenario, triggered) => {
-  const denied = scenario.failRule && triggered;
-  phaseElement.textContent = denied ? "Bounder denied" : "Bounder monitoring";
-  statusCode.textContent = denied ? scenario.code : "evaluating";
-  outcomeElement.textContent = denied ? scenario.outcome : "Monitoring";
-  decisionCode.textContent = denied ? scenario.code : "evaluating";
-  reasonElement.textContent = denied ? scenario.denied : scenario.initial;
-  adapterOutput.textContent = denied ? scenario.output : "No state change yet";
-  setRuleState(scenario.failRule, denied);
+const renderReceiptMetadata = (receipt) => {
+  receiptSource.textContent = receipt.decision_source === receiptBundle.engine ? "Go interlock receipt" : "Adapter receipt after Go verification";
+  receiptFields.engine.textContent = receipt.decision_source;
+  receiptFields.signature.textContent = receipt.signature_verified ? "Ed25519 verified by engine" : "Verification precondition failed";
+  receiptFields.policy.textContent = receipt.policy_id;
+  receiptFields.issuer.textContent = receipt.issuer;
+  receiptFields.subject.textContent = receipt.subject;
+  receiptFields.sequence.textContent = String(receipt.sequence);
+  receiptFields.evidence.textContent = `${receipt.evidence.tier} · ${receipt.evidence.auditor} · age ${receipt.evidence.age_seconds}s`;
+  receiptFields.evaluated.textContent = receipt.evaluated_at;
+  receiptFields.hash.textContent = receipt.policy_hash;
+};
+
+const setDecision = (receipt, presentation, triggered) => {
+  renderReceiptMetadata(receipt);
+  if (!triggered) {
+    phaseElement.textContent = "Bounder monitoring";
+    statusCode.textContent = "evaluating";
+    outcomeElement.textContent = "Monitoring";
+    decisionCode.textContent = "evaluating";
+    reasonElement.textContent = presentation.initial;
+    adapterOutput.textContent = "No state change yet";
+    setRuleState(receipt.rule, false);
+    return;
+  }
+  phaseElement.textContent = receipt.allowed ? "Route complete" : "Bounder denied";
+  statusCode.textContent = receipt.code;
+  outcomeElement.textContent = receipt.allowed ? "Allowed" : "Denied";
+  decisionCode.textContent = receipt.code;
+  reasonElement.textContent = receipt.reason;
+  adapterOutput.textContent = receipt.adapter.output;
+  setRuleState(receipt.rule, !receipt.allowed);
 };
 
 const selectScenario = (name) => {
+  const receipt = receiptsByScenario.get(name);
+  if (!receipt) return;
   selectedScenario = name;
+  currentReceipt = receipt;
   progress = 0;
   deniedTime = 0;
   playing = !reduceMotion;
@@ -667,13 +691,13 @@ const selectScenario = (name) => {
   drone.position.copy(curves[name].getPointAt(0));
   bounderEnvelope.material.color.set(colours.signal);
   bounderEnvelope.scale.setScalar(1);
-  setDecision(scenarios[name], name === "replay");
-  if (name === "replay") adapterOutput.textContent = scenarios[name].output;
+  setDecision(receipt, scenarioPresentation[name], name === "replay");
 };
 
 const update = (delta, elapsed) => {
-  const scenario = scenarios[selectedScenario];
-  if (playing && progress < scenario.stop) progress = Math.min(scenario.stop, progress + delta * 0.085);
+  if (!currentReceipt) return;
+  const presentation = scenarioPresentation[selectedScenario];
+  if (playing && progress < presentation.stop) progress = Math.min(presentation.stop, progress + delta * 0.085);
   const point = curves[selectedScenario].getPointAt(progress);
   const nextPoint = curves[selectedScenario].getPointAt(Math.min(progress + 0.008, 1));
   drone.position.copy(point);
@@ -692,19 +716,14 @@ const update = (delta, elapsed) => {
     positions.needsUpdate = true;
   }
 
-  const triggered = scenario.failRule && progress >= scenario.stop;
-  if (triggered) {
+  const triggered = progress >= presentation.stop;
+  if (triggered && !currentReceipt.allowed) {
     deniedTime += delta;
     bounderEnvelope.material.color.set(colours.safety);
     bounderEnvelope.scale.setScalar(1 + Math.sin(deniedTime * 7) * 0.13);
-    setDecision(scenario, true);
-  } else if (!scenario.failRule && progress >= 0.995) {
-    phaseElement.textContent = "Route complete";
-    statusCode.textContent = scenario.code;
-    outcomeElement.textContent = "Allowed";
-    decisionCode.textContent = scenario.code;
-    reasonElement.textContent = scenario.denied;
-    adapterOutput.textContent = scenario.output;
+    setDecision(currentReceipt, presentation, true);
+  } else if (triggered && currentReceipt.allowed) {
+    setDecision(currentReceipt, presentation, true);
   }
 };
 
@@ -743,7 +762,37 @@ const reportEmbeddedHeight = () => {
   }
 };
 new ResizeObserver(reportEmbeddedHeight).observe(document.body);
-selectScenario("safe");
-resize();
-reportEmbeddedHeight();
-requestAnimationFrame(animate);
+
+const showReceiptLoadFailure = () => {
+  playing = false;
+  playButton.disabled = true;
+  for (const button of root.querySelectorAll("[data-scenario]")) button.disabled = true;
+  stage.dataset.receiptsReady = "false";
+  receiptSource.textContent = "Receipt fixture unavailable";
+  phaseElement.textContent = "Simulation paused";
+  statusCode.textContent = "fixture_unavailable";
+  outcomeElement.textContent = "Unavailable";
+  decisionCode.textContent = "fixture_unavailable";
+  reasonElement.textContent = "The Go interlock receipt bundle could not be loaded or validated. The simulation remains paused.";
+  adapterOutput.textContent = "No command authority";
+  setRuleState("all", false);
+};
+
+const bootstrap = async () => {
+  playButton.disabled = true;
+  try {
+    await loadReceiptBundle();
+    playButton.disabled = false;
+    selectScenario("safe");
+  } catch (error) {
+    console.error("Bounder receipt bundle failed closed", error);
+    showRoute(curves.safe);
+    drone.position.copy(curves.safe.getPointAt(0));
+    showReceiptLoadFailure();
+  }
+  resize();
+  reportEmbeddedHeight();
+  requestAnimationFrame(animate);
+};
+
+bootstrap();

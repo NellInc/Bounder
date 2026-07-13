@@ -1,0 +1,46 @@
+name: Receipt contract and drift
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+      - "schemas/**"
+      - "simulator.js"
+      - "simulator.html"
+      - "simulator-world.js"
+      - "tests/**"
+      - "package.json"
+      - ".github/workflows/receipt-drift.yml"
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm test
+      - name: Compare receipts and schemas with the canonical interlock repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          base="https://raw.githubusercontent.com/NellWatson/Bounder/master"
+          nonce="$(date +%s)"
+          curl -fsSL --retry 4 --retry-all-errors "$base/fixtures/web-simulator-receipts.v1.json?cache=$nonce" -o "$tmp/receipts.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/bounder.receipt.v1.schema.json?cache=$nonce" -o "$tmp/receipt-schema.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/bounder.receipt-bundle.v1.schema.json?cache=$nonce" -o "$tmp/bundle-schema.json"
+          cmp data/bounder-receipts.v1.json "$tmp/receipts.json"
+          cmp schemas/bounder.receipt.v1.schema.json "$tmp/receipt-schema.json"
+          cmp schemas/bounder.receipt-bundle.v1.schema.json "$tmp/bundle-schema.json"

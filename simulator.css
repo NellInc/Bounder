@@ -103,6 +103,14 @@
   border-color: var(--signal);
 }
 
+.sim-control:disabled,
+.scenario-button:disabled {
+  color: rgba(255, 255, 255, 0.35);
+  background: transparent;
+  border-color: var(--line-light);
+  cursor: not-allowed;
+}
+
 .scenario-controls {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -251,6 +259,16 @@
   border-bottom: 1px solid var(--line-light);
 }
 
+.receipt-source {
+  display: block;
+  margin-top: 0.65rem;
+  color: rgba(255, 255, 255, 0.52);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .decision-outcome {
   display: block;
   margin: 1.2rem 0 0.35rem;
@@ -320,6 +338,63 @@
   display: block;
   margin-top: 0.45rem;
   font-size: 0.9rem;
+}
+
+.receipt-details {
+  border-top: 1px solid var(--line-light);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.receipt-details summary {
+  padding: 1rem 1.6rem;
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.receipt-details dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0 1.6rem;
+}
+
+.receipt-details dl > div {
+  display: grid;
+  grid-template-columns: 5.4rem minmax(0, 1fr);
+  gap: 0.8rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line-light);
+}
+
+.receipt-details dt,
+.receipt-details dd {
+  margin: 0;
+  font-size: 0.68rem;
+}
+
+.receipt-details dt {
+  color: rgba(255, 255, 255, 0.42);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.receipt-details dd {
+  overflow-wrap: anywhere;
+}
+
+.receipt-details p {
+  margin: 0;
+  padding: 1rem 1.6rem 1.4rem;
+  font-size: 0.72rem;
+}
+
+.receipt-details a {
+  color: var(--signal);
 }
 
 .rules-context {

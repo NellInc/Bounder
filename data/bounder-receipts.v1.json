@@ -1,0 +1,427 @@
+{
+  "version": "bounder-receipt-bundle/v1",
+  "engine": "bounder-io/interlock",
+  "generated_at": "2026-07-13T12:00:00Z",
+  "receipts": [
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "safe",
+      "rule": "all",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": true,
+      "code": "allowed",
+      "reason": "signature, policy, and local constraints permit the action",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": true,
+        "command_sent": false,
+        "output": "LOITER authorized; fixture generation has no vehicle channel"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "civilian",
+      "rule": "civilian",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "civilian_proximity",
+      "reason": "civilian distance is below the signed minimum separation",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 5,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold outside civilian buffer"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "friendly",
+      "rule": "friendly",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "friendly_force_proximity",
+      "reason": "friendly-force distance is below the signed minimum separation",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 10,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold outside friendly separation"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "protected",
+      "rule": "protected",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "protected_site",
+      "reason": "local position intersects a declared protected site",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": true,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold outside protected site"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "humanitarian",
+      "rule": "humanitarian",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "humanitarian_corridor_protected",
+      "reason": "local position intersects an active humanitarian corridor",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": true,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold outside humanitarian corridor"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "altitude",
+      "rule": "operating",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "altitude_above_maximum",
+      "reason": "altitude is above the signed maximum",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 120,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Maintain permitted altitude"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "weather",
+      "rule": "weather",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "weather_outside_envelope",
+      "reason": "wind speed is above the signed maximum",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 26,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold for weather recovery"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "window",
+      "rule": "operating",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "operating_window_closed",
+      "reason": "policy is not active",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:abeb5246af2b81f3dd78dd667e11edb370986b90df8d411d33ae6c4e1797ea15",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Await authorized window"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "link",
+      "rule": "link",
+      "decision_source": "bounder-io/adapter",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "transport_unavailable",
+      "reason": "MAVLink transport has no current heartbeat",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "No new adapter authority"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "replay",
+      "rule": "authority",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "policy_replay",
+      "reason": "policy sequence has already been accepted",
+      "action": "loiter",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "No command sent"
+      }
+    }
+  ]
+}
