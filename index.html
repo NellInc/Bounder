@@ -6,14 +6,18 @@
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <title>Bounder | Trust at the Point of Action</title>
   <meta name="description" content="Bounder is an open reference architecture for local, auditable physical interlocks between verified digital policy and device-safe action.">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="https://www.bounder.io/">
   <meta name="theme-color" content="#11130f">
 
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Bounder">
+  <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://www.bounder.io/">
   <meta property="og:title" content="Bounder | Trust at the Point of Action">
   <meta property="og:description" content="Open, local safety gates between verified policy and physical action.">
   <meta property="og:image" content="https://images.squarespace-cdn.com/content/v1/55acf641e4b0b8a3dbbdbd91/1437403987855-UZEGF7VV4UCP5MQ7E5MI/drone-698564.jpg">
+  <meta property="og:image:alt" content="A drone in flight above open countryside">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bounder | Trust at the Point of Action">
   <meta name="twitter:description" content="Open, local safety gates between verified policy and physical action.">
@@ -24,13 +28,43 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareSourceCode",
-    "name": "Bounder",
-    "description": "An open reference architecture for trustworthy physical interlocks.",
-    "codeRepository": "https://github.com/NellWatson/Bounder",
-    "license": "https://www.apache.org/licenses/LICENSE-2.0",
-    "programmingLanguage": ["Go", "Python"],
-    "author": {"@type": "Person", "name": "Nell Watson"}
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://www.bounder.io/#nell-watson",
+        "name": "Nell Watson"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.bounder.io/#website",
+        "url": "https://www.bounder.io/",
+        "name": "Bounder",
+        "description": "Open reference architecture for local, auditable physical interlocks.",
+        "inLanguage": "en-GB",
+        "publisher": {"@id": "https://www.bounder.io/#nell-watson"}
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://www.bounder.io/#webpage",
+        "url": "https://www.bounder.io/",
+        "name": "Bounder | Trust at the Point of Action",
+        "description": "Bounder is an open reference architecture for local, auditable physical interlocks between verified digital policy and device-safe action.",
+        "isPartOf": {"@id": "https://www.bounder.io/#website"},
+        "about": {"@id": "https://www.bounder.io/#software"},
+        "inLanguage": "en-GB"
+      },
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": "https://www.bounder.io/#software",
+        "name": "Bounder",
+        "description": "An open reference architecture for trustworthy physical interlocks.",
+        "url": "https://www.bounder.io/",
+        "codeRepository": "https://github.com/NellWatson/Bounder",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "programmingLanguage": ["Go", "Python"],
+        "author": {"@id": "https://www.bounder.io/#nell-watson"}
+      }
+    ]
   }
   </script>
 </head>
