@@ -80,7 +80,7 @@ button, a {
 
 .wordmark {
   display: inline-flex;
-  gap: 0.38rem;
+  gap: 0.58rem;
   align-items: center;
   color: inherit;
   font-size: 1rem;
@@ -89,9 +89,34 @@ button, a {
   text-decoration: none;
 }
 
-.wordmark span {
-  color: var(--signal);
-  font-size: 0.65em;
+.brand-mark {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.48rem;
+  height: 1.48rem;
+  background: currentColor;
+  mask: url("assets/bounder-mark.svg") center / contain no-repeat;
+  -webkit-mask: url("assets/bounder-mark.svg") center / contain no-repeat;
+}
+
+.wordmark::after {
+  width: 0.38rem;
+  height: 0.38rem;
+  background: var(--signal);
+  border-radius: 999px;
+  content: "";
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .header-nav {

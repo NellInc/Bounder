@@ -170,6 +170,11 @@
   cursor: grabbing;
 }
 
+.simulator-stage canvas:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: -3px;
+}
+
 .stage-status {
   position: absolute;
   top: 1rem;
@@ -201,6 +206,7 @@
   right: 1rem;
   bottom: 1rem;
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 0.6rem 0.8rem;
   color: rgba(255, 255, 255, 0.75);
@@ -215,6 +221,17 @@
   display: inline-flex;
   gap: 0.45rem;
   align-items: center;
+}
+
+.stage-legend kbd {
+  padding: 0.08rem 0.25rem;
+  color: var(--ink);
+  background: var(--signal);
+  border: 0;
+  border-radius: 2px;
+  box-shadow: none;
+  font: inherit;
+  font-weight: 800;
 }
 
 .stage-legend i {

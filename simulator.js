@@ -62,6 +62,54 @@ controls.minDistance = 11;
 controls.maxDistance = 34;
 controls.maxPolarAngle = Math.PI * 0.48;
 
+const navigationCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE"]);
+const pressedNavigationKeys = new Set();
+const cameraForward = new THREE.Vector3();
+const cameraRight = new THREE.Vector3();
+const cameraMovement = new THREE.Vector3();
+
+canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
+canvas.addEventListener("keydown", (event) => {
+  if (!navigationCodes.has(event.code)) return;
+  event.preventDefault();
+  pressedNavigationKeys.add(event.code);
+  stage.dataset.lastNavigationKey = event.code;
+});
+canvas.addEventListener("keyup", (event) => {
+  if (!navigationCodes.has(event.code)) return;
+  event.preventDefault();
+  pressedNavigationKeys.delete(event.code);
+});
+canvas.addEventListener("blur", () => pressedNavigationKeys.clear());
+
+const updateCameraNavigation = (delta) => {
+  if (pressedNavigationKeys.size === 0) return;
+
+  camera.getWorldDirection(cameraForward);
+  cameraForward.y = 0;
+  if (cameraForward.lengthSq() < 0.0001) cameraForward.set(0, 0, -1);
+  cameraForward.normalize();
+  cameraRight.crossVectors(cameraForward, camera.up).normalize();
+  cameraMovement.set(0, 0, 0);
+
+  if (pressedNavigationKeys.has("KeyW")) cameraMovement.add(cameraForward);
+  if (pressedNavigationKeys.has("KeyS")) cameraMovement.sub(cameraForward);
+  if (pressedNavigationKeys.has("KeyD")) cameraMovement.add(cameraRight);
+  if (pressedNavigationKeys.has("KeyA")) cameraMovement.sub(cameraRight);
+  if (pressedNavigationKeys.has("KeyE")) cameraMovement.y += 1;
+  if (pressedNavigationKeys.has("KeyQ")) cameraMovement.y -= 1;
+  if (cameraMovement.lengthSq() === 0) return;
+
+  cameraMovement.normalize().multiplyScalar(delta * 6.5);
+  const previousTarget = controls.target.clone();
+  controls.target.add(cameraMovement);
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -WORLD_BOUNDS.width / 2, WORLD_BOUNDS.width / 2);
+  controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0.6, 10);
+  controls.target.z = THREE.MathUtils.clamp(controls.target.z, -WORLD_BOUNDS.depth / 2, WORLD_BOUNDS.depth / 2);
+  camera.position.add(controls.target.clone().sub(previousTarget));
+  stage.dataset.cameraPosition = camera.position.toArray().map((value) => value.toFixed(2)).join(",");
+};
+
 scene.add(new THREE.HemisphereLight(0xe9f7ff, 0x5b6749, 2.15));
 const sun = new THREE.DirectionalLight(0xfff1cf, 3.1);
 sun.position.set(-10, 18, 12);
@@ -147,6 +195,45 @@ const addWindow = (group, x, y, z, scaleX = 1) => {
   group.add(frame, pane);
 };
 
+const makeGableRoofGeometry = (width, depth, height = 0.72) => {
+  const halfWidth = width / 2 + 0.18;
+  const halfDepth = depth / 2 + 0.18;
+  let vertices;
+  let indices;
+
+  if (width >= depth) {
+    const ridgeHalf = Math.max(halfWidth - 0.42, halfWidth * 0.56);
+    vertices = [
+      -halfWidth, 0, -halfDepth,
+      halfWidth, 0, -halfDepth,
+      halfWidth, 0, halfDepth,
+      -halfWidth, 0, halfDepth,
+      -ridgeHalf, height, 0,
+      ridgeHalf, height, 0
+    ];
+    indices = [0, 5, 1, 0, 4, 5, 3, 2, 5, 3, 5, 4, 0, 3, 4, 1, 5, 2];
+  } else {
+    const ridgeHalf = Math.max(halfDepth - 0.42, halfDepth * 0.56);
+    vertices = [
+      -halfWidth, 0, -halfDepth,
+      halfWidth, 0, -halfDepth,
+      halfWidth, 0, halfDepth,
+      -halfWidth, 0, halfDepth,
+      0, height, -ridgeHalf,
+      0, height, ridgeHalf
+    ];
+    indices = [0, 5, 4, 0, 3, 5, 1, 4, 5, 1, 5, 2, 0, 4, 1, 3, 2, 5];
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  const facetedGeometry = geometry.toNonIndexed();
+  facetedGeometry.computeVertexNormals();
+  geometry.dispose();
+  return facetedGeometry;
+};
+
 const addBuilding = (spec, index) => {
   const group = new THREE.Group();
   group.userData = { name: spec.name, footprint: spec };
@@ -161,13 +248,12 @@ const addBuilding = (spec, index) => {
   body.castShadow = true;
   body.receiveShadow = true;
   const roof = new THREE.Mesh(
-    new THREE.ConeGeometry(Math.max(spec.width, spec.depth) * 0.73, 0.68, 4),
-    new THREE.MeshStandardMaterial({ color: spec.roof, roughness: 0.8 })
+    makeGableRoofGeometry(spec.width, spec.depth),
+    new THREE.MeshStandardMaterial({ color: spec.roof, roughness: 0.82, side: THREE.DoubleSide })
   );
-  roof.rotation.y = Math.PI / 4;
-  roof.scale.z = spec.depth / spec.width;
-  roof.position.y = spec.height + 0.46;
+  roof.position.y = spec.height + 0.12;
   roof.castShadow = true;
+  roof.receiveShadow = true;
   group.add(foundation, body, roof);
 
   const storeys = Math.max(1, Math.floor(spec.height / 1.25));
@@ -739,6 +825,7 @@ const animate = (time) => {
   const delta = Math.min((time - lastTime) / 1000 || 0, 0.05);
   lastTime = time;
   update(delta, time);
+  updateCameraNavigation(delta);
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);

@@ -14,6 +14,7 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Bounder Simulator | See the Boundary Hold">
   <meta name="twitter:description" content="A 3D demonstration of local, auditable safety rules at the point of physical action.">
+  <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="simulator.css">
   <script type="importmap">
@@ -24,7 +25,7 @@
 <body class="interior-page simulator-page" id="top">
   <a class="skip-link" href="#main">Skip to simulator</a>
   <header class="site-header">
-    <a class="wordmark" href="index.html" aria-label="Bounder home">BOUNDER<span aria-hidden="true">●</span></a>
+    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-mark" aria-hidden="true"></span><span class="wordmark-text">BOUNDER</span></a>
     <nav class="header-nav" aria-label="Primary navigation">
       <a href="index.html#architecture">Architecture</a>
       <a href="index.html#applications">Applications</a>
@@ -70,7 +71,7 @@
 
       <div class="simulator-grid">
         <div class="simulator-stage">
-          <canvas role="img" aria-label="Three-dimensional simulation of an autonomous aircraft flying above a detailed town while Bounder evaluates local protection rules"></canvas>
+          <canvas tabindex="0" role="img" aria-keyshortcuts="W A S D Q E" aria-describedby="simulator-navigation-help" aria-label="Three-dimensional simulation of an autonomous aircraft flying above a detailed town while Bounder evaluates local protection rules"></canvas>
           <div class="stage-status" aria-live="polite">
             <span class="status-phase">Bounder monitoring</span>
             <code class="status-code">evaluating</code>
@@ -79,8 +80,9 @@
             <span><i class="legend-route"></i>Route projection</span>
             <span><i class="legend-boundary"></i>Protection boundary</span>
             <span><i class="legend-bounder"></i>Bounder envelope</span>
-            <span class="legend-explore">Drag to explore</span>
+            <span class="legend-explore"><kbd>WASD</kbd> move <kbd>Q/E</kbd> altitude · drag orbit</span>
           </div>
+          <p class="visually-hidden" id="simulator-navigation-help">Focus the scene, then use W, A, S, and D to move. Use Q to descend and E to climb. Drag to orbit the camera.</p>
           <p class="webgl-fallback">The 3D scene could not start. The decision panel remains available.</p>
         </div>
 
@@ -156,7 +158,7 @@
   </main>
 
   <footer class="site-footer">
-    <a class="wordmark" href="index.html">BOUNDER<span aria-hidden="true">●</span></a>
+    <a class="wordmark" href="index.html"><span class="brand-mark" aria-hidden="true"></span><span class="wordmark-text">BOUNDER</span></a>
     <p>Trust at the point of action.</p>
     <nav class="secondary-nav" aria-label="Footer navigation">
       <a href="terms.html">Terms</a>
