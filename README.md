@@ -11,6 +11,8 @@ The root directory is the canonical website:
 | File | Purpose |
 |---|---|
 | `index.html` | Project positioning, architecture, applications, maturity, and contribution path |
+| `simulator.html` | Interactive 3D demonstration of local interlock decisions and protection rules |
+| `simulator.js` and `simulator.css` | Three.js scene, scenario logic, accessibility, and responsive simulator presentation |
 | `contact.html` | Formspree-backed contact route |
 | `privacy.html` | Current website privacy notice |
 | `terms.html` | Website and research-software terms |
@@ -34,6 +36,7 @@ Open `http://127.0.0.1:8000/`.
 ```bash
 # Deterministic design lint. Triage results rather than bulk-fixing.
 npx impeccable detect index.html
+npx impeccable detect simulator.html
 npx impeccable detect contact.html
 npx impeccable detect privacy.html
 npx impeccable detect terms.html

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bounder Simulator | Physical Interlocks in Action</title>
+  <meta name="description" content="Explore a 3D, software-only demonstration of Bounder enforcing civilian protection, friendly-force separation, protected-site, communications, and signed-authority rules.">
+  <link rel="canonical" href="https://www.bounder.io/simulator.html">
+  <meta name="theme-color" content="#11130f">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.bounder.io/simulator.html">
+  <meta property="og:title" content="Bounder Simulator | See the Boundary Hold">
+  <meta property="og:description" content="A 3D demonstration of local, auditable safety rules at the point of physical action.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Bounder Simulator | See the Boundary Hold">
+  <meta name="twitter:description" content="A 3D demonstration of local, auditable safety rules at the point of physical action.">
+  <link rel="preconnect" href="https://esm.sh" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="simulator.css">
+</head>
+<body class="interior-page simulator-page" id="top">
+  <a class="skip-link" href="#main">Skip to simulator</a>
+  <header class="site-header">
+    <a class="wordmark" href="index.html" aria-label="Bounder home">BOUNDER<span aria-hidden="true">●</span></a>
+    <nav class="header-nav" aria-label="Primary navigation">
+      <a href="index.html#architecture">Architecture</a>
+      <a href="index.html#applications">Applications</a>
+      <a href="index.html#safety">Safety</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="simulator-intro" aria-labelledby="simulator-title">
+      <div class="section-label">Interactive demonstrator</div>
+      <div>
+        <h1 id="simulator-title">See the boundary hold.</h1>
+        <p>Choose a mission condition, then watch a local Bounder interlock permit or deny the next state change before it reaches the simulated autopilot.</p>
+      </div>
+      <aside>
+        <span>Software only</span>
+        <p>No aircraft, weapons, targeting systems, or live command channels are connected.</p>
+      </aside>
+    </section>
+
+    <section class="simulator-workbench" aria-labelledby="workbench-title">
+      <div class="workbench-heading">
+        <div>
+          <div class="section-label">Scenario lab</div>
+          <h2 id="workbench-title">Rules at the point of action</h2>
+        </div>
+        <button class="sim-control sim-play" type="button" data-action="play" aria-pressed="false">Pause simulation</button>
+      </div>
+
+      <div class="scenario-controls" role="group" aria-label="Choose a simulation scenario">
+        <button class="scenario-button" type="button" data-scenario="safe" aria-pressed="true">Safe corridor</button>
+        <button class="scenario-button" type="button" data-scenario="civilian" aria-pressed="false">Civilian buffer</button>
+        <button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false">Friendly separation</button>
+        <button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false">Protected site</button>
+        <button class="scenario-button" type="button" data-scenario="link" aria-pressed="false">Lost link</button>
+        <button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false">Policy replay</button>
+      </div>
+
+      <div class="simulator-grid">
+        <div class="simulator-stage">
+          <canvas role="img" aria-label="Three-dimensional simulation of an autonomous aircraft approaching protected areas while Bounder evaluates local rules"></canvas>
+          <div class="stage-status" aria-live="polite">
+            <span class="status-phase">Bounder monitoring</span>
+            <code class="status-code">evaluating</code>
+          </div>
+          <div class="stage-legend" aria-hidden="true">
+            <span><i class="legend-route"></i>Planned route</span>
+            <span><i class="legend-boundary"></i>Protection boundary</span>
+            <span><i class="legend-bounder"></i>Bounder envelope</span>
+          </div>
+          <p class="webgl-fallback">The 3D scene could not start. The decision panel remains available.</p>
+        </div>
+
+        <aside class="decision-panel" aria-labelledby="decision-title">
+          <div class="decision-header">
+            <div class="section-label">Decision receipt</div>
+            <strong class="decision-outcome" id="decision-title">Monitoring</strong>
+            <code class="decision-code">evaluating</code>
+            <p class="decision-reason">Checking signed authority and local operating conditions.</p>
+          </div>
+          <ol class="rule-stack" aria-label="Evaluated rule stack">
+            <li data-rule="authority"><span>Signed authority</span><strong>PASS</strong></li>
+            <li data-rule="civilian"><span>Civilian protection</span><strong>PASS</strong></li>
+            <li data-rule="friendly"><span>Friendly-force separation</span><strong>PASS</strong></li>
+            <li data-rule="protected"><span>Protected sites</span><strong>PASS</strong></li>
+            <li data-rule="operating"><span>Operating envelope</span><strong>PASS</strong></li>
+            <li data-rule="link"><span>Link and telemetry</span><strong>PASS</strong></li>
+          </ol>
+          <div class="actuation-state">
+            <span>Adapter output</span>
+            <strong class="adapter-output">No state change yet</strong>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="rules-context section" aria-labelledby="rules-title">
+      <div class="section-heading">
+        <div class="section-label">Protection rules</div>
+        <h2 id="rules-title">Constraints, not targeting logic.</h2>
+        <p>Bounder does not decide whom or what to engage. It enforces narrow, reviewed constraints on whether a requested physical state change may proceed.</p>
+      </div>
+      <div class="rules-context-grid">
+        <article>
+          <span aria-hidden="true">◎</span>
+          <h3>Human protection</h3>
+          <p>Civilian presence, medical facilities, schools, cultural sites, declared protected zones, surrender, and other protected status can require denial or escalation.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">◇</span>
+          <h3>Friendly-force protection</h3>
+          <p>Authenticated friendly positions and minimum-separation rules can prevent blue-on-blue incidents without exposing arbitrary control authority.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">⌁</span>
+          <h3>Prosaic operating rules</h3>
+          <p>Time windows, altitude, weather, battery, communications, identification, operator authentication, geography, and policy freshness remain equally important.</p>
+        </article>
+      </div>
+      <div class="simulator-boundary-note">
+        <strong>Conceptual safety demonstrator.</strong>
+        <p>These examples are deliberately abstract. Operational rules require lawful authority, expert review, reliable sensing, rigorous verification, and human accountability. Bounder is not certified safety software or an engagement system.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="wordmark" href="index.html">BOUNDER<span aria-hidden="true">●</span></a>
+    <p>Trust at the point of action.</p>
+    <nav class="secondary-nav" aria-label="Footer navigation">
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="contact.html">Contact</a>
+      <a href="https://github.com/NellWatson/Bounder" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+    <p class="copyright">© 2026 Bounder. Open source under the MIT License.</p>
+  </footer>
+  <script type="module" src="simulator.js"></script>
+</body>
+</html>

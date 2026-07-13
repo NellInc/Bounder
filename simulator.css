@@ -1,0 +1,370 @@
+.simulator-page {
+  --friendly: #3f91c9;
+  --civilian: #d69223;
+  --protected: #b83d26;
+  --route: #69a63c;
+}
+
+.simulator-intro {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) minmax(240px, 0.36fr);
+  gap: 2rem;
+  width: min(calc(100% - 3rem), var(--content));
+  margin: 0 auto;
+  padding: clamp(4rem, 8vw, 8rem) 0 clamp(3rem, 6vw, 5rem);
+}
+
+.simulator-intro h1 {
+  max-width: 800px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3.7rem, 8vw, 8rem);
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 0.88;
+}
+
+.simulator-intro > div > p {
+  max-width: 670px;
+  margin: 1.5rem 0 0;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+}
+
+.simulator-intro aside {
+  align-self: end;
+  padding-top: 1rem;
+  border-top: 2px solid var(--safety);
+}
+
+.simulator-intro aside span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.simulator-intro aside p {
+  margin: 0.75rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.simulator-workbench {
+  padding: clamp(2.5rem, 5vw, 5rem) max(1.5rem, calc((100vw - var(--content)) / 2));
+  color: white;
+  background: var(--ink);
+}
+
+.simulator-workbench .section-label {
+  color: var(--signal);
+}
+
+.workbench-heading {
+  display: flex;
+  gap: 2rem;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.workbench-heading h2 {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 5rem);
+  line-height: 0.95;
+}
+
+.sim-control,
+.scenario-button {
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--line-light);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sim-control {
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  font-size: 0.74rem;
+}
+
+.sim-control:hover,
+.scenario-button:hover,
+.scenario-button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+.scenario-controls {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  margin: 2.5rem 0 1rem;
+}
+
+.scenario-button {
+  min-height: 72px;
+  padding: 0.8rem;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.scenario-button + .scenario-button {
+  border-left: 0;
+}
+
+.simulator-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.33fr);
+  min-height: 620px;
+  border: 1px solid var(--line-light);
+}
+
+.simulator-stage {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: #171a15;
+}
+
+.simulator-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 620px;
+  cursor: grab;
+}
+
+.simulator-stage canvas:active {
+  cursor: grabbing;
+}
+
+.stage-status {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  color: white;
+  background: rgba(17, 19, 15, 0.82);
+  border: 1px solid var(--line-light);
+  pointer-events: none;
+}
+
+.status-phase {
+  font-weight: 700;
+}
+
+.stage-status code,
+.decision-code {
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.stage-legend {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  padding: 0.6rem 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(17, 19, 15, 0.78);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  pointer-events: none;
+}
+
+.stage-legend span {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.stage-legend i {
+  display: block;
+  width: 18px;
+  height: 3px;
+}
+
+.legend-route { background: var(--route); }
+.legend-boundary { background: var(--safety); }
+.legend-bounder { background: var(--signal); }
+
+.webgl-fallback {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(80%, 440px);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.simulator-stage.is-ready .webgl-fallback {
+  display: none;
+}
+
+.decision-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-left: 1px solid var(--line-light);
+}
+
+.decision-header {
+  padding: 1.6rem;
+  border-bottom: 1px solid var(--line-light);
+}
+
+.decision-outcome {
+  display: block;
+  margin: 1.2rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 2.15rem;
+  line-height: 1;
+}
+
+.decision-reason {
+  min-height: 4.5rem;
+  margin: 1rem 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.88rem;
+}
+
+.rule-stack {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rule-stack li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  padding: 0.9rem 1.6rem;
+  border-bottom: 1px solid var(--line-light);
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.83rem;
+}
+
+.rule-stack strong {
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.rule-stack li.is-failed {
+  color: white;
+  background: rgba(184, 61, 38, 0.22);
+}
+
+.rule-stack li.is-failed strong {
+  color: #ff9f8d;
+}
+
+.rule-stack li.is-monitoring strong {
+  color: white;
+}
+
+.actuation-state {
+  margin-top: auto;
+  padding: 1.5rem 1.6rem;
+  border-top: 1px solid var(--line-light);
+}
+
+.actuation-state span {
+  display: block;
+  color: rgba(255, 255, 255, 0.52);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.actuation-state strong {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.rules-context {
+  padding-top: clamp(5rem, 10vw, 10rem);
+  padding-bottom: clamp(5rem, 10vw, 10rem);
+}
+
+.rules-context-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.rules-context-grid article {
+  padding: 2rem;
+  border-right: 1px solid var(--line);
+}
+
+.rules-context-grid article:first-child { padding-left: 0; }
+.rules-context-grid article:last-child { padding-right: 0; border-right: 0; }
+.rules-context-grid span { color: var(--safety); font-size: 1.8rem; }
+.rules-context-grid h3 { margin: 2rem 0 0.7rem; }
+.rules-context-grid p { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
+
+.simulator-boundary-note {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.3fr) 1fr;
+  gap: 2rem;
+  margin-top: 4rem;
+  padding-top: 1.4rem;
+  border-top: 2px solid var(--safety);
+}
+
+.simulator-boundary-note p {
+  max-width: 790px;
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 1050px) {
+  .simulator-intro { grid-template-columns: 150px 1fr; }
+  .simulator-intro aside { grid-column: 2; }
+  .scenario-controls { grid-template-columns: repeat(3, 1fr); }
+  .scenario-button:nth-child(4) { border-left: 1px solid var(--line-light); }
+  .scenario-button:nth-child(n+4) { border-top: 0; }
+  .simulator-grid { grid-template-columns: 1fr; }
+  .decision-panel { border-top: 1px solid var(--line-light); border-left: 0; }
+  .decision-reason { min-height: 0; }
+  .actuation-state { margin-top: 0; }
+}
+
+@media (max-width: 680px) {
+  .simulator-intro { grid-template-columns: 1fr; }
+  .simulator-intro aside { grid-column: 1; }
+  .workbench-heading { align-items: flex-start; flex-direction: column; }
+  .scenario-controls { grid-template-columns: 1fr 1fr; }
+  .scenario-button:nth-child(odd) { border-left: 1px solid var(--line-light); }
+  .scenario-button:nth-child(n+3) { border-top: 0; }
+  .simulator-grid { min-height: 0; }
+  .simulator-stage canvas { min-height: 440px; }
+  .stage-legend { right: auto; left: 1rem; flex-direction: column; gap: 0.4rem; }
+  .rules-context-grid { grid-template-columns: 1fr; }
+  .rules-context-grid article,
+  .rules-context-grid article:first-child,
+  .rules-context-grid article:last-child { padding: 1.8rem 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .rules-context-grid article:last-child { border-bottom: 0; }
+  .simulator-boundary-note { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simulator-stage canvas { cursor: default; }
+}

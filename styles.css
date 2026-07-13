@@ -476,6 +476,48 @@ button, a {
   border-top: 1px solid var(--line);
 }
 
+.simulator-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.75fr);
+  gap: clamp(3rem, 8vw, 8rem);
+  width: 100%;
+  max-width: none;
+  padding-right: max(1.5rem, calc((100vw - var(--content)) / 2));
+  padding-left: max(1.5rem, calc((100vw - var(--content)) / 2));
+}
+
+.simulator-preview-copy {
+  max-width: 720px;
+}
+
+.simulator-preview-copy h2 {
+  margin: 1.25rem 0;
+}
+
+.simulator-preview-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 1.08rem;
+}
+
+.simulator-preview-copy .button {
+  margin-top: 2rem;
+}
+
+.simulator-preview-rules {
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-light);
+  list-style: none;
+}
+
+.simulator-preview-rules li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line-light);
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .application-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -910,7 +952,8 @@ button, a {
 @media (max-width: 900px) {
   .section-heading,
   .intro,
-  .section-safety {
+  .section-safety,
+  .simulator-preview {
     grid-template-columns: 1fr;
   }
 
@@ -1002,6 +1045,10 @@ button, a {
   .principle-grid,
   .application-list {
     grid-template-columns: 1fr;
+  }
+
+  .simulator-preview-rules {
+    width: 100%;
   }
 
   .architecture-flow li,
