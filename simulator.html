@@ -17,6 +17,7 @@
   <link rel="preconnect" href="https://esm.sh" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="simulator.css">
+  <script>if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.classList.add("simulator-embed");</script>
 </head>
 <body class="interior-page simulator-page" id="top">
   <a class="skip-link" href="#main">Skip to simulator</a>
@@ -57,6 +58,10 @@
         <button class="scenario-button" type="button" data-scenario="civilian" aria-pressed="false">Civilian buffer</button>
         <button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false">Friendly separation</button>
         <button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false">Protected site</button>
+        <button class="scenario-button" type="button" data-scenario="humanitarian" aria-pressed="false">Humanitarian corridor</button>
+        <button class="scenario-button" type="button" data-scenario="altitude" aria-pressed="false">Altitude ceiling</button>
+        <button class="scenario-button" type="button" data-scenario="weather" aria-pressed="false">Weather limit</button>
+        <button class="scenario-button" type="button" data-scenario="window" aria-pressed="false">Operating window</button>
         <button class="scenario-button" type="button" data-scenario="link" aria-pressed="false">Lost link</button>
         <button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false">Policy replay</button>
       </div>
@@ -88,7 +93,9 @@
             <li data-rule="civilian"><span>Civilian protection</span><strong>PASS</strong></li>
             <li data-rule="friendly"><span>Friendly-force separation</span><strong>PASS</strong></li>
             <li data-rule="protected"><span>Protected sites</span><strong>PASS</strong></li>
+            <li data-rule="humanitarian"><span>Humanitarian corridors</span><strong>PASS</strong></li>
             <li data-rule="operating"><span>Operating envelope</span><strong>PASS</strong></li>
+            <li data-rule="weather"><span>Weather and visibility</span><strong>PASS</strong></li>
             <li data-rule="link"><span>Link and telemetry</span><strong>PASS</strong></li>
           </ol>
           <div class="actuation-state">
@@ -138,7 +145,7 @@
       <a href="contact.html">Contact</a>
       <a href="https://github.com/NellWatson/Bounder" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
-    <p class="copyright">© 2026 Bounder. Open source under the MIT License.</p>
+    <p class="copyright">© 2026 Bounder. Licensed under Apache-2.0.</p>
   </footer>
   <script type="module" src="simulator.js"></script>
 </body>

@@ -2,6 +2,7 @@
   --friendly: #3f91c9;
   --civilian: #d69223;
   --protected: #b83d26;
+  --humanitarian: #4eb5a0;
   --route: #69a63c;
 }
 
@@ -104,7 +105,7 @@
 
 .scenario-controls {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   margin: 2.5rem 0 1rem;
 }
 
@@ -117,6 +118,14 @@
 
 .scenario-button + .scenario-button {
   border-left: 0;
+}
+
+.scenario-button:nth-child(6) {
+  border-left: 1px solid var(--line-light);
+}
+
+.scenario-button:nth-child(n+6) {
+  border-top: 0;
 }
 
 .simulator-grid {
@@ -338,9 +347,9 @@
 @media (max-width: 1050px) {
   .simulator-intro { grid-template-columns: 150px 1fr; }
   .simulator-intro aside { grid-column: 2; }
-  .scenario-controls { grid-template-columns: repeat(3, 1fr); }
-  .scenario-button:nth-child(4) { border-left: 1px solid var(--line-light); }
-  .scenario-button:nth-child(n+4) { border-top: 0; }
+  .scenario-controls { grid-template-columns: repeat(2, 1fr); }
+  .scenario-button:nth-child(odd) { border-left: 1px solid var(--line-light); }
+  .scenario-button:nth-child(n+3) { border-top: 0; }
   .simulator-grid { grid-template-columns: 1fr; }
   .decision-panel { border-top: 1px solid var(--line-light); border-left: 0; }
   .decision-reason { min-height: 0; }
@@ -352,8 +361,6 @@
   .simulator-intro aside { grid-column: 1; }
   .workbench-heading { align-items: flex-start; flex-direction: column; }
   .scenario-controls { grid-template-columns: 1fr 1fr; }
-  .scenario-button:nth-child(odd) { border-left: 1px solid var(--line-light); }
-  .scenario-button:nth-child(n+3) { border-top: 0; }
   .simulator-grid { min-height: 0; }
   .simulator-stage canvas { min-height: 440px; }
   .stage-legend { right: auto; left: 1rem; flex-direction: column; gap: 0.4rem; }
@@ -363,6 +370,34 @@
   .rules-context-grid article:last-child { padding: 1.8rem 0; border-right: 0; border-bottom: 1px solid var(--line); }
   .rules-context-grid article:last-child { border-bottom: 0; }
   .simulator-boundary-note { grid-template-columns: 1fr; }
+}
+
+.simulator-embed body {
+  background: var(--ink);
+}
+
+.simulator-embed .site-header,
+.simulator-embed .simulator-intro,
+.simulator-embed .rules-context,
+.simulator-embed .site-footer {
+  display: none;
+}
+
+.simulator-embed .simulator-workbench {
+  padding: 0;
+}
+
+.simulator-embed .workbench-heading {
+  justify-content: flex-end;
+  padding: 1rem 0;
+}
+
+.simulator-embed .workbench-heading > div {
+  display: none;
+}
+
+.simulator-embed .scenario-controls {
+  margin-top: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

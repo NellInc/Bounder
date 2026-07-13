@@ -2,7 +2,7 @@
 
 This repository contains the public website for [bounder.io](https://www.bounder.io/).
 
-Bounder began as a drone-geofencing project and is being revived as an open reference architecture for trustworthy physical interlocks. The website presents that current purpose, the original experiment, the integration model, verified software status, and explicit hardware limitations.
+Bounder is an open reference architecture for trustworthy physical interlocks. The website presents the current project, integration model, interactive simulator, verified software status, and explicit hardware limitations.
 
 ## Canonical site
 
@@ -20,6 +20,7 @@ The root directory is the canonical website:
 | `styles.css` | Shared responsive design system |
 | `sitemap.xml` and `robots.txt` | Search discovery |
 | `CNAME` | `www.bounder.io` custom domain |
+| `LICENSE` and `NOTICE` | Apache-2.0 project licence and attribution notice |
 
 The `docs/` directory is the preserved Squarespace-era clone. It is a legacy snapshot, not the source for new content. GitHub Pages should deploy `main` from `/`.
 
@@ -47,7 +48,7 @@ Before publishing, verify desktop and mobile layouts, keyboard focus, one `<h1>`
 
 ## Project code
 
-The revived interlock and historical drone code live in [NellWatson/Bounder](https://github.com/NellWatson/Bounder). This site is maintained separately so the public presentation and physical-control code retain clear boundaries.
+The interlock and device-adapter code live in [NellWatson/Bounder](https://github.com/NellWatson/Bounder). This site is maintained separately so the public presentation and physical-control code retain clear boundaries.
 
 ## Deployment
 
