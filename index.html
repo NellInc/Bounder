@@ -241,7 +241,9 @@
            full-bleed `slice` viewBox crops by an amount that swings with the
            viewport's aspect, which pushed the gate clean off the frame at
            narrower widths and left a vector running into nothing. -->
-      <svg class="hero-interlock" viewBox="0 0 300 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+      <!-- The box runs to 232 rather than 220 so the REROUTE label has room to sit
+           clear of the arrowhead without its descenders clipping at the edge. -->
+      <svg class="hero-interlock" viewBox="0 0 300 232" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
         <g class="il-issued">
           <text x="14" y="20" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="700" letter-spacing="1.2">AUTHORITY · EXPIRES</text>
           <rect x="14" y="27" width="150" height="8" fill="none" stroke="rgba(201, 255, 87, 0.45)" stroke-width="1.2" rx="1.5"/>
@@ -284,7 +286,7 @@
 
         <path class="il-reroute" d="M150 166 C 150 192, 122 198, 86 198" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
         <path class="il-arrow" d="M98 190 L84 198 L98 206" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <text class="il-reroute-tag" x="86" y="216" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">REROUTE</text>
+        <text class="il-reroute-tag" x="86" y="223" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">REROUTE</text>
 
         <g class="il-gate">
           <path d="M232 58 V202" stroke="#c9ff57" stroke-width="10" opacity="0.16" stroke-linecap="round"/>
