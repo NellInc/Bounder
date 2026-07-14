@@ -56,7 +56,7 @@ test("fleet resilience evidence covers temporal, transport, trust, and restart f
   const evidence = JSON.parse(await readFile(new URL("data/bounder-fleet-evidence.v1.json", root), "utf8"));
   assert.equal(evidence.resilience.version, "bounder-resilience-evidence/v1");
   assert.equal(evidence.resilience.mode, "deterministic-live-replay");
-  assert.equal(evidence.resilience.scenarios.length, 10);
+  assert.equal(evidence.resilience.scenarios.length, 12);
   const scenarios = new Map(evidence.resilience.scenarios.map((scenario) => [scenario.id, scenario]));
   for (const id of ["network-partition", "audit-outage", "corrupted-envelope", "clock-rollback", "guardian-restart", "key-revocation", "stale-evidence", "partial-rollout", "fleet-revocation", "offline-expiry"]) {
     assert.ok(scenarios.has(id), `missing ${id}`);

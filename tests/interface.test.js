@@ -54,3 +54,15 @@ test("resilience laboratory exposes deterministic fault controls and live-stream
   assert.match(simulatorStyles, /\.resilience-console/);
   assert.match(simulatorStyles, /\.fleet-node\.is-affected/);
 });
+
+test("rollback proof scenarios expose local and Fleet floors plus bounded authority", () => {
+  assert.match(simulatorHtml, /Rollback-proof checkpoint/);
+  assert.match(simulatorHtml, /data-resilience="local-floor"/);
+  assert.match(simulatorHtml, /data-resilience="fleet-floor"/);
+  assert.match(simulatorHtml, /data-resilience="lease"/);
+  assert.match(simulatorHtml, /creedspace-bounder-checkpoint-v1\.schema\.json/);
+  assert.match(simulatorScript, /coherent-snapshot-rollback/);
+  assert.match(simulatorScript, /continuity-lease-expiry/);
+  assert.match(simulatorScript, /renderContinuityProof/);
+  assert.match(simulatorStyles, /\.continuity-proof\.is-held/);
+});

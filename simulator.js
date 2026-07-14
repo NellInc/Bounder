@@ -23,6 +23,7 @@ const resilienceEvents = root.querySelector("[data-resilience-events]");
 const resilienceFields = Object.fromEntries([...root.querySelectorAll("[data-resilience]")].map((element) => [element.dataset.resilience, element]));
 const resilienceScrubber = root.querySelector("[data-resilience-scrubber]");
 const resilienceActions = Object.fromEntries([...root.querySelectorAll("[data-resilience-action]")].map((element) => [element.dataset.resilienceAction, element]));
+const continuityProof = root.querySelector("[data-continuity-proof]");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const css = getComputedStyle(document.documentElement);
@@ -750,6 +751,9 @@ const validateFleetEvidence = (evidence) => {
     }
     resilienceIDs.add(scenario.id);
   }
+  for (const required of ["coherent-snapshot-rollback", "continuity-lease-expiry"]) {
+    if (!resilienceIDs.has(required)) throw new Error(`fleet resilience evidence is missing ${required}`);
+  }
   return evidence;
 };
 
@@ -791,7 +795,9 @@ const resilienceRoute = Object.freeze({
   "stale-evidence": "weather",
   "partial-rollout": "civilian",
   "fleet-revocation": "link",
-  "offline-expiry": "link"
+  "offline-expiry": "link",
+  "coherent-snapshot-rollback": "replay",
+  "continuity-lease-expiry": "link"
 });
 const resilienceRule = Object.freeze({
   "network-partition": "link",
@@ -803,7 +809,24 @@ const resilienceRule = Object.freeze({
   "stale-evidence": "authority",
   "partial-rollout": "fleet",
   "fleet-revocation": "fleet",
-  "offline-expiry": "authority"
+  "offline-expiry": "authority",
+  "coherent-snapshot-rollback": "fleet",
+  "continuity-lease-expiry": "authority"
+});
+
+const continuityFrames = Object.freeze({
+  "coherent-snapshot-rollback": [
+    { status: "Floors agree", local: "Current durable receipt floor", fleet: "Matching signed receipt floor", lease: "05:00 signed", authority: "ACTIVE", held: false },
+    { status: "Rollback exposed", local: "Coherent older snapshot", fleet: "Newer signed receipt floor", lease: "Revoked", authority: "FROZEN", held: true },
+    { status: "Durable hold", local: "Rollback marker persisted", fleet: "Signed proof verified", lease: "None", authority: "HOLD", held: true },
+    { status: "Reconciliation required", local: "Awaiting floor adoption", fleet: "Hold receipt recorded", lease: "New policy required", authority: "HOLD", held: true }
+  ],
+  "continuity-lease-expiry": [
+    { status: "Lease current", local: "Durable floors coherent", fleet: "Matching signed floors", lease: "05:00 signed", authority: "ACTIVE", held: false },
+    { status: "Lease elapsed", local: "Durable floors coherent", fleet: "Last signed floor retained", lease: "00:00 expired", authority: "FROZEN", held: true },
+    { status: "Offline authority ended", local: "Expiry hold persisted", fleet: "Reconnection pending", lease: "Expired", authority: "HOLD", held: true },
+    { status: "Fresh checkpoint required", local: "No authority restored", fleet: "Hold receipt recorded", lease: "Renewal required", authority: "HOLD", held: true }
+  ]
 });
 let selectedResilience;
 let resilienceCursor = -1;
@@ -844,6 +867,20 @@ const renderResilienceTimeline = () => {
   resilienceEvents.replaceChildren(fragment);
 };
 
+const renderContinuityProof = (cursor = resilienceCursor) => {
+  const frames = selectedResilience && continuityFrames[selectedResilience.id];
+  continuityProof.hidden = !frames;
+  if (!frames) return;
+  const frame = frames[Math.max(0, Math.min(cursor, frames.length - 1))];
+  continuityProof.classList.toggle("is-held", frame.held);
+  continuityProof.dataset.checkpointState = frame.held ? "held" : "verified";
+  resilienceFields["checkpoint-status"].textContent = frame.status;
+  resilienceFields["local-floor"].textContent = frame.local;
+  resilienceFields["fleet-floor"].textContent = frame.fleet;
+  resilienceFields.lease.textContent = frame.lease;
+  resilienceFields.authority.textContent = frame.authority;
+};
+
 const markAffectedGuardians = (device) => {
   for (const node of fleetNodes.querySelectorAll(".fleet-node")) {
     const all = device === "all guardians" || device === "six canaries";
@@ -860,6 +897,7 @@ const applyResilienceEvent = (event) => {
   resilienceFields.time.textContent = `${(event.at_ms / 1000).toFixed(2)} s`;
   resilienceFields.transport.textContent = event.kind === "audit" ? "Evidence recorded" : event.message;
   renderResilienceTimeline();
+  renderContinuityProof(index);
   markAffectedGuardians(event.device_id || selectedResilience.affected_device);
   receiptSource.textContent = "Fleet resilience evidence";
   receiptFields.engine.textContent = "Creed Space Fleet + Bounder guardian";
@@ -905,6 +943,7 @@ const resetResilience = () => {
   resilienceFields.transport.textContent = "Ready";
   markAffectedGuardians("");
   renderResilienceTimeline();
+  renderContinuityProof(-1);
   if (selectedResilience) {
     const first = selectedResilience.events[0];
     drone.position.copy(curves[resilienceRoute[selectedResilience.id]].getPointAt(0));

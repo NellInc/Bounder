@@ -334,7 +334,7 @@
 
 .resilience-scenarios {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   margin-top: 1.2rem;
 }
 
@@ -357,11 +357,11 @@
   border-left: 0;
 }
 
-.resilience-scenario:nth-child(6) {
+.resilience-scenario:nth-child(7) {
   border-left: 1px solid var(--line-light);
 }
 
-.resilience-scenario:nth-child(n + 6) {
+.resilience-scenario:nth-child(n + 7) {
   border-top: 0;
 }
 
@@ -427,6 +427,84 @@
   overflow-wrap: anywhere;
   color: rgba(255, 255, 255, 0.76);
   font-size: 0.72rem;
+}
+
+.continuity-proof {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(179, 235, 117, 0.24);
+  background: linear-gradient(145deg, rgba(179, 235, 117, 0.07), rgba(255, 255, 255, 0.015));
+}
+
+.continuity-proof[hidden] {
+  display: none;
+}
+
+.continuity-proof.is-held {
+  border-color: rgba(236, 106, 75, 0.58);
+  background: linear-gradient(145deg, rgba(184, 61, 38, 0.14), rgba(255, 255, 255, 0.015));
+}
+
+.continuity-proof-heading {
+  display: flex;
+  gap: 0.8rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.continuity-proof-heading span,
+.continuity-proof-heading strong {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.continuity-proof-heading span {
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.continuity-proof-heading strong {
+  color: var(--signal);
+}
+
+.continuity-proof.is-held .continuity-proof-heading strong,
+.continuity-proof.is-held [data-resilience="authority"] {
+  color: #ff9a7f;
+}
+
+.continuity-rail {
+  display: grid;
+  grid-template-columns: 12px 1fr 12px;
+  gap: 0.42rem;
+  align-items: center;
+  margin: 0.72rem 0 0.42rem;
+}
+
+.continuity-rail i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--signal);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(179, 235, 117, 0.42);
+}
+
+.continuity-rail span {
+  height: 2px;
+  background: linear-gradient(90deg, var(--signal), rgba(179, 235, 117, 0.28), var(--signal));
+}
+
+.continuity-proof.is-held .continuity-local {
+  border-color: var(--safety);
+  box-shadow: 0 0 12px rgba(184, 61, 38, 0.55);
+}
+
+.continuity-proof.is-held .continuity-rail span {
+  background: repeating-linear-gradient(90deg, var(--safety) 0 8px, transparent 8px 13px);
+}
+
+.continuity-proof dl {
+  margin-top: 0.35rem;
 }
 
 .resilience-timeline {
