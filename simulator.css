@@ -261,7 +261,7 @@
 }
 
 .fleet-node b {
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
 }
 
@@ -275,11 +275,283 @@
   margin: 0;
   color: rgba(255, 255, 255, 0.56);
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.7rem;
 }
 
 .fleet-contract-links a {
   color: var(--signal);
+}
+
+.resilience-lab {
+  margin: 0 0 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line-light);
+  background: #181b17;
+}
+
+.resilience-lab[hidden] {
+  display: none;
+}
+
+.resilience-heading {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.resilience-heading strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+}
+
+.resilience-heading p {
+  max-width: 760px;
+  margin: 0.55rem 0 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.82rem;
+}
+
+.resilience-download {
+  flex: 0 0 auto;
+  padding: 0.7rem 0.85rem;
+  color: var(--signal);
+  border: 1px solid var(--line-light);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.resilience-download:hover {
+  color: var(--ink);
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+.resilience-scenarios {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 1.2rem;
+}
+
+.resilience-scenario {
+  min-height: 58px;
+  padding: 0.65rem;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border: 1px solid var(--line-light);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.resilience-scenario + .resilience-scenario {
+  border-left: 0;
+}
+
+.resilience-scenario:nth-child(6) {
+  border-left: 1px solid var(--line-light);
+}
+
+.resilience-scenario:nth-child(n + 6) {
+  border-top: 0;
+}
+
+.resilience-scenario:hover,
+.resilience-scenario[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+.resilience-console {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.72fr) minmax(500px, 1.45fr);
+  margin-top: 1rem;
+  border-top: 1px solid var(--line-light);
+  border-right: 1px solid var(--line-light);
+  border-bottom: 1px solid var(--line-light);
+  border-left: 1px solid var(--line-light);
+}
+
+.resilience-detail {
+  padding: 1.1rem;
+  border-right: 1px solid var(--line-light);
+}
+
+.resilience-detail > span,
+.resilience-detail dt,
+.resilience-scrubber > span {
+  color: rgba(255, 255, 255, 0.46);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.resilience-detail > strong {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.resilience-detail > p {
+  min-height: 2.8rem;
+  margin: 0.55rem 0 1rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.78rem;
+}
+
+.resilience-detail dl {
+  margin: 0;
+}
+
+.resilience-detail dl div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0.48rem 0;
+  border-top: 1px solid var(--line-light);
+}
+
+.resilience-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.72rem;
+}
+
+.resilience-timeline {
+  min-width: 0;
+  padding: 1.1rem;
+}
+
+.resilience-transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.resilience-transport button {
+  min-height: 36px;
+  padding: 0.5rem 0.7rem;
+  color: white;
+  background: transparent;
+  border: 1px solid var(--line-light);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.resilience-transport button:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+.resilience-transport button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.resilience-transport > span {
+  margin-left: auto;
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.resilience-scrubber {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.resilience-scrubber > span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.resilience-scrubber output {
+  color: white;
+}
+
+.resilience-scrubber input {
+  width: 100%;
+  accent-color: var(--signal);
+}
+
+.resilience-events {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resilience-event {
+  min-width: 0;
+  padding: 0.65rem;
+  color: rgba(255, 255, 255, 0.42);
+  border-top: 2px solid var(--line-light);
+}
+
+.resilience-event.is-reached {
+  color: rgba(255, 255, 255, 0.78);
+  border-color: var(--signal);
+}
+
+.resilience-event.is-current {
+  background: rgba(179, 235, 117, 0.07);
+}
+
+.resilience-event.is-fault,
+.resilience-event.is-held {
+  border-color: var(--safety);
+}
+
+.resilience-event time,
+.resilience-event b,
+.resilience-event code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resilience-event time {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.resilience-event b {
+  margin-top: 0.32rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.resilience-event code {
+  margin-top: 0.28rem;
+  color: inherit;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.fleet-node.is-affected {
+  border-color: var(--safety);
+  background: rgba(184, 61, 38, 0.12);
 }
 
 .simulator-grid {
@@ -634,6 +906,11 @@
   .scenario-button:nth-child(n+3) { border-top: 0; }
   .fleet-control-panel { grid-template-columns: 1fr; }
   .fleet-nodes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .resilience-scenarios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resilience-scenario:nth-child(odd) { border-left: 1px solid var(--line-light); }
+  .resilience-scenario:nth-child(n + 3) { border-top: 0; }
+  .resilience-console { grid-template-columns: 1fr; }
+  .resilience-detail { border-right: 0; border-bottom: 1px solid var(--line-light); }
   .decision-panel {
     grid-template-areas: "header" "rules" "actuation" "receipt";
     grid-template-columns: 1fr;
@@ -653,6 +930,11 @@
   .scenario-controls { grid-template-columns: 1fr 1fr; }
   .fleet-metrics { grid-template-columns: 1fr 1fr; }
   .fleet-nodes { grid-template-columns: 1fr 1fr; }
+  .resilience-heading { display: grid; gap: 1rem; }
+  .resilience-download { justify-self: start; }
+  .resilience-scenarios { grid-template-columns: 1fr 1fr; }
+  .resilience-events { grid-template-columns: 1fr 1fr; }
+  .resilience-transport > span { width: 100%; margin-left: 0; }
   .simulator-stage { aspect-ratio: 4 / 3; }
   .stage-legend { right: auto; left: 1rem; flex-direction: column; gap: 0.4rem; }
   .rules-context-grid { grid-template-columns: 1fr; }

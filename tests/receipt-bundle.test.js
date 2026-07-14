@@ -51,3 +51,25 @@ test("fleet evidence covers every simulated guardian and stays protective", asyn
   const serialized = JSON.stringify(evidence);
   assert.doesNotMatch(serialized, /"target"|"weapon"|"engage"|"payload"/i);
 });
+
+test("fleet resilience evidence covers temporal, transport, trust, and restart faults", async () => {
+  const evidence = JSON.parse(await readFile(new URL("data/bounder-fleet-evidence.v1.json", root), "utf8"));
+  assert.equal(evidence.resilience.version, "bounder-resilience-evidence/v1");
+  assert.equal(evidence.resilience.mode, "deterministic-live-replay");
+  assert.equal(evidence.resilience.scenarios.length, 10);
+  const scenarios = new Map(evidence.resilience.scenarios.map((scenario) => [scenario.id, scenario]));
+  for (const id of ["network-partition", "audit-outage", "corrupted-envelope", "clock-rollback", "guardian-restart", "key-revocation", "stale-evidence", "partial-rollout", "fleet-revocation", "offline-expiry"]) {
+    assert.ok(scenarios.has(id), `missing ${id}`);
+  }
+  for (const scenario of scenarios.values()) {
+    assert.ok(scenario.events.length >= 3);
+    assert.deepEqual([...scenario.events].sort((left, right) => left.at_ms - right.at_ms), scenario.events);
+    assert.equal(scenario.events.at(-1).code, "signed_receipt");
+    assert.ok(scenario.safe_response.length > 0);
+    assert.ok(scenario.proof.length > 0);
+  }
+  assert.equal(scenarios.get("clock-rollback").expected_code, "clock_rollback");
+  assert.equal(scenarios.get("guardian-restart").expected_code, "policy_replay");
+  assert.equal(scenarios.get("key-revocation").expected_code, "unknown_key");
+  await readFile(new URL("schemas/bounder-resilience-evidence.v1.schema.json", root), "utf8");
+});
