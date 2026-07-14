@@ -206,9 +206,12 @@ button, a {
 .hero-image {
   z-index: -3;
   object-fit: cover;
-  object-position: center 55%;
-  /* Cooled and desaturated so the photo sits under the palette rather than fighting it. */
-  filter: saturate(0.34) contrast(1.14) brightness(0.82) hue-rotate(-12deg);
+  /* The drone sits high in the frame, so the crop favours the upper half.
+     Cropping it out would discard the reason this photograph was chosen: its
+     own status light is already signal green. */
+  object-position: center 34%;
+  /* Cooled so the dusk sky sits under the palette rather than fighting it. */
+  filter: saturate(0.42) contrast(1.12) brightness(0.86) hue-rotate(-10deg);
 }
 
 .hero-scrim {
@@ -230,7 +233,61 @@ button, a {
   pointer-events: none;
 }
 
+/* The interlock, drawn once over the photograph: an approach vector meets the
+   boundary and is held. It sits above the scrim but below the copy, anchored to
+   the right gutter so its position does not drift with the viewport's aspect
+   ratio, and it occupies only the negative space beside the headline. */
+.hero-interlock {
+  position: absolute;
+  top: 50%;
+  right: max(1.5rem, calc((100vw - var(--content)) / 2));
+  z-index: 0;
+  width: min(300px, 26vw);
+  height: auto;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Resting state is the RESOLVED frame: vector drawn, gate up, craft held.
+   If the script never runs, the hero still reads as composed and finished.
+   Motion is opt-in via .is-armed, never opt-out. */
+.hero-interlock .interlock-vector {
+  stroke-dasharray: 140;
+  stroke-dashoffset: 0;
+}
+
+.js .hero-interlock.is-armed .interlock-vector {
+  animation: interlock-draw 900ms cubic-bezier(0.3, 0.8, 0.2, 1) 200ms backwards;
+}
+
+.js .hero-interlock.is-armed .interlock-gate {
+  animation: interlock-fade 400ms ease 1000ms backwards;
+}
+
+.js .hero-interlock.is-armed .interlock-held {
+  animation: interlock-halt 550ms cubic-bezier(0.2, 1.5, 0.4, 1) 1250ms backwards;
+  transform-origin: 150px 130px;
+}
+
+.js .hero-interlock.is-armed .interlock-label {
+  animation: interlock-fade 500ms ease 1500ms backwards;
+}
+
+@keyframes interlock-draw {
+  from { stroke-dashoffset: 140; }
+}
+
+@keyframes interlock-fade {
+  from { opacity: 0; }
+}
+
+@keyframes interlock-halt {
+  from { opacity: 0; transform: scale(0.6); }
+}
+
 .hero-content {
+  position: relative;
+  z-index: 1;
   align-self: center;
   width: min(calc(100% - 3rem), var(--content));
   margin: 3rem auto 0;
@@ -1123,6 +1180,13 @@ button, a {
     font-size: clamp(3.6rem, 19vw, 6rem);
   }
 
+  /* The headline stacks and fills the frame at this width, leaving no negative
+     space for the interlock to occupy without colliding. The photograph carries
+     the hero on its own here. */
+  .hero-interlock {
+    display: none;
+  }
+
   .hero-actions,
   .cta-actions {
     align-items: flex-start;
@@ -1211,6 +1275,12 @@ button, a {
 
   *, *::before, *::after {
     transition-duration: 0.01ms !important;
+  }
+
+  /* The interlock's resting state is already the resolved frame, so suppressing the
+     animation leaves the composition intact rather than empty. */
+  .hero-interlock * {
+    animation: none !important;
   }
 }
 
