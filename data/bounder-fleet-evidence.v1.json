@@ -1,6 +1,6 @@
 {
   "version": "bounder-fleet-evidence/v1",
-  "generated_at": "2026-07-13T12:00:00Z",
+  "generated_at": "2026-07-13T20:44:35.780741Z",
   "fleet_id": "relief-fleet",
   "policy_profile": "creedspace-bounder-policy/v1",
   "summary": {
@@ -19,34 +19,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-alpha",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 1,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "loiter",
         "allowed": true,
         "code": "allowed",
         "reason": "signature, policy, and local constraints permit the action",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:35.780749Z"
       },
       "fleet_audit": {
         "decision": "allow",
-        "input_hash": "005e4a830dfeeedfcf8854bea035e3172d86dce7c46cc8241f0a54426dffee31",
+        "input_hash": "ccbc2ec330c168d537217fc682112e08190b67ab930ff08623254030b8ed5f45",
         "policy_version": "creedspace-bounder-policy/v1#1",
         "rationale": "signature, policy, and local constraints permit the action",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-alpha",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 1,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "loiter",
           "allowed": true,
           "code": "allowed",
           "reason": "signature, policy, and local constraints permit the action",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:35.780749Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -58,34 +59,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-bravo",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 2,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "loiter",
         "allowed": false,
         "code": "civilian_proximity",
         "reason": "civilian distance is below the signed minimum separation",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:35.823985Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "57b663c7b5340a7c220a1696f85e13451d47a81fa6461678c00a3245a3660d37",
+        "input_hash": "7457d9f980e2576845d62132db9b382f39839c466c00a23aec5ff2f3f52224d6",
         "policy_version": "creedspace-bounder-policy/v1#2",
         "rationale": "civilian distance is below the signed minimum separation",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-bravo",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 2,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "loiter",
           "allowed": false,
           "code": "civilian_proximity",
           "reason": "civilian distance is below the signed minimum separation",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:35.823985Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -97,34 +99,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-charlie",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 3,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "rtl",
         "allowed": false,
         "code": "friendly_force_proximity",
         "reason": "friendly-force distance is below the signed minimum separation",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:35.854593Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "d899817787a5202905d0f9605dc0457ff46ebaad33ba56301db824118dcbefd3",
+        "input_hash": "6a3ea5c31ce67e1100d80960911cee3c95f7d08587cfa65df0ed2b9941fabe17",
         "policy_version": "creedspace-bounder-policy/v1#3",
         "rationale": "friendly-force distance is below the signed minimum separation",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-charlie",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 3,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "rtl",
           "allowed": false,
           "code": "friendly_force_proximity",
           "reason": "friendly-force distance is below the signed minimum separation",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:35.854593Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -136,34 +139,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-delta",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 4,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "land",
         "allowed": false,
         "code": "protected_site",
         "reason": "local position intersects a declared protected site",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:35.890133Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "e7f51e49d42d3864dd103b33dffaac6adceb6dda5f04eb49962318c1caf11686",
+        "input_hash": "065a161e0353494be4ce403c093e3c80091a0864cf8ed0bc884be229b25a2afa",
         "policy_version": "creedspace-bounder-policy/v1#4",
         "rationale": "local position intersects a declared protected site",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-delta",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 4,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "land",
           "allowed": false,
           "code": "protected_site",
           "reason": "local position intersects a declared protected site",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:35.890133Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -175,34 +179,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-echo",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 5,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "loiter",
         "allowed": false,
         "code": "humanitarian_corridor_protected",
         "reason": "local position intersects an active humanitarian corridor",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:35.917053Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "edef90d130ab54ec39f7cc2c2d955707b321c8028e98586230133108a07c2703",
+        "input_hash": "6be904ffa1c28bab1841b32428c96b6df5a2a7b4b264e82eec282c5974858c1f",
         "policy_version": "creedspace-bounder-policy/v1#5",
         "rationale": "local position intersects an active humanitarian corridor",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-echo",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 5,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "loiter",
           "allowed": false,
           "code": "humanitarian_corridor_protected",
           "reason": "local position intersects an active humanitarian corridor",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:35.917053Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -214,34 +219,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-foxtrot",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 6,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "rtl",
         "allowed": false,
         "code": "inside_exclusion_zone",
         "reason": "local position intersects an exclusion zone",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:35.94287Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "ed8b5482c62d89d4582abbe6cb245e2a87614caeb7ba0b8cc23406fdfa0f059c",
+        "input_hash": "4b8b7d248141dd887c38b8b9c1f9329a686b014a9787340595319d80f9e2e7b5",
         "policy_version": "creedspace-bounder-policy/v1#6",
         "rationale": "local position intersects an exclusion zone",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-foxtrot",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 6,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "rtl",
           "allowed": false,
           "code": "inside_exclusion_zone",
           "reason": "local position intersects an exclusion zone",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:35.94287Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -253,34 +259,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-golf",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 7,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "loiter",
         "allowed": false,
         "code": "weather_outside_envelope",
         "reason": "wind speed is above the signed maximum",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:35.975221Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "902f944de27569e9af04cbc8612722193bcbf8241b82bb7a676dda2d42a751eb",
+        "input_hash": "d2780f863659ff71206e91e1948b75d00260f5e20d207bd1fe3cc47274a9d91a",
         "policy_version": "creedspace-bounder-policy/v1#7",
         "rationale": "wind speed is above the signed maximum",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-golf",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 7,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "loiter",
           "allowed": false,
           "code": "weather_outside_envelope",
           "reason": "wind speed is above the signed maximum",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:35.975221Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -292,34 +299,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-hotel",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 8,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "loiter",
         "allowed": false,
         "code": "evidence_stale",
         "reason": "verified assurance evidence is missing, stale, or from the future",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:36.011246Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "a68e68b133edda591dda94ee15f93e9b787e46f9e472ff5e34dc40d5e4f3d990",
+        "input_hash": "9358735f747838d253c5a175bb030d7ca5292d87829df7f077b240c31d66eb88",
         "policy_version": "creedspace-bounder-policy/v1#8",
         "rationale": "verified assurance evidence is missing, stale, or from the future",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-hotel",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 8,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "loiter",
           "allowed": false,
           "code": "evidence_stale",
           "reason": "verified assurance evidence is missing, stale, or from the future",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:36.011246Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -332,34 +340,35 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-india",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 9,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "rtl",
         "allowed": true,
         "code": "allowed",
         "reason": "signature, policy, and local constraints permit the action",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:36.05952Z"
       },
       "fleet_audit": {
         "decision": "allow",
-        "input_hash": "44c6e4b0d027929b045f0b8376d7e7fb125b4e8d3fea42ca3ca553ec3236fd11",
+        "input_hash": "ce964069b3ff26ee1f0908c10d763240e756e68c6c47c8c830f751f3f3c7244d",
         "policy_version": "creedspace-bounder-policy/v1#9",
         "rationale": "signature, policy, and local constraints permit the action",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-india",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 9,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "rtl",
           "allowed": true,
           "code": "allowed",
           "reason": "signature, policy, and local constraints permit the action",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:36.05952Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -374,11 +383,11 @@
         "allowed": false,
         "code": "policy_unavailable",
         "reason": "no verified Creed Space Fleet policy is active",
-        "evaluated_at": "2026-07-13T12:00:00Z"
+        "evaluated_at": "2026-07-13T20:44:36.100053Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "ccb11eb0a53f6d21a5ce68c9ef6f2ae0a2d0cb4de315e9469e294b8380cd5d82",
+        "input_hash": "42d76d8295630f4f4d758684cfe75e63a72fb69bcd0001622f1632be36150d0e",
         "policy_version": "creedspace-bounder-policy/v1#0",
         "rationale": "no verified Creed Space Fleet policy is active",
         "dimensions_triggered": {
@@ -388,9 +397,10 @@
           "allowed": false,
           "code": "policy_unavailable",
           "reason": "no verified Creed Space Fleet policy is active",
-          "evaluated_at": "2026-07-13T12:00:00Z"
+          "evaluated_at": "2026-07-13T20:44:36.100053Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     },
     {
@@ -402,35 +412,619 @@
         "version": "bounder-creedspace-receipt/v1",
         "device_id": "bounder-kilo",
         "fleet_id": "relief-fleet",
-        "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+        "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
         "policy_sequence": 11,
-        "signing_key_id": "creed-fleet-simulation-2026",
+        "signing_key_id": "bounder-fleet-lab",
         "action": "rtl",
         "allowed": false,
         "code": "policy_expired",
         "reason": "the last verified Creed Space Fleet policy has expired",
-        "evaluated_at": "2026-07-13T12:06:00Z"
+        "evaluated_at": "2026-07-13T20:47:36.123023Z"
       },
       "fleet_audit": {
         "decision": "block",
-        "input_hash": "6a68ab9d93914af56b72a3e11e4753555f6900cdc4f50ca790a3e4b756102277",
+        "input_hash": "b0686f5d4936ee62b17ffc1dad60fc2a6016388d5227be2d67ccb52a41b1d08e",
         "policy_version": "creedspace-bounder-policy/v1#11",
         "rationale": "the last verified Creed Space Fleet policy has expired",
         "dimensions_triggered": {
           "version": "bounder-creedspace-receipt/v1",
           "device_id": "bounder-kilo",
           "fleet_id": "relief-fleet",
-          "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+          "policy_id": "sha256:6f8d2ff37aa99152bbcc743625449206f5dd0398dc5a2352008cc18af1e86868",
           "policy_sequence": 11,
-          "signing_key_id": "creed-fleet-simulation-2026",
+          "signing_key_id": "bounder-fleet-lab",
           "action": "rtl",
           "allowed": false,
           "code": "policy_expired",
           "reason": "the last verified Creed Space Fleet policy has expired",
-          "evaluated_at": "2026-07-13T12:06:00Z"
+          "evaluated_at": "2026-07-13T20:47:36.123023Z"
         },
-        "action_type": "physical_interlock"
+        "action_type": "physical_interlock",
+        "certificate_verified": true
       }
     }
-  ]
+  ],
+  "lab": {
+    "mode": "real-fleet-postgresql",
+    "policy_id": "eae84598-624b-48e2-8a7a-c39f4655dbad",
+    "enrolled_devices": 11,
+    "persisted_audits": 50,
+    "signed_audits": 50,
+    "staged_policy_version": "bounder-lab-2",
+    "revoked_policy_version": "bounder-lab-3",
+    "stages": [
+      {
+        "name": "baseline protections",
+        "devices": 11,
+        "allowed": 2,
+        "blocked": 9,
+        "passed": true,
+        "detail": "eleven signed device policies enforce recovery, civilian, friendly-force, protected-place, weather, assurance, replay, missing-policy, and expiry rules"
+      },
+      {
+        "name": "partial policy rollout",
+        "devices": 11,
+        "allowed": 5,
+        "blocked": 6,
+        "passed": true,
+        "detail": "six canaries enforce the tighter 600 metre civilian floor while five devices safely retain the signed 150 metre floor"
+      },
+      {
+        "name": "completed policy rollout",
+        "devices": 11,
+        "allowed": 0,
+        "blocked": 11,
+        "passed": true,
+        "detail": "all eleven guardians enforce the tightened fleet policy"
+      },
+      {
+        "name": "corrupted policy rejection",
+        "devices": 1,
+        "allowed": 0,
+        "blocked": 1,
+        "passed": true,
+        "detail": "a damaged Fleet signature is rejected while the last verified policy continues to enforce locally"
+      },
+      {
+        "name": "guardian restart persistence",
+        "devices": 1,
+        "allowed": 0,
+        "blocked": 1,
+        "passed": true,
+        "detail": "an on-disk sequence floor rejects the pre-restart envelope; a newer signed sync restores enforcement"
+      },
+      {
+        "name": "clock rollback",
+        "devices": 1,
+        "allowed": 0,
+        "blocked": 1,
+        "passed": true,
+        "detail": "local time behind the persisted trusted high-water mark cannot revive earlier authority"
+      },
+      {
+        "name": "control-plane disconnect",
+        "devices": 1,
+        "allowed": 0,
+        "blocked": 1,
+        "passed": true,
+        "detail": "a failed policy sync does not create permission; the cached verified policy continues to block locally"
+      },
+      {
+        "name": "audit-channel outage",
+        "devices": 1,
+        "allowed": 0,
+        "blocked": 1,
+        "passed": true,
+        "detail": "failed receipt delivery never changes the local decision; the signed audit uploads after reconnection"
+      },
+      {
+        "name": "signing-key lifecycle",
+        "devices": 1,
+        "allowed": 0,
+        "blocked": 1,
+        "passed": true,
+        "detail": "a pinned overlap accepts the rotated key, then removal of the old key rejects later old-key envelopes without replacing active policy"
+      },
+      {
+        "name": "fleet-wide revocation",
+        "devices": 11,
+        "allowed": 0,
+        "blocked": 11,
+        "passed": true,
+        "detail": "an authenticated no-policy response places every connected guardian into an explicit hold"
+      },
+      {
+        "name": "offline policy expiry",
+        "devices": 1,
+        "allowed": 0,
+        "blocked": 1,
+        "passed": true,
+        "detail": "a disconnected guardian never treats stale authority as permission and uploads its signed receipt after reconnecting"
+      },
+      {
+        "name": "audit round trip",
+        "devices": 11,
+        "allowed": 0,
+        "blocked": 0,
+        "passed": true,
+        "detail": "Fleet PostgreSQL returned 50 physical-interlock rows, including 50 signed governance certificates"
+      }
+    ]
+  },
+  "resilience": {
+    "version": "bounder-resilience-evidence/v1",
+    "mode": "deterministic-live-replay",
+    "scenarios": [
+      {
+        "id": "network-partition",
+        "name": "Fleet partition",
+        "fault": "Policy sync loses its control-plane connection.",
+        "expected_code": "civilian_proximity",
+        "safe_response": "Keep enforcing the cached unexpired floor.",
+        "proof": "real Fleet client failure plus local evaluation",
+        "affected_device": "bounder-alpha",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-alpha",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-alpha",
+            "status": "fault",
+            "code": "fleet_unreachable",
+            "message": "Fleet endpoint becomes unreachable",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-alpha",
+            "status": "held",
+            "code": "civilian_proximity",
+            "message": "cached signed policy continues to hold the unsafe request",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-alpha",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 2
+          }
+        ]
+      },
+      {
+        "id": "audit-outage",
+        "name": "Audit outage",
+        "fault": "The receipt channel is unavailable.",
+        "expected_code": "civilian_proximity",
+        "safe_response": "Preserve the local decision and upload after recovery.",
+        "proof": "failed submit_audit followed by signed round trip",
+        "affected_device": "bounder-alpha",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-alpha",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-alpha",
+            "status": "fault",
+            "code": "audit_unreachable",
+            "message": "signed receipt delivery fails",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-alpha",
+            "status": "held",
+            "code": "civilian_proximity",
+            "message": "enforcement remains local and unchanged",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-alpha",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 2
+          }
+        ]
+      },
+      {
+        "id": "corrupted-envelope",
+        "name": "Corrupted policy",
+        "fault": "A signed Fleet envelope is damaged in transit.",
+        "expected_code": "invalid_signature",
+        "safe_response": "Reject the update and retain the last verified floor.",
+        "proof": "real Ed25519 verification failure",
+        "affected_device": "bounder-bravo",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-bravo",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-bravo",
+            "status": "fault",
+            "code": "signature_corrupted",
+            "message": "exact signed bytes no longer verify",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-bravo",
+            "status": "held",
+            "code": "invalid_signature",
+            "message": "damaged authority is rejected before policy replacement",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-bravo",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 2
+          }
+        ]
+      },
+      {
+        "id": "clock-rollback",
+        "name": "Clock rollback",
+        "fault": "Local time moves behind the persisted high-water mark.",
+        "expected_code": "clock_rollback",
+        "safe_response": "Hold instead of reviving earlier authority.",
+        "proof": "restart-persistent trusted-time check",
+        "affected_device": "bounder-charlie",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-charlie",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-charlie",
+            "status": "fault",
+            "code": "time_rollback",
+            "message": "wall clock is earlier than durable guardian time",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-charlie",
+            "status": "held",
+            "code": "clock_rollback",
+            "message": "guardian refuses authority while time is untrusted",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-charlie",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 3
+          }
+        ]
+      },
+      {
+        "id": "guardian-restart",
+        "name": "Guardian restart",
+        "fault": "A guardian restarts and sees its previous envelope again.",
+        "expected_code": "policy_replay",
+        "safe_response": "Reject the replay, then accept only a newer signed sequence.",
+        "proof": "atomically persisted sequence floor",
+        "affected_device": "bounder-charlie",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-charlie",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-charlie",
+            "status": "fault",
+            "code": "process_restart",
+            "message": "persisted sequence is restored before policy sync",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-charlie",
+            "status": "held",
+            "code": "policy_replay",
+            "message": "old envelope is rejected and a newer sync restores enforcement",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-charlie",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 3
+          }
+        ]
+      },
+      {
+        "id": "key-revocation",
+        "name": "Signing-key rotation",
+        "fault": "The retired Fleet key signs a later envelope.",
+        "expected_code": "unknown_key",
+        "safe_response": "Reject it and retain the active new-key policy.",
+        "proof": "real two-key Ed25519 trust-set transition",
+        "affected_device": "bounder-alpha",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-alpha",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 9002
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-alpha",
+            "status": "fault",
+            "code": "retired_key_used",
+            "message": "retired key identifier is absent from the pinned trust set",
+            "policy_sequence": 9002
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-alpha",
+            "status": "held",
+            "code": "unknown_key",
+            "message": "new-key policy remains active",
+            "policy_sequence": 9002
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-alpha",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 9002
+          }
+        ]
+      },
+      {
+        "id": "stale-evidence",
+        "name": "Stale METTLE evidence",
+        "fault": "Verified assurance evidence ages beyond the signed limit.",
+        "expected_code": "evidence_stale",
+        "safe_response": "Hold until fresh assurance is verified.",
+        "proof": "real interlock evidence-age evaluation",
+        "affected_device": "bounder-hotel",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-hotel",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 1
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-hotel",
+            "status": "fault",
+            "code": "evidence_aged_out",
+            "message": "assurance age exceeds the signed maximum",
+            "policy_sequence": 1
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-hotel",
+            "status": "held",
+            "code": "evidence_stale",
+            "message": "guardian holds without promoting a badge into authority",
+            "policy_sequence": 1
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-hotel",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 1
+          }
+        ]
+      },
+      {
+        "id": "partial-rollout",
+        "name": "Partial rollout",
+        "fault": "Six canaries receive a stricter floor before five peers.",
+        "expected_code": "civilian_proximity",
+        "safe_response": "Each guardian enforces its last verified unexpired policy.",
+        "proof": "real Fleet per-device canary synchronization",
+        "affected_device": "six canaries",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "six canaries",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "six canaries",
+            "status": "fault",
+            "code": "mixed_policy_sequences",
+            "message": "fleet temporarily contains two signed policy sequences",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "six canaries",
+            "status": "held",
+            "code": "civilian_proximity",
+            "message": "six devices hold while five retain the earlier valid floor",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "six canaries",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 2
+          }
+        ]
+      },
+      {
+        "id": "fleet-revocation",
+        "name": "Fleet revocation",
+        "fault": "The Bounder projection is removed from Fleet policy.",
+        "expected_code": "policy_unavailable",
+        "safe_response": "Place every connected guardian into an explicit hold.",
+        "proof": "authenticated no-policy sync across eleven devices",
+        "affected_device": "all guardians",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "all guardians",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "all guardians",
+            "status": "fault",
+            "code": "policy_removed",
+            "message": "Fleet sends an authenticated no-policy response",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "all guardians",
+            "status": "held",
+            "code": "policy_unavailable",
+            "message": "all eleven guardians enter hold",
+            "policy_sequence": 3
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "all guardians",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 3
+          }
+        ]
+      },
+      {
+        "id": "offline-expiry",
+        "name": "Offline expiry",
+        "fault": "A disconnected guardian's cached policy expires.",
+        "expected_code": "policy_expired",
+        "safe_response": "Hold without waiting for cloud connectivity.",
+        "proof": "local signed-expiry evaluation and delayed audit",
+        "affected_device": "bounder-alpha",
+        "events": [
+          {
+            "at_ms": 0,
+            "kind": "baseline",
+            "device_id": "bounder-alpha",
+            "status": "verified",
+            "code": "policy_active",
+            "message": "signed Fleet policy is active",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 650,
+            "kind": "fault",
+            "device_id": "bounder-alpha",
+            "status": "fault",
+            "code": "cache_expired",
+            "message": "signed validity window closes while offline",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 1350,
+            "kind": "decision",
+            "device_id": "bounder-alpha",
+            "status": "held",
+            "code": "policy_expired",
+            "message": "guardian removes authority locally and queues evidence",
+            "policy_sequence": 2
+          },
+          {
+            "at_ms": 2100,
+            "kind": "audit",
+            "device_id": "bounder-alpha",
+            "status": "recorded",
+            "code": "signed_receipt",
+            "message": "guardian decision is available for Fleet audit",
+            "policy_sequence": 2
+          }
+        ]
+      }
+    ]
+  }
 }

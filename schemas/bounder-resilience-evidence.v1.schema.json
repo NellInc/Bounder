@@ -1,0 +1,52 @@
++{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bounder.io/schemas/bounder-resilience-evidence.v1.schema.json",
+  "title": "Bounder resilience evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "mode", "scenarios"],
+  "properties": {
+    "version": {"const": "bounder-resilience-evidence/v1"},
+    "mode": {"enum": ["deterministic-live-replay"]},
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/scenario"}
+    }
+  },
+  "$defs": {
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "fault", "expected_code", "safe_response", "proof", "affected_device", "events"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+        "name": {"type": "string", "minLength": 1},
+        "fault": {"type": "string", "minLength": 1},
+        "expected_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "safe_response": {"type": "string", "minLength": 1},
+        "proof": {"type": "string", "minLength": 1},
+        "affected_device": {"type": "string", "minLength": 1},
+        "events": {
+          "type": "array",
+          "minItems": 3,
+          "items": {"$ref": "#/$defs/event"}
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_ms", "kind", "status", "code", "message"],
+      "properties": {
+        "at_ms": {"type": "integer", "minimum": 0},
+        "kind": {"enum": ["baseline", "fault", "decision", "audit"]},
+        "device_id": {"type": "string"},
+        "status": {"enum": ["verified", "fault", "held", "recorded"]},
+        "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "message": {"type": "string", "minLength": 1},
+        "policy_sequence": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

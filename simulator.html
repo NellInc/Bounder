@@ -88,7 +88,7 @@
       </div>
       <aside>
         <span>What you are seeing</span>
-        <p>A software-only town replays deterministic receipts produced by Bounder’s Go verifier. Nothing live is connected.</p>
+        <p>A software-only town replays deterministic receipts from Bounder’s Go verifier. The local Fleet laboratory can also stream its signed fault evidence into the controls below.</p>
       </aside>
     </section>
 
@@ -130,7 +130,46 @@
           <div><dt>Evidence</dt><dd data-fleet="evidence">Loading</dd></div>
         </dl>
         <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder guardian outcomes"></div>
-        <p class="fleet-contract-links"><a href="data/bounder-fleet-evidence.v1.json">Fleet evidence</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a></p>
+        <p class="fleet-contract-links"><a href="data/bounder-fleet-evidence.v1.json">Fleet evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a></p>
+      </section>
+
+      <section class="resilience-lab" aria-labelledby="resilience-title" hidden>
+        <div class="resilience-heading">
+          <div>
+            <span class="fleet-kicker">Fleet resilience laboratory</span>
+            <strong id="resilience-title">Introduce a failure. Watch every boundary fail safe.</strong>
+            <p>The local laboratory streams verified Fleet events. The public demonstrator replays the same deterministic evidence when no laboratory endpoint is present.</p>
+          </div>
+          <a class="resilience-download" href="data/bounder-fleet-evidence.v1.json" download>Download evidence</a>
+        </div>
+        <div class="resilience-scenarios" data-resilience-scenarios role="group" aria-label="Choose a resilience scenario"></div>
+        <div class="resilience-console">
+          <div class="resilience-detail">
+            <span>Selected fault</span>
+            <strong data-resilience="name">Choose a scenario</strong>
+            <p data-resilience="fault">The fault description will appear here.</p>
+            <dl>
+              <div><dt>Device</dt><dd data-resilience="device">None</dd></div>
+              <div><dt>Expected</dt><dd data-resilience="expected">None</dd></div>
+              <div><dt>Safe response</dt><dd data-resilience="response">None</dd></div>
+              <div><dt>Proof</dt><dd data-resilience="proof">None</dd></div>
+            </dl>
+          </div>
+          <div class="resilience-timeline">
+            <div class="resilience-transport">
+              <button type="button" data-resilience-action="run">Run fault</button>
+              <button type="button" data-resilience-action="pause" disabled>Pause</button>
+              <button type="button" data-resilience-action="step">Step</button>
+              <button type="button" data-resilience-action="reset">Reset</button>
+              <span data-resilience="transport" aria-live="polite">Ready</span>
+            </div>
+            <label class="resilience-scrubber">
+              <span>Event time <output data-resilience="time">0.00 s</output></span>
+              <input type="range" min="0" max="2100" step="50" value="0" data-resilience-scrubber aria-label="Resilience event time">
+            </label>
+            <ol class="resilience-events" data-resilience-events aria-label="Scenario event timeline"></ol>
+          </div>
+        </div>
       </section>
 
       <div class="simulator-grid">

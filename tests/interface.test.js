@@ -42,3 +42,15 @@ test("Creed Space Fleet control is visible, interactive, and evidence backed", (
   assert.match(simulatorScript, /fleetMode = !fleetMode/);
   assert.match(simulatorStyles, /\.fleet-control-panel\.is-active/);
 });
+
+test("resilience laboratory exposes deterministic fault controls and live-stream fallback", () => {
+  assert.match(simulatorHtml, /Fleet resilience laboratory/);
+  assert.match(simulatorHtml, /data-resilience-action="run"/);
+  assert.match(simulatorHtml, /data-resilience-action="step"/);
+  assert.match(simulatorHtml, /data-resilience-scrubber/);
+  assert.match(simulatorHtml, /bounder-resilience-evidence\.v1\.schema\.json/);
+  assert.match(simulatorScript, /new EventSource\(`\.\/api\/resilience\/events\?scenario=/);
+  assert.match(simulatorScript, /playResilienceLocally\(\)/);
+  assert.match(simulatorStyles, /\.resilience-console/);
+  assert.match(simulatorStyles, /\.fleet-node\.is-affected/);
+});
