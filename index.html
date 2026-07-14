@@ -226,21 +226,70 @@
       <!-- The interlock, drawn once over the photograph: an approach vector runs at
            the protected volume, meets the boundary, and is held. It plays a single
            time and stops. A loop would be decoration; a settle is the argument. -->
-      <!-- Sized and anchored in CSS with a `meet` viewBox, deliberately. A full-bleed
-           `slice` viewBox crops by an amount that swings with the viewport's aspect,
-           which pushed the gate clean off the frame at narrower widths and left a
-           vector running into nothing. This box is never cropped. -->
+      <!-- The interlock, played once: the page's own Govern -> Issue -> Bound -> Act
+           arc, enacted before a word is read.
+
+             issued (and already expiring) -> four checks -> approach -> gate
+             -> HELD -> DENIED -> reroute drawn -> REROUTE
+
+           Transient beats (the meter, the checks, the denial) rest at opacity 0:
+           they are brought in and taken back out, so nothing accumulates and the
+           settled frame stays quiet. Persistent marks rest visible, so a dead
+           script or a reduced-motion preference still leaves a composed hero.
+
+           Sized and anchored in CSS with a `meet` viewBox, deliberately: a
+           full-bleed `slice` viewBox crops by an amount that swings with the
+           viewport's aspect, which pushed the gate clean off the frame at
+           narrower widths and left a vector running into nothing. -->
       <svg class="hero-interlock" viewBox="0 0 300 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
-        <path class="interlock-vector" d="M14 130 H150" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
-        <g class="interlock-gate">
-          <path d="M232 40 V200" stroke="#c9ff57" stroke-width="10" opacity="0.16" stroke-linecap="round"/>
-          <path d="M232 40 V200" stroke="#c9ff57" stroke-width="2.5" stroke-linecap="round"/>
+        <g class="il-issued">
+          <text x="14" y="20" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="700" letter-spacing="1.2">AUTHORITY · EXPIRES</text>
+          <rect x="14" y="27" width="150" height="8" fill="none" stroke="rgba(201, 255, 87, 0.45)" stroke-width="1.2" rx="1.5"/>
+          <rect class="il-meter" x="14" y="27" width="150" height="8" fill="#c9ff57" opacity="0.85" rx="1.5"/>
         </g>
-        <g class="interlock-held" fill="none" stroke="#c9ff57" stroke-width="2">
-          <circle cx="150" cy="130" r="14"/>
-          <path d="M143 130 h14" stroke-linecap="round"/>
+
+        <g font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700" letter-spacing="1.1" fill="#c9ff57">
+          <g class="il-check il-check-1">
+            <path d="M20 54 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="58">SIGNATURE</text>
+          </g>
+          <g class="il-check il-check-2">
+            <path d="M20 74 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="78">EXPIRY</text>
+          </g>
+          <g class="il-check il-check-3">
+            <path d="M20 94 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="98">SEQUENCE</text>
+          </g>
+          <g class="il-check il-check-4">
+            <path d="M20 114 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="118">SCOPE</text>
+          </g>
         </g>
-        <text class="interlock-label" x="150" y="96" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12" font-weight="700" letter-spacing="1.5" text-anchor="middle">HELD</text>
+
+        <path class="il-vector" d="M14 150 H134" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
+
+        <g class="il-held" fill="none" stroke="#c9ff57" stroke-width="2">
+          <circle cx="150" cy="150" r="14"/>
+          <path d="M143 150 h14" stroke-linecap="round"/>
+        </g>
+        <text class="il-held-tag" x="150" y="130" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">HELD</text>
+
+        <!-- Safety red measures 3.1:1 on the graded photograph, under the 4.5:1 floor.
+             This lighter tint of the same hue reads at 5.2:1. -->
+        <g class="il-denied">
+          <path d="M168 150 H226" fill="none" stroke="#e0674a" stroke-width="2" stroke-dasharray="5 5"/>
+          <text x="197" y="140" fill="#e0674a" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="700" letter-spacing="1.2" text-anchor="middle">DENIED</text>
+        </g>
+
+        <path class="il-reroute" d="M150 166 C 150 192, 122 198, 86 198" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
+        <path class="il-arrow" d="M98 190 L84 198 L98 206" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text class="il-reroute-tag" x="86" y="216" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">REROUTE</text>
+
+        <g class="il-gate">
+          <path d="M232 58 V202" stroke="#c9ff57" stroke-width="10" opacity="0.16" stroke-linecap="round"/>
+          <path d="M232 58 V202" stroke="#c9ff57" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
       </svg>
 
       <div class="hero-content">

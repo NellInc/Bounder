@@ -233,10 +233,12 @@ button, a {
   pointer-events: none;
 }
 
-/* The interlock, drawn once over the photograph: an approach vector meets the
-   boundary and is held. It sits above the scrim but below the copy, anchored to
-   the right gutter so its position does not drift with the viewport's aspect
-   ratio, and it occupies only the negative space beside the headline. */
+/* The interlock, played once over the photograph: the page's own
+   Govern -> Issue -> Bound -> Act arc, enacted before a word is read.
+
+   It sits above the scrim but below the copy, anchored to the right gutter so
+   its position does not drift with the viewport's aspect ratio, and it occupies
+   only the negative space beside the headline. */
 .hero-interlock {
   position: absolute;
   top: 50%;
@@ -248,42 +250,83 @@ button, a {
   pointer-events: none;
 }
 
-/* Resting state is the RESOLVED frame: vector drawn, gate up, craft held.
-   If the script never runs, the hero still reads as composed and finished.
-   Motion is opt-in via .is-armed, never opt-out. */
-.hero-interlock .interlock-vector {
-  stroke-dasharray: 140;
+/* Resting state is the RESOLVED frame, so the hero reads as composed even if the
+   script never runs. Motion is opt-in via .is-armed, never opt-out.
+
+   Transient beats rest at opacity 0. The animation brings them in and takes them
+   back out, so nothing accumulates and the settled frame stays quiet: approach,
+   held, reroute, gate. That settled frame is also exactly what a reduced-motion
+   visitor sees, so there is no second composition to maintain. */
+.hero-interlock .il-issued,
+.hero-interlock .il-check,
+.hero-interlock .il-denied {
+  opacity: 0;
+}
+
+/* Both dash arrays must be at least the path length, or stroke-dashoffset has
+   nothing to act on and the line simply appears fully drawn. */
+.hero-interlock .il-vector {
+  stroke-dasharray: 130;
   stroke-dashoffset: 0;
 }
 
-.js .hero-interlock.is-armed .interlock-vector {
-  animation: interlock-draw 900ms cubic-bezier(0.3, 0.8, 0.2, 1) 200ms backwards;
+.hero-interlock .il-reroute {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 0;
 }
 
-.js .hero-interlock.is-armed .interlock-gate {
-  animation: interlock-fade 400ms ease 1000ms backwards;
+/* Beat 1 — issued, and already expiring. */
+.js .hero-interlock.is-armed .il-issued { animation: il-land 1500ms ease 150ms both; }
+.js .hero-interlock.is-armed .il-meter {
+  animation: il-drain 950ms linear 300ms both;
+  transform-origin: 14px 0;
 }
 
-.js .hero-interlock.is-armed .interlock-held {
-  animation: interlock-halt 550ms cubic-bezier(0.2, 1.5, 0.4, 1) 1250ms backwards;
-  transform-origin: 150px 130px;
+/* Beat 2 — the four checks. */
+.js .hero-interlock.is-armed .il-check-1 { animation: il-land 1000ms ease 1150ms both; }
+.js .hero-interlock.is-armed .il-check-2 { animation: il-land 1000ms ease 1260ms both; }
+.js .hero-interlock.is-armed .il-check-3 { animation: il-land 1000ms ease 1370ms both; }
+.js .hero-interlock.is-armed .il-check-4 { animation: il-land 1000ms ease 1480ms both; }
+
+/* Beat 3 — approach, and the boundary it meets. */
+.js .hero-interlock.is-armed .il-vector { animation: il-draw-vector 700ms cubic-bezier(0.3, 0.85, 0.2, 1) 1950ms backwards; }
+.js .hero-interlock.is-armed .il-gate { animation: il-fade 400ms ease 2550ms backwards; }
+
+/* Beat 4 — held. It stops at the line before anything is refused. */
+.js .hero-interlock.is-armed .il-held {
+  animation: il-pop 500ms cubic-bezier(0.2, 1.5, 0.4, 1) 2700ms backwards;
+  transform-origin: 150px 150px;
+}
+.js .hero-interlock.is-armed .il-held-tag { animation: il-fade 400ms ease 2950ms backwards; }
+
+/* Beat 5 — denied. This one recedes: it is a verdict, not a fixture. */
+.js .hero-interlock.is-armed .il-denied { animation: il-flash 1000ms ease 3250ms both; }
+
+/* Beat 6 — the reroute, drawn only once the denial has landed. */
+.js .hero-interlock.is-armed .il-reroute { animation: il-draw-reroute 700ms cubic-bezier(0.3, 0.85, 0.2, 1) 3900ms backwards; }
+.js .hero-interlock.is-armed .il-arrow { animation: il-fade 350ms ease 4450ms backwards; }
+.js .hero-interlock.is-armed .il-reroute-tag { animation: il-fade 450ms ease 4600ms backwards; }
+
+/* A beat arrives, holds long enough to be read, then gets out of the way. */
+@keyframes il-land {
+  0% { opacity: 0; transform: translateX(-8px); }
+  14% { opacity: 1; transform: translateX(0); }
+  64% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(0); }
 }
 
-.js .hero-interlock.is-armed .interlock-label {
-  animation: interlock-fade 500ms ease 1500ms backwards;
+@keyframes il-flash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  72% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
-@keyframes interlock-draw {
-  from { stroke-dashoffset: 140; }
-}
-
-@keyframes interlock-fade {
-  from { opacity: 0; }
-}
-
-@keyframes interlock-halt {
-  from { opacity: 0; transform: scale(0.6); }
-}
+@keyframes il-draw-vector { from { stroke-dashoffset: 130; } }
+@keyframes il-draw-reroute { from { stroke-dashoffset: 120; } }
+@keyframes il-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes il-fade { from { opacity: 0; } }
+@keyframes il-pop { from { opacity: 0; transform: scale(0.6); } }
 
 .hero-content {
   position: relative;
