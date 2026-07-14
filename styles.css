@@ -49,6 +49,44 @@ button, a {
   outline-offset: 4px;
 }
 
+/* Icon system: one 24px stroke grid, inherited colour, drawn from the inline sprite. */
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.step-icon,
+.principle-mark,
+.application-mark,
+.boundary-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Scroll reveal. Gated on .js so the content is never hidden without scripting;
+   index.html sets that class inline only when it will actually run the observer. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 700ms ease, transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.js [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
 .skip-link {
   position: fixed;
   top: 1rem;
@@ -148,7 +186,8 @@ button, a {
 .hero {
   position: relative;
   display: grid;
-  min-height: 760px;
+  /* Kept under the common 720px viewport so the hero note stays above the fold. */
+  min-height: 640px;
   height: 100svh;
   color: white;
   background: var(--ink);
@@ -156,7 +195,8 @@ button, a {
 }
 
 .hero-image,
-.hero-scrim {
+.hero-scrim,
+.hero-grid {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -164,18 +204,133 @@ button, a {
 }
 
 .hero-image {
-  z-index: -2;
+  z-index: -3;
   object-fit: cover;
-  object-position: center 55%;
-  filter: saturate(0.62) contrast(1.08);
+  /* The drone sits high in the frame, so the crop favours the upper half.
+     Cropping it out would discard the reason this photograph was chosen: its
+     own status light is already signal green. */
+  object-position: center 34%;
+  /* Cooled so the dusk sky sits under the palette rather than fighting it. */
+  filter: saturate(0.42) contrast(1.12) brightness(0.86) hue-rotate(-10deg);
 }
 
 .hero-scrim {
-  z-index: -1;
-  background: linear-gradient(90deg, rgba(10, 12, 9, 0.9) 0%, rgba(10, 12, 9, 0.58) 50%, rgba(10, 12, 9, 0.2) 100%);
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(10, 12, 9, 0.92) 0%, rgba(10, 12, 9, 0.62) 52%, rgba(10, 12, 9, 0.24) 100%),
+    linear-gradient(0deg, rgba(10, 12, 9, 0.75) 0%, rgba(10, 12, 9, 0) 42%);
 }
 
+/* Survey grid: the boundary, made faintly visible across the frame. */
+.hero-grid {
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(201, 255, 87, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 255, 87, 0.14) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.18) 45%, transparent 72%);
+  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.18) 45%, transparent 72%);
+  pointer-events: none;
+}
+
+/* The interlock, played once over the photograph: the page's own
+   Govern -> Issue -> Bound -> Act arc, enacted before a word is read.
+
+   It sits above the scrim but below the copy, anchored to the right gutter so
+   its position does not drift with the viewport's aspect ratio, and it occupies
+   only the negative space beside the headline. */
+.hero-interlock {
+  position: absolute;
+  top: 50%;
+  right: max(1.5rem, calc((100vw - var(--content)) / 2));
+  z-index: 0;
+  width: min(300px, 26vw);
+  height: auto;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Resting state is the RESOLVED frame, so the hero reads as composed even if the
+   script never runs. Motion is opt-in via .is-armed, never opt-out.
+
+   Transient beats rest at opacity 0. The animation brings them in and takes them
+   back out, so nothing accumulates and the settled frame stays quiet: approach,
+   held, reroute, gate. That settled frame is also exactly what a reduced-motion
+   visitor sees, so there is no second composition to maintain. */
+.hero-interlock .il-issued,
+.hero-interlock .il-check,
+.hero-interlock .il-denied {
+  opacity: 0;
+}
+
+/* Both dash arrays must be at least the path length, or stroke-dashoffset has
+   nothing to act on and the line simply appears fully drawn. */
+.hero-interlock .il-vector {
+  stroke-dasharray: 130;
+  stroke-dashoffset: 0;
+}
+
+.hero-interlock .il-reroute {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 0;
+}
+
+/* Beat 1 — issued, and already expiring. */
+.js .hero-interlock.is-armed .il-issued { animation: il-land 1500ms ease 150ms both; }
+.js .hero-interlock.is-armed .il-meter {
+  animation: il-drain 950ms linear 300ms both;
+  transform-origin: 14px 0;
+}
+
+/* Beat 2 — the four checks. */
+.js .hero-interlock.is-armed .il-check-1 { animation: il-land 1000ms ease 1150ms both; }
+.js .hero-interlock.is-armed .il-check-2 { animation: il-land 1000ms ease 1260ms both; }
+.js .hero-interlock.is-armed .il-check-3 { animation: il-land 1000ms ease 1370ms both; }
+.js .hero-interlock.is-armed .il-check-4 { animation: il-land 1000ms ease 1480ms both; }
+
+/* Beat 3 — approach, and the boundary it meets. */
+.js .hero-interlock.is-armed .il-vector { animation: il-draw-vector 700ms cubic-bezier(0.3, 0.85, 0.2, 1) 1950ms backwards; }
+.js .hero-interlock.is-armed .il-gate { animation: il-fade 400ms ease 2550ms backwards; }
+
+/* Beat 4 — held. It stops at the line before anything is refused. */
+.js .hero-interlock.is-armed .il-held {
+  animation: il-pop 500ms cubic-bezier(0.2, 1.5, 0.4, 1) 2700ms backwards;
+  transform-origin: 150px 150px;
+}
+.js .hero-interlock.is-armed .il-held-tag { animation: il-fade 400ms ease 2950ms backwards; }
+
+/* Beat 5 — denied. This one recedes: it is a verdict, not a fixture. */
+.js .hero-interlock.is-armed .il-denied { animation: il-flash 1000ms ease 3250ms both; }
+
+/* Beat 6 — the reroute, drawn only once the denial has landed. */
+.js .hero-interlock.is-armed .il-reroute { animation: il-draw-reroute 700ms cubic-bezier(0.3, 0.85, 0.2, 1) 3900ms backwards; }
+.js .hero-interlock.is-armed .il-arrow { animation: il-fade 350ms ease 4450ms backwards; }
+.js .hero-interlock.is-armed .il-reroute-tag { animation: il-fade 450ms ease 4600ms backwards; }
+
+/* A beat arrives, holds long enough to be read, then gets out of the way. */
+@keyframes il-land {
+  0% { opacity: 0; transform: translateX(-8px); }
+  14% { opacity: 1; transform: translateX(0); }
+  64% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(0); }
+}
+
+@keyframes il-flash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  72% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes il-draw-vector { from { stroke-dashoffset: 130; } }
+@keyframes il-draw-reroute { from { stroke-dashoffset: 120; } }
+@keyframes il-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes il-fade { from { opacity: 0; } }
+@keyframes il-pop { from { opacity: 0; transform: scale(0.6); } }
+
 .hero-content {
+  position: relative;
+  z-index: 1;
   align-self: center;
   width: min(calc(100% - 3rem), var(--content));
   margin: 3rem auto 0;
@@ -183,8 +338,7 @@ button, a {
 
 .eyebrow,
 .section-label,
-.status-kicker,
-.application-mark {
+.status-kicker {
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.8rem;
@@ -308,7 +462,10 @@ button, a {
 .section-heading {
   display: grid;
   grid-template-columns: 180px minmax(0, 720px);
-  gap: 2rem;
+  /* Row gap is 0 so the sub-paragraph spaces itself off the h2's own margin.
+     A row gap here plus a negative margin collides once the h2 wraps. */
+  column-gap: 2rem;
+  row-gap: 0;
   align-items: start;
   margin-bottom: 4.5rem;
 }
@@ -316,6 +473,7 @@ button, a {
 .section-heading h2,
 .intro h2,
 .section-safety h2,
+.home-simulator-heading h2,
 .cta h2 {
   margin: 0;
   font-family: var(--font-display);
@@ -328,7 +486,7 @@ button, a {
 .section-heading > p {
   grid-column: 2;
   max-width: 620px;
-  margin: -2.5rem 0 0;
+  margin: 1.25rem 0 0;
   color: var(--ink-soft);
   font-size: 1.1rem;
 }
@@ -372,6 +530,27 @@ button, a {
   padding-left: max(1.5rem, calc((100vw - var(--content)) / 2));
   color: white;
   background: var(--ink);
+  overflow: hidden;
+}
+
+/* Faint technical substrate: gives the flat ink panels depth without competing for attention. */
+.section-dark::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 0, 0, 0.9), transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 0, 0, 0.9), transparent 78%);
+  pointer-events: none;
+  content: "";
+}
+
+/* The substrate is positioned, so in-flow content needs a layer of its own to sit above it. */
+.section-dark > * {
+  position: relative;
+  z-index: 1;
 }
 
 .section-dark .section-label,
@@ -379,9 +558,44 @@ button, a {
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* The thesis of this section is that authority narrows toward the machine.
+   The wedge states it literally; the column taper repeats it structurally. */
+.authority-wedge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  margin-bottom: 2.75rem;
+}
+
+/* Tapers to a point, and stops clear of the end label rather than running under it. */
+.authority-wedge::before {
+  position: absolute;
+  inset: 0 26% 0 0;
+  background: linear-gradient(90deg, var(--signal) 0%, rgba(201, 255, 87, 0.3) 100%);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  content: "";
+}
+
+.wedge-start,
+.wedge-end {
+  position: relative;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wedge-end {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 .architecture-flow {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1.16fr 1.06fr 0.96fr 0.86fr;
   margin: 0;
   padding: 0;
   border-top: 1px solid var(--line-light);
@@ -389,6 +603,9 @@ button, a {
 }
 
 .architecture-flow li {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 1.5rem;
   min-height: 290px;
   padding: 1.5rem 1.5rem 2rem;
   border-right: 1px solid var(--line-light);
@@ -402,13 +619,17 @@ button, a {
   border-right: 0;
 }
 
-.step-mark {
+.step-index {
   display: block;
-  margin-bottom: 4.5rem;
-  color: var(--signal);
+  color: rgba(255, 255, 255, 0.45);
   font-family: var(--font-mono);
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.step-icon {
+  color: var(--signal);
 }
 
 .architecture-flow h3 {
@@ -432,9 +653,9 @@ button, a {
   border-top: 1px solid var(--signal);
 }
 
-.boundary-note span {
+.boundary-icon {
   color: var(--signal);
-  font-size: 1.6rem;
+  margin-top: 0.15rem;
 }
 
 .boundary-note p {
@@ -467,14 +688,11 @@ button, a {
 }
 
 .principle-mark {
-  display: block;
-  min-height: 3rem;
   color: var(--safety);
-  font-size: 2rem;
 }
 
 .principle-grid h3 {
-  margin: 2.5rem 0 0.7rem;
+  margin: 2rem 0 0.7rem;
   font-size: 1.15rem;
 }
 
@@ -547,7 +765,7 @@ button, a {
 .application-mark {
   grid-row: 1 / 3;
   color: var(--safety);
-  font-size: 1.25rem;
+  margin-top: 0.2rem;
 }
 
 .application-list h3 {
@@ -983,15 +1201,33 @@ button, a {
   }
 
   .hero {
-    min-height: 720px;
+    /* Matches the desktop floor: a taller hero pushes the note below the fold on short phones. */
+    min-height: 640px;
   }
 
   .hero-scrim {
-    background: rgba(10, 12, 9, 0.7);
+    background: linear-gradient(0deg, rgba(10, 12, 9, 0.82) 0%, rgba(10, 12, 9, 0.62) 45%, rgba(10, 12, 9, 0.72) 100%);
+  }
+
+  .hero-grid {
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 65%);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 65%);
+  }
+
+  /* Narrow columns leave the tip crowding the end label, so pull the wedge back further. */
+  .authority-wedge::before {
+    inset: 0 38% 0 0;
   }
 
   .hero h1 {
     font-size: clamp(3.6rem, 19vw, 6rem);
+  }
+
+  /* The headline stacks and fills the frame at this width, leaving no negative
+     space for the interlock to occupy without colliding. The photograph carries
+     the hero on its own here. */
+  .hero-interlock {
+    display: none;
   }
 
   .hero-actions,
@@ -1032,13 +1268,21 @@ button, a {
     border-bottom-color: var(--line);
   }
 
-  .step-mark,
   .principle-grid h3 {
-    margin-bottom: 1rem;
+    margin: 1rem 0;
   }
 
-  .principle-grid h3 {
-    margin-top: 1rem;
+  .architecture-flow li {
+    gap: 1rem;
+  }
+
+  .authority-wedge {
+    height: 40px;
+  }
+
+  .wedge-start,
+  .wedge-end {
+    font-size: 0.6rem;
   }
 
   .application-list article,
@@ -1074,6 +1318,12 @@ button, a {
 
   *, *::before, *::after {
     transition-duration: 0.01ms !important;
+  }
+
+  /* The interlock's resting state is already the resolved frame, so suppressing the
+     animation leaves the composition intact rather than empty. */
+  .hero-interlock * {
+    animation: none !important;
   }
 }
 

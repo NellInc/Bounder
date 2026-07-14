@@ -16,15 +16,70 @@
   <meta property="og:url" content="https://www.bounder.io/">
   <meta property="og:title" content="Bounder | Trust at the Point of Action">
   <meta property="og:description" content="Open, local safety gates between verified policy and physical action.">
-  <meta property="og:image" content="https://images.squarespace-cdn.com/content/v1/55acf641e4b0b8a3dbbdbd91/1437403987855-UZEGF7VV4UCP5MQ7E5MI/drone-698564.jpg">
-  <meta property="og:image:alt" content="A drone in flight above open countryside">
+  <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
+  <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bounder | Trust at the Point of Action">
   <meta name="twitter:description" content="Open, local safety gates between verified policy and physical action.">
-  <meta name="twitter:image" content="https://images.squarespace-cdn.com/content/v1/55acf641e4b0b8a3dbbdbd91/1437403987855-UZEGF7VV4UCP5MQ7E5MI/drone-698564.jpg">
+  <meta name="twitter:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
 
-  <link rel="preconnect" href="https://images.squarespace-cdn.com">
+  <link rel="preload" as="image" href="images/hero-drone-dusk.jpg" fetchpriority="high">
   <link rel="stylesheet" href="styles.css">
+  <script>
+  /* Reveal bootstrap is inline on purpose. It gates content visibility, so it must share
+     the lifetime of the document: a network-fetched file that 404s or throws would leave
+     every [data-reveal] block stuck at opacity 0. Inline runs before first paint, so the
+     hidden state is applied without a flash of unstyled content. */
+  (function () {
+    var root = document.documentElement;
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduced || !("IntersectionObserver" in window)) return;
+    root.classList.add("js");
+
+    function revealAll() {
+      var targets = document.querySelectorAll("[data-reveal]");
+      for (var i = 0; i < targets.length; i++) targets[i].classList.add("is-revealed");
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      var targets = document.querySelectorAll("[data-reveal]");
+
+      try {
+        if (targets.length) {
+          var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add("is-revealed");
+              observer.unobserve(entry.target);
+            });
+          }, { rootMargin: "0px 0px -10% 0px", threshold: 0.08 });
+
+          for (var i = 0; i < targets.length; i++) observer.observe(targets[i]);
+        }
+
+        /* The interlock plays when the hero is actually on screen, not merely when
+           the document parses. Arming on load would spend the animation before a
+           deep-linked visitor ever scrolled up to see it. */
+        var interlock = document.querySelector(".hero-interlock");
+
+        if (interlock) {
+          var interlockObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add("is-armed");
+              interlockObserver.unobserve(entry.target);
+            });
+          }, { threshold: 0.35 });
+
+          interlockObserver.observe(interlock);
+        }
+      } catch (error) {
+        revealAll();
+      }
+    });
+  })();
+  </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -72,6 +127,85 @@
 <body id="top">
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <svg class="icon-sprite" width="0" height="0" aria-hidden="true" focusable="false"
+       fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+       xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <symbol id="i-govern" viewBox="0 0 24 24">
+        <circle cx="12" cy="4" r="2.5"/>
+        <path d="M12 6.5v3"/>
+        <path d="M4.5 9.5h15"/>
+        <path d="M4.5 9.5v3.5M12 9.5v3.5M19.5 9.5v3.5"/>
+        <circle cx="4.5" cy="15.5" r="2.5"/>
+        <circle cx="12" cy="15.5" r="2.5"/>
+        <circle cx="19.5" cy="15.5" r="2.5"/>
+      </symbol>
+      <symbol id="i-issue" viewBox="0 0 24 24">
+        <circle cx="7" cy="12" r="4"/>
+        <path d="M7 9.9V12l1.7 1"/>
+        <path d="M11 12h9.5"/>
+        <path d="M17 12v3.4M20.5 12v2.4"/>
+      </symbol>
+      <symbol id="i-bound" viewBox="0 0 24 24">
+        <path d="M12 2.8 4.5 6v6c0 4.6 3.2 7.7 7.5 9.2 4.3-1.5 7.5-4.6 7.5-9.2V6Z"/>
+        <path d="M8.2 12h7.6"/>
+      </symbol>
+      <symbol id="i-act" viewBox="0 0 24 24">
+        <path d="M12 3.5v11"/>
+        <path d="M7.8 10.3 12 14.5l4.2-4.2"/>
+        <path d="M4.5 19.5h15"/>
+      </symbol>
+      <symbol id="i-local" viewBox="0 0 24 24">
+        <rect x="5.5" y="12.5" width="13" height="8.5" rx="2"/>
+        <circle cx="12" cy="16.75" r="1.5"/>
+        <path d="M7.6 9.2a6.2 6.2 0 0 1 8.8 0"/>
+        <path d="M5.8 3.8 18.2 10.2"/>
+      </symbol>
+      <symbol id="i-narrow" viewBox="0 0 24 24">
+        <path d="M3 4.5h18l-7 8.2V21l-4-2.6v-5.7Z"/>
+      </symbol>
+      <symbol id="i-deny" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8.5"/>
+        <path d="M8 12h8"/>
+      </symbol>
+      <symbol id="i-failsafe" viewBox="0 0 24 24">
+        <path d="M3.5 11.5a8.5 8.5 0 0 1 17 0Z"/>
+        <path d="M3.5 11.5 12 20.8l8.5-9.3"/>
+        <path d="M9.2 11.5 12 20.8M14.8 11.5 12 20.8"/>
+      </symbol>
+      <symbol id="i-vehicle" viewBox="0 0 24 24">
+        <circle cx="5.5" cy="5.5" r="2.5"/>
+        <circle cx="18.5" cy="5.5" r="2.5"/>
+        <circle cx="5.5" cy="18.5" r="2.5"/>
+        <circle cx="18.5" cy="18.5" r="2.5"/>
+        <path d="M7.3 7.3 9.8 9.8M16.7 7.3 14.2 9.8M7.3 16.7 9.8 14.2M16.7 16.7 14.2 14.2"/>
+        <rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/>
+      </symbol>
+      <symbol id="i-lab" viewBox="0 0 24 24">
+        <path d="M9.5 3v6.4L4.8 18a2 2 0 0 0 1.8 3h10.8a2 2 0 0 0 1.8-3l-4.7-8.6V3"/>
+        <path d="M8 3h8"/>
+        <path d="M7.1 14.2h9.8"/>
+      </symbol>
+      <symbol id="i-robot" viewBox="0 0 24 24">
+        <rect x="4" y="8" width="16" height="11" rx="2.5"/>
+        <circle cx="9" cy="13" r="1.3"/>
+        <circle cx="15" cy="13" r="1.3"/>
+        <path d="M12 8V5.5"/>
+        <circle cx="12" cy="3.6" r="1.6"/>
+        <path d="M9.5 19v2M14.5 19v2"/>
+      </symbol>
+      <symbol id="i-maintenance" viewBox="0 0 24 24">
+        <path d="M15.6 3.6a5 5 0 0 0-4.8 6.4L3.9 16.9a2.4 2.4 0 0 0 3.4 3.4l6.9-6.9a5 5 0 0 0 6.2-6.2l-3 3-3-.6-.6-3Z"/>
+        <path d="M5.9 18.3h.01"/>
+      </symbol>
+      <symbol id="i-boundary" viewBox="0 0 24 24">
+        <path d="M18.5 3.5v17"/>
+        <path d="M2.5 12h10.2"/>
+        <path d="M9.5 8.8 12.7 12l-3.2 3.2"/>
+      </symbol>
+    </defs>
+  </svg>
+
   <header class="site-header">
     <a class="wordmark" href="#top" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <nav class="header-nav" aria-label="Primary navigation">
@@ -85,8 +219,81 @@
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
-      <img class="hero-image" src="https://images.squarespace-cdn.com/content/v1/55acf641e4b0b8a3dbbdbd91/1437403987855-UZEGF7VV4UCP5MQ7E5MI/drone-698564.jpg?format=2500w" alt="A drone in flight above open countryside" fetchpriority="high">
+      <img class="hero-image" src="images/hero-drone-dusk.jpg" alt="A quadcopter hovering at dusk above a city skyline, its status light lit" fetchpriority="high" width="2400" height="1800">
       <div class="hero-scrim"></div>
+      <div class="hero-grid" aria-hidden="true"></div>
+
+      <!-- The interlock, drawn once over the photograph: an approach vector runs at
+           the protected volume, meets the boundary, and is held. It plays a single
+           time and stops. A loop would be decoration; a settle is the argument. -->
+      <!-- The interlock, played once: the page's own Govern -> Issue -> Bound -> Act
+           arc, enacted before a word is read.
+
+             issued (and already expiring) -> four checks -> approach -> gate
+             -> HELD -> DENIED -> reroute drawn -> REROUTE
+
+           Transient beats (the meter, the checks, the denial) rest at opacity 0:
+           they are brought in and taken back out, so nothing accumulates and the
+           settled frame stays quiet. Persistent marks rest visible, so a dead
+           script or a reduced-motion preference still leaves a composed hero.
+
+           Sized and anchored in CSS with a `meet` viewBox, deliberately: a
+           full-bleed `slice` viewBox crops by an amount that swings with the
+           viewport's aspect, which pushed the gate clean off the frame at
+           narrower widths and left a vector running into nothing. -->
+      <!-- The box runs to 232 rather than 220 so the REROUTE label has room to sit
+           clear of the arrowhead without its descenders clipping at the edge. -->
+      <svg class="hero-interlock" viewBox="0 0 300 232" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+        <g class="il-issued">
+          <text x="14" y="20" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="700" letter-spacing="1.2">AUTHORITY · EXPIRES</text>
+          <rect x="14" y="27" width="150" height="8" fill="none" stroke="rgba(201, 255, 87, 0.45)" stroke-width="1.2" rx="1.5"/>
+          <rect class="il-meter" x="14" y="27" width="150" height="8" fill="#c9ff57" opacity="0.85" rx="1.5"/>
+        </g>
+
+        <g font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700" letter-spacing="1.1" fill="#c9ff57">
+          <g class="il-check il-check-1">
+            <path d="M20 54 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="58">SIGNATURE</text>
+          </g>
+          <g class="il-check il-check-2">
+            <path d="M20 74 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="78">EXPIRY</text>
+          </g>
+          <g class="il-check il-check-3">
+            <path d="M20 94 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="98">SEQUENCE</text>
+          </g>
+          <g class="il-check il-check-4">
+            <path d="M20 114 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="42" y="118">SCOPE</text>
+          </g>
+        </g>
+
+        <path class="il-vector" d="M14 150 H134" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
+
+        <g class="il-held" fill="none" stroke="#c9ff57" stroke-width="2">
+          <circle cx="150" cy="150" r="14"/>
+          <path d="M143 150 h14" stroke-linecap="round"/>
+        </g>
+        <text class="il-held-tag" x="150" y="130" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">HELD</text>
+
+        <!-- Safety red measures 3.1:1 on the graded photograph, under the 4.5:1 floor.
+             This lighter tint of the same hue reads at 5.2:1. -->
+        <g class="il-denied">
+          <path d="M168 150 H226" fill="none" stroke="#e0674a" stroke-width="2" stroke-dasharray="5 5"/>
+          <text x="197" y="140" fill="#e0674a" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="700" letter-spacing="1.2" text-anchor="middle">DENIED</text>
+        </g>
+
+        <path class="il-reroute" d="M150 166 C 150 192, 122 198, 86 198" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
+        <path class="il-arrow" d="M98 190 L84 198 L98 206" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text class="il-reroute-tag" x="86" y="223" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">REROUTE</text>
+
+        <g class="il-gate">
+          <path d="M232 58 V202" stroke="#c9ff57" stroke-width="10" opacity="0.16" stroke-linecap="round"/>
+          <path d="M232 58 V202" stroke="#c9ff57" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+      </svg>
+
       <div class="hero-content">
         <h1 id="hero-title">Trust, at the<br>point of action.</h1>
         <p class="hero-summary"><strong>Open physical interlocks.</strong> Bounder verifies narrow authority, checks live conditions locally, and permits only device-safe action.</p>
@@ -98,7 +305,7 @@
       <p class="hero-note">Local by design. Auditable by construction. Safe-state behavior remains device-specific.</p>
     </section>
 
-    <section class="intro section" aria-labelledby="intro-title">
+    <section class="intro section" aria-labelledby="intro-title" data-reveal>
       <div class="section-label">The proposition</div>
       <div class="intro-copy">
         <h2 id="intro-title">Digital governance needs a last metre.</h2>
@@ -113,36 +320,45 @@
     </section>
 
     <section class="architecture section section-dark" id="architecture" aria-labelledby="architecture-title">
-      <div class="section-heading">
+      <div class="section-heading" data-reveal>
         <div class="section-label">Architecture</div>
         <h2 id="architecture-title">Four layers. One narrow handoff.</h2>
         <p>Authority gets smaller as it approaches the machine.</p>
       </div>
 
-      <ol class="architecture-flow">
+      <div class="authority-wedge" data-reveal aria-hidden="true">
+        <span class="wedge-start">Broad authority</span>
+        <span class="wedge-end">Device-safe act</span>
+      </div>
+
+      <ol class="architecture-flow" data-reveal>
         <li>
-          <span class="step-mark" aria-hidden="true">G</span>
+          <span class="step-index" aria-hidden="true">01</span>
+          <svg class="step-icon" aria-hidden="true" focusable="false"><use href="#i-govern"/></svg>
           <div>
             <h3>Govern</h3>
             <p>Creed Space Fleet distributes one signed protective rule across an enrolled team, with immutable policy provenance.</p>
           </div>
         </li>
         <li>
-          <span class="step-mark" aria-hidden="true">I</span>
+          <span class="step-index" aria-hidden="true">02</span>
+          <svg class="step-icon" aria-hidden="true" focusable="false"><use href="#i-issue"/></svg>
           <div>
             <h3>Issue</h3>
             <p>Fleet creates a short-lived, device-bound projection with a monotonic sequence for every Bounder guardian.</p>
           </div>
         </li>
         <li>
-          <span class="step-mark" aria-hidden="true">B</span>
+          <span class="step-index" aria-hidden="true">03</span>
+          <svg class="step-icon" aria-hidden="true" focusable="false"><use href="#i-bound"/></svg>
           <div>
             <h3>Bound</h3>
             <p>Bounder checks signature, subject, expiry, replay sequence, action scope, and local sensors.</p>
           </div>
         </li>
         <li>
-          <span class="step-mark" aria-hidden="true">A</span>
+          <span class="step-index" aria-hidden="true">04</span>
+          <svg class="step-icon" aria-hidden="true" focusable="false"><use href="#i-act"/></svg>
           <div>
             <h3>Act safely</h3>
             <p>A reviewed adapter chooses hold, return, land, isolate, escalate, or no state change.</p>
@@ -150,35 +366,35 @@
         </li>
       </ol>
 
-      <div class="boundary-note">
-        <span aria-hidden="true">⟂</span>
+      <div class="boundary-note" data-reveal>
+        <svg class="boundary-icon" aria-hidden="true" focusable="false"><use href="#i-boundary"/></svg>
         <p><strong>Optional evidence is never a remote-control channel.</strong> Configured systems may satisfy an explicit signed precondition. They do not send arbitrary actuator commands.</p>
       </div>
     </section>
 
     <section class="principles section" aria-labelledby="principles-title">
-      <div class="section-heading">
+      <div class="section-heading" data-reveal>
         <div class="section-label">Design principles</div>
         <h2 id="principles-title">Authority that expires. Safety that stays local.</h2>
       </div>
-      <div class="principle-grid">
+      <div class="principle-grid" data-reveal>
         <article>
-          <span class="principle-mark" aria-hidden="true">⌁</span>
+          <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-local"/></svg>
           <h3>Local first</h3>
           <p>Safety decisions continue when cloud services or network links disappear.</p>
         </article>
         <article>
-          <span class="principle-mark" aria-hidden="true">◇</span>
+          <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-narrow"/></svg>
           <h3>Cryptographically narrow</h3>
           <p>Policies bind issuer, subject, validity, sequence, actions, and constraints.</p>
         </article>
         <article>
-          <span class="principle-mark" aria-hidden="true">⊢</span>
+          <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-deny"/></svg>
           <h3>Deny new authority</h3>
           <p>Missing, stale, replayed, or ambiguous evidence cannot create permission.</p>
         </article>
         <article>
-          <span class="principle-mark" aria-hidden="true">◎</span>
+          <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-failsafe"/></svg>
           <h3>Fail physically safe</h3>
           <p>Each device defines its safe transition through a documented hazard analysis.</p>
         </article>
@@ -186,28 +402,28 @@
     </section>
 
     <section class="applications section" id="applications" aria-labelledby="applications-title">
-      <div class="section-heading">
+      <div class="section-heading" data-reveal>
         <div class="section-label">Applications</div>
         <h2 id="applications-title">The pattern travels beyond drones.</h2>
       </div>
-      <div class="application-list">
+      <div class="application-list" data-reveal>
         <article>
-          <span class="application-mark" aria-hidden="true">↗</span>
+          <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-vehicle"/></svg>
           <h3>Autonomous vehicles</h3>
           <p>Gate takeoff or mission changes on identity, location, time, battery, and a current signed policy.</p>
         </article>
         <article>
-          <span class="application-mark" aria-hidden="true">⌁</span>
+          <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-lab"/></svg>
           <h3>Laboratory systems</h3>
           <p>Enable hazardous modes only when verified operator, protocol, and physical conditions agree.</p>
         </article>
         <article>
-          <span class="application-mark" aria-hidden="true">◎</span>
+          <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-robot"/></svg>
           <h3>Robots in shared space</h3>
           <p>Require current consent and supervision evidence before entering human environments.</p>
         </article>
         <article>
-          <span class="application-mark" aria-hidden="true">⊢</span>
+          <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-maintenance"/></svg>
           <h3>Critical maintenance</h3>
           <p>Combine a signed maintenance window with a local key, measured state, and an auditable receipt.</p>
         </article>
@@ -215,10 +431,10 @@
     </section>
 
     <section class="home-simulator section-dark" aria-labelledby="simulator-preview-title">
-      <div class="home-simulator-heading">
+      <div class="home-simulator-heading" data-reveal>
         <div>
-        <div class="section-label">Interactive demonstrator</div>
-        <h2 id="simulator-preview-title">Watch the boundary hold.</h2>
+          <div class="section-label">Interactive demonstrator</div>
+          <h2 id="simulator-preview-title">Watch the boundary hold.</h2>
           <p>Explore civilian protection, friendly-force separation, humanitarian corridors, protected sites, weather, altitude, communications, policy integrity, and one Creed Space policy enforced across an entire simulated fleet.</p>
         </div>
         <a class="text-link" href="simulator.html">Open full simulator <span aria-hidden="true">↗</span></a>
