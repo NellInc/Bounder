@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bounder.io/schemas/creedspace-bounder-checkpoint-v1.schema.json",
+  "title": "Creed Space Bounder monotonic checkpoint",
+  "oneOf": [
+    {"$ref": "#/$defs/payload"},
+    {"$ref": "#/$defs/envelope"}
+  ],
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version", "device_id", "checkpoint_sequence", "policy_sequence_floor",
+        "trusted_time_floor", "receipt_sequence_floor", "last_receipt_hash",
+        "signing_key_id", "signing_key_generation", "issued_at", "expires_at",
+        "rollback_detected"
+      ],
+      "properties": {
+        "version": {"const": "bounder-fleet-checkpoint/v1"},
+        "device_id": {"type": "string", "minLength": 1, "maxLength": 255},
+        "checkpoint_sequence": {"type": "integer", "minimum": 1},
+        "policy_sequence_floor": {"type": "integer", "minimum": 1},
+        "trusted_time_floor": {"type": "string", "format": "date-time"},
+        "receipt_sequence_floor": {"type": "integer", "minimum": 0},
+        "last_receipt_hash": {"type": "string", "pattern": "^(?:|[0-9a-f]{64})$"},
+        "signing_key_id": {"type": "string", "minLength": 1},
+        "signing_key_generation": {"type": "integer", "minimum": 1},
+        "issued_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "rollback_detected": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"receipt_sequence_floor": {"const": 0}}},
+          "then": {"properties": {"last_receipt_hash": {"const": ""}}},
+          "else": {"properties": {"last_receipt_hash": {"pattern": "^[0-9a-f]{64}$"}}}
+        }
+      ]
+    },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payload", "signature", "public_key_id"],
+      "properties": {
+        "payload": {"type": "string", "minLength": 2},
+        "signature": {"type": "string", "contentEncoding": "base64"},
+        "public_key_id": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -130,7 +130,7 @@
           <div><dt>Evidence</dt><dd data-fleet="evidence">Loading</dd></div>
         </dl>
         <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder guardian outcomes"></div>
-        <p class="fleet-contract-links"><a href="data/bounder-fleet-evidence.v1.json">Fleet evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a></p>
+        <p class="fleet-contract-links"><a href="data/bounder-fleet-evidence.v1.json">Fleet evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a> · <a href="schemas/creedspace-bounder-checkpoint-v1.schema.json">Checkpoint schema</a></p>
       </section>
 
       <section class="resilience-lab" aria-labelledby="resilience-title" hidden>
@@ -154,6 +154,21 @@
               <div><dt>Safe response</dt><dd data-resilience="response">None</dd></div>
               <div><dt>Proof</dt><dd data-resilience="proof">None</dd></div>
             </dl>
+            <section class="continuity-proof" data-continuity-proof hidden aria-labelledby="continuity-proof-title">
+              <div class="continuity-proof-heading">
+                <span>Rollback-proof checkpoint</span>
+                <strong id="continuity-proof-title" data-resilience="checkpoint-status">Verified</strong>
+              </div>
+              <div class="continuity-rail" aria-hidden="true">
+                <i class="continuity-local"></i><span></span><i class="continuity-fleet"></i>
+              </div>
+              <dl>
+                <div><dt>Local</dt><dd data-resilience="local-floor">Current floor</dd></div>
+                <div><dt>Fleet</dt><dd data-resilience="fleet-floor">Matching signed floor</dd></div>
+                <div><dt>Lease</dt><dd data-resilience="lease">05:00 signed</dd></div>
+                <div><dt>Authority</dt><dd data-resilience="authority">ACTIVE</dd></div>
+              </dl>
+            </section>
           </div>
           <div class="resilience-timeline">
             <div class="resilience-transport">
