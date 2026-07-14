@@ -2,6 +2,7 @@ name: Update Footer Year
 
 on:
   schedule:
+    # 00:15 UTC on 1 January.
     - cron: '15 0 1 1 *'
   workflow_dispatch:
 
@@ -15,17 +16,44 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Get current year
         id: year
-        run: echo "CURRENT_YEAR=$(date +%Y)" >> $GITHUB_OUTPUT
-      
+        run: echo "CURRENT_YEAR=$(date -u +%Y)" >> "$GITHUB_OUTPUT"
+
       - name: Update footer year
+        env:
+          YEAR: ${{ steps.year.outputs.CURRENT_YEAR }}
         run: |
-          YEAR=${{ steps.year.outputs.CURRENT_YEAR }}
-          # Pattern matches "Bounder.io 2014-YYYY" and updates YYYY to current year
-          find . -name "*.html" -exec sed -i -E "s/(Bounder\.io 2014-)[0-9]{4}/\1$YEAR/g" {} \;
-      
+          set -euo pipefail
+
+          # Only the copyright line is rewritten: "© 2026 Bounder." and the
+          # &copy; entity form. The narrowness is deliberate. A broader year
+          # pattern would catch two things it must not:
+          #
+          #   - "dateModified" in the privacy/terms JSON-LD. Bumping those would
+          #     tell search engines the legal text changed when only the year rolled.
+          #   - docs/, the preserved Squarespace-era snapshot kept for historical
+          #     comparison. -maxdepth 1 keeps this to the canonical root pages.
+          find . -maxdepth 1 -name '*.html' -exec sed -i -E \
+            -e "s/© [0-9]{4}/© ${YEAR}/g" \
+            -e "s/\&copy; [0-9]{4}/\&copy; ${YEAR}/g" \
+            {} +
+
       - name: Commit if changed
+        env:
+          YEAR: ${{ steps.year.outputs.CURRENT_YEAR }}
         run: |
-          git diff --quiet || (git config user.email "github-actions[bot]@users.noreply.github.com" && git config user.name "github-actions[bot]" && git add -A && git commit -m "chore: Update footer year to ${{ steps.year.outputs.CURRENT_YEAR }}" && git push)
+          set -euo pipefail
+
+          if git diff --quiet; then
+            echo "Footer year is already ${YEAR}; nothing to commit."
+            exit 0
+          fi
+
+          git diff --stat
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "chore: update footer year to ${YEAR}"
+          git push
