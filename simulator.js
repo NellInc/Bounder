@@ -517,6 +517,59 @@ for (const offset of [-0.75, 0, 0.75]) {
 humanitarianConvoy.position.copy(humanitarianPosition);
 scene.add(humanitarianConvoy);
 
+const makeWorldLabel = (text, colour) => {
+  const labelCanvas = document.createElement("canvas");
+  labelCanvas.width = 512;
+  labelCanvas.height = 128;
+  const context = labelCanvas.getContext("2d");
+  context.fillStyle = "rgba(17, 19, 15, 0.88)";
+  context.roundRect(4, 4, 504, 120, 28);
+  context.fill();
+  context.strokeStyle = colour;
+  context.lineWidth = 8;
+  context.stroke();
+  context.fillStyle = "#ffffff";
+  context.font = "600 38px system-ui, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, 256, 65, 460);
+  const texture = new THREE.CanvasTexture(labelCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+  sprite.scale.set(4.2, 1.05, 1);
+  sprite.position.y = 2.1;
+  return sprite;
+};
+
+const makeROEMarker = (position, label, colour) => {
+  const group = new THREE.Group();
+  const material = new THREE.MeshStandardMaterial({ color: colour, emissive: colour, emissiveIntensity: 0.18, roughness: 0.55 });
+  const beacon = new THREE.Mesh(new THREE.OctahedronGeometry(0.34, 0), material);
+  beacon.position.y = 0.85;
+  beacon.castShadow = true;
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.055, 0.72, 12), lampMetal);
+  stem.position.y = 0.38;
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.72, 0.82, 48),
+    new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0.92, side: THREE.DoubleSide })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.025;
+  group.add(beacon, stem, ring, makeWorldLabel(label, colour));
+  group.position.copy(position);
+  group.visible = false;
+  scene.add(group);
+  return group;
+};
+
+const roeMarkers = Object.freeze({
+  surrender: makeROEMarker(new THREE.Vector3(-1.2, 0, -4.2), "Surrender observed", "#f2c14e"),
+  incapacitated: makeROEMarker(new THREE.Vector3(3.6, 0, -1.2), "Incapacitated person", "#e88762"),
+  identification: makeROEMarker(new THREE.Vector3(3.6, 0, 3.6), "Identification uncertain", "#d5a021"),
+  proportionality: makeROEMarker(new THREE.Vector3(0, 0, 3.6), "Proportionality unresolved", "#c983b9"),
+  human_authorization: makeROEMarker(new THREE.Vector3(-3.6, 0, 3.6), "Human authorization absent", "#6fa8dc")
+});
+
 const altitudeCeiling = new THREE.Mesh(
   new THREE.PlaneGeometry(24, 18),
   new THREE.MeshBasicMaterial({ color: new THREE.Color(colours.safety), transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false })
@@ -665,6 +718,11 @@ const scenarioPresentation = Object.freeze({
   friendly: { stop: 0.94, initial: "Authenticated friendly presence is inside the planned route corridor." },
   protected: { stop: 0.94, initial: "The route is approaching a declared protected-site boundary." },
   humanitarian: { stop: 0.94, initial: "The route is approaching an active humanitarian movement corridor." },
+  surrender: { stop: 0.94, initial: "A surrender indication is being checked before the evidence-only intercept decision." },
+  incapacitated: { stop: 0.94, initial: "An incapacitated-person indication is being checked before the evidence-only intercept decision." },
+  identification: { stop: 0.94, initial: "Positive identification has not yet been confirmed." },
+  proportionality: { stop: 0.94, initial: "The signed proportionality condition has not yet been satisfied." },
+  human_authorization: { stop: 0.94, initial: "Current human authorization has not yet been confirmed." },
   altitude: { stop: 0.57, initial: "Local altitude is being compared with the signed flight ceiling." },
   weather: { stop: 0.48, initial: "Visibility and wind observations are approaching the permitted envelope." },
   window: { stop: 0.22, initial: "The requested state change is being checked against its authorized time window." },
@@ -723,7 +781,7 @@ const validateFleetEvidence = (evidence) => {
   if (!evidence || evidence.version !== "bounder-fleet-evidence/v1" || evidence.fleet_id !== "relief-fleet") {
     throw new Error("fleet evidence metadata is invalid");
   }
-  if (!evidence.summary || evidence.summary.devices !== 11 || evidence.summary.passed !== 11 || evidence.summary.allowed + evidence.summary.blocked !== 11 || typeof evidence.policy_profile !== "string" || !Array.isArray(evidence.devices) || evidence.devices.length !== 11) {
+  if (!evidence.summary || evidence.summary.devices !== 16 || evidence.summary.passed !== 16 || evidence.summary.allowed + evidence.summary.blocked !== 16 || typeof evidence.policy_profile !== "string" || !Array.isArray(evidence.devices) || evidence.devices.length !== 16) {
     throw new Error("fleet evidence summary is invalid");
   }
   const deviceIDs = new Set();
@@ -1133,6 +1191,7 @@ const selectScenario = (name) => {
   friendlyBoundary.visible = name === "friendly";
   protectedBoundary.visible = name === "protected";
   humanitarianBoundary.visible = name === "humanitarian";
+  for (const [scenario, marker] of Object.entries(roeMarkers)) marker.visible = name === scenario;
   altitudeCeiling.visible = name === "altitude";
   weatherGroup.visible = name === "weather";
   sun.intensity = name === "window" ? 0.75 : name === "weather" ? 1.35 : 3.1;
