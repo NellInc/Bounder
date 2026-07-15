@@ -71,14 +71,14 @@
         // Add a subtle animation to draw attention
         const style = document.createElement('style');
         style.textContent = `
-            @keyframes gentle-bounce {
+            @keyframes gentle-float {
                 0%, 100% { transform: translateY(0); }
                 50% { transform: translateY(5px); }
             }
             
             .scroll-arrow {
-                animation: gentle-bounce 2s ease-in-out infinite;
-                transition: all 0.3s ease;
+                animation: gentle-float 2s ease-in-out infinite;
+                transition: transform 0.3s ease, opacity 0.3s ease;
             }
             
             .scroll-arrow:hover {

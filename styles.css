@@ -294,7 +294,7 @@ button, a {
 
 /* Beat 4 — held. It stops at the line before anything is refused. */
 .js .hero-interlock.is-armed .il-held {
-  animation: il-pop 500ms cubic-bezier(0.2, 1.5, 0.4, 1) 2700ms backwards;
+  animation: il-pop 500ms cubic-bezier(0.16, 1, 0.3, 1) 2700ms backwards;
   transform-origin: 150px 150px;
 }
 .js .hero-interlock.is-armed .il-held-tag { animation: il-fade 400ms ease 2950ms backwards; }
@@ -1149,14 +1149,15 @@ button, a {
   margin: 0 0 1rem;
   color: var(--signal);
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: 0.75rem;
 }
 
 .error-main > p:not(.error-code) {
   max-width: 520px;
   margin: 1.5rem 0 2rem;
   color: rgba(255, 255, 255, 0.68);
-  font-size: 1.1rem;
+  font-size: 1.4rem;
+  line-height: 1.5;
 }
 
 /* Compatibility for the retained legal, contact, and error pages. */

@@ -28,7 +28,6 @@
                 pointer-events: none;
                 z-index: 1;
                 background: #171717;
-                transition: height 0.1s ease;
             `;
             document.body.appendChild(maskElement);
         }
