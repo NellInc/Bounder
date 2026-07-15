@@ -66,3 +66,11 @@ test("rollback proof scenarios expose local and Fleet floors plus bounded author
   assert.match(simulatorScript, /renderContinuityProof/);
   assert.match(simulatorStyles, /\.continuity-proof\.is-held/);
 });
+
+test("rules-of-engagement scenarios are visible and evidence-only", () => {
+  for (const scenario of ["surrender", "incapacitated", "identification", "proportionality", "human_authorization"]) {
+    assert.match(simulatorHtml, new RegExp(`data-scenario="${scenario}"`));
+  }
+  assert.match(simulatorScript, /const roeMarkers = Object\.freeze/);
+  assert.match(simulatorScript, /evidence-only intercept decision/);
+});

@@ -1,4 +1,4 @@
-+{
+{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bounder.io/schemas/bounder-resilience-evidence.v1.schema.json",
   "title": "Bounder resilience evidence",

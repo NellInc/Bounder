@@ -18,7 +18,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -37,7 +37,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": true,
@@ -60,7 +65,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -79,7 +84,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
@@ -102,7 +112,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -121,7 +131,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
@@ -144,7 +159,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -163,7 +178,12 @@
         "inside_protected_site": true,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
@@ -186,7 +206,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -205,12 +225,252 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": true,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
         "command_sent": false,
         "output": "Hold outside humanitarian corridor"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "surrender",
+      "rule": "surrender",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "surrender_protected",
+      "reason": "a surrender indication requires the action to remain inhibited",
+      "action": "intercept",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": true,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold and preserve the surrender indication"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "incapacitated",
+      "rule": "incapacitated",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "incapacitated_person_protected",
+      "reason": "an incapacitated person indication requires the action to remain inhibited",
+      "action": "intercept",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": true,
+        "human_authorization_confirmed": true
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold and preserve the incapacitated-person indication"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "identification",
+      "rule": "identification",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "positive_identification_required",
+      "reason": "positive identification has not been confirmed",
+      "action": "intercept",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000,
+        "positive_identification": false,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold pending positive identification"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "proportionality",
+      "rule": "proportionality",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "proportionality_unconfirmed",
+      "reason": "the signed proportionality condition has not been satisfied",
+      "action": "intercept",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": false,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold pending a satisfied proportionality condition"
+      }
+    },
+    {
+      "version": "bounder-receipt/v1",
+      "scenario": "human_authorization",
+      "rule": "authorization",
+      "decision_source": "bounder-io/interlock",
+      "signature_verified": true,
+      "allowed": false,
+      "code": "human_authorization_required",
+      "reason": "current human authorization is required for this action",
+      "action": "intercept",
+      "subject": "vehicle:bounder-sitl-001",
+      "policy_id": "web-simulator-policy",
+      "issuer": "did:web:bounder.io:fixture-issuer",
+      "sequence": 7,
+      "evaluated_at": "2026-07-13T12:00:00Z",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
+      "evidence": {
+        "tier": "gold",
+        "session_id": "fixture-session-v1",
+        "auditor": "mettle.creed.space",
+        "auditor_key_id": "fixture-auditor-key-v1",
+        "verified_at": "2026-07-13T11:59:30Z",
+        "age_seconds": 30
+      },
+      "state": {
+        "gps_fix": true,
+        "battery_percent": 80,
+        "altitude_metres": 30,
+        "inside_exclusion_zone": false,
+        "civilian_distance_metres": 120,
+        "friendly_distance_metres": 150,
+        "inside_protected_site": false,
+        "inside_humanitarian_corridor": false,
+        "wind_speed_metres_per_second": 4,
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": false
+      },
+      "adapter": {
+        "command_authorized": false,
+        "command_sent": false,
+        "output": "Hold pending current human authorization"
       }
     },
     {
@@ -228,7 +488,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -247,7 +507,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
@@ -270,7 +535,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -289,7 +554,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 26,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
@@ -312,7 +582,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:abeb5246af2b81f3dd78dd667e11edb370986b90df8d411d33ae6c4e1797ea15",
+      "policy_hash": "sha256:750c44ef9a6b35b7b0d7b23470c192c19379b3f62ef5cd4131cca29fa9ab9dc5",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -331,7 +601,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
@@ -354,7 +629,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -373,7 +648,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,
@@ -396,7 +676,7 @@
       "issuer": "did:web:bounder.io:fixture-issuer",
       "sequence": 7,
       "evaluated_at": "2026-07-13T12:00:00Z",
-      "policy_hash": "sha256:8536024441544275ae565eb0067910e81b219ee0e3f5ed3950ee6d7cd1642fcb",
+      "policy_hash": "sha256:54f3eda4d864fe2d289f309bfe2514bf654532f2224b244d22786e7786b3aa47",
       "evidence": {
         "tier": "gold",
         "session_id": "fixture-session-v1",
@@ -415,7 +695,12 @@
         "inside_protected_site": false,
         "inside_humanitarian_corridor": false,
         "wind_speed_metres_per_second": 4,
-        "visibility_metres": 8000
+        "visibility_metres": 8000,
+        "positive_identification": true,
+        "proportionality_satisfied": true,
+        "surrender_observed": false,
+        "incapacitated_observed": false,
+        "human_authorization_confirmed": true
       },
       "adapter": {
         "command_authorized": false,

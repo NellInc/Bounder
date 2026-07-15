@@ -11,8 +11,8 @@
     "generated_at": { "type": "string", "format": "date-time" },
     "receipts": {
       "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
+      "minItems": 15,
+      "maxItems": 15,
       "items": { "$ref": "bounder.receipt.v1.schema.json" }
     }
   }

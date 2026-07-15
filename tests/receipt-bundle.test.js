@@ -3,7 +3,11 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
-const expectedScenarios = ["safe", "civilian", "friendly", "protected", "humanitarian", "altitude", "weather", "window", "link", "replay"];
+const expectedScenarios = [
+  "safe", "civilian", "friendly", "protected", "humanitarian",
+  "surrender", "incapacitated", "identification", "proportionality", "human_authorization",
+  "altitude", "weather", "window", "link", "replay"
+];
 
 test("receipt bundle is complete, versioned, and fail-safe", async () => {
   const bundle = JSON.parse(await readFile(new URL("data/bounder-receipts.v1.json", root), "utf8"));
@@ -19,7 +23,13 @@ test("receipt bundle is complete, versioned, and fail-safe", async () => {
     assert.ok(receipt.reason.length > 0);
   }
   assert.equal(bundle.receipts.find(({ scenario }) => scenario === "safe").allowed, true);
-  assert.ok(bundle.receipts.filter(({ allowed }) => !allowed).length === 9);
+  assert.equal(bundle.receipts.filter(({ allowed }) => !allowed).length, 14);
+  for (const scenario of ["surrender", "incapacitated", "identification", "proportionality", "human_authorization"]) {
+    const receipt = bundle.receipts.find((candidate) => candidate.scenario === scenario);
+    assert.equal(receipt.action, "intercept");
+    assert.equal(receipt.allowed, false);
+    assert.equal(receipt.adapter.command_authorized, false);
+  }
 });
 
 test("simulator consumes same-origin receipts and vendored Three.js", async () => {
@@ -38,15 +48,16 @@ test("fleet evidence covers every simulated guardian and stays protective", asyn
   const evidence = JSON.parse(await readFile(new URL("data/bounder-fleet-evidence.v1.json", root), "utf8"));
   assert.equal(evidence.version, "bounder-fleet-evidence/v1");
   assert.equal(evidence.fleet_id, "relief-fleet");
-  assert.equal(evidence.summary.devices, 11);
-  assert.equal(evidence.summary.passed, 11);
-  assert.equal(evidence.summary.allowed + evidence.summary.blocked, 11);
-  assert.equal(new Set(evidence.devices.map(({ device_id }) => device_id)).size, 11);
+  assert.equal(evidence.summary.devices, 16);
+  assert.equal(evidence.summary.passed, 16);
+  assert.equal(evidence.summary.allowed + evidence.summary.blocked, 16);
+  assert.equal(new Set(evidence.devices.map(({ device_id }) => device_id)).size, 16);
   for (const device of evidence.devices) {
     assert.equal(device.passed, true);
     assert.equal(device.fleet_audit.action_type, "physical_interlock");
     assert.match(device.fleet_audit.input_hash, /^[0-9a-f]{64}$/);
-    assert.ok(["loiter", "rtl", "land"].includes(device.receipt.action));
+    assert.ok(["loiter", "rtl", "land", "intercept"].includes(device.receipt.action));
+    if (device.receipt.action === "intercept") assert.equal(device.receipt.allowed, false);
   }
   const serialized = JSON.stringify(evidence);
   assert.doesNotMatch(serialized, /"target"|"weapon"|"engage"|"payload"/i);
