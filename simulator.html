@@ -100,10 +100,30 @@
           <p class="workbench-summary">Change one condition at a time. Watch the same request move from permitted to held as the local evidence changes.</p>
         </div>
         <div class="workbench-actions">
+          <button class="sim-control sim-tour" type="button" data-action="tour" aria-expanded="false">Guided tour</button>
           <button class="sim-control sim-fleet" type="button" data-action="fleet" aria-pressed="false" disabled>Show fleet</button>
           <button class="sim-control sim-play" type="button" data-action="play" aria-pressed="false">Pause simulation</button>
         </div>
       </div>
+
+      <section class="operator-tour" data-operator-tour hidden aria-labelledby="operator-tour-title">
+        <div class="operator-tour-progress" aria-hidden="true">
+          <span data-tour="position">Step 1 of 6</span>
+          <i><b data-tour="progress"></b></i>
+        </div>
+        <div class="operator-tour-copy" aria-live="polite">
+          <span class="fleet-kicker">Guided operator demonstration</span>
+          <h3 id="operator-tour-title" data-tour="title">Verify the signed baseline</h3>
+          <p data-tour="summary">Start with a permitted recovery state and inspect the signed decision receipt.</p>
+          <p class="operator-tour-proof"><strong>Inspect:</strong> <span data-tour="proof">The issuer, subject, sequence, evidence age, and policy hash.</span></p>
+          <a class="operator-tour-feedback" href="https://github.com/NellWatson/Bounder/issues/new?template=operator-demo.yml" target="_blank" rel="noopener noreferrer">Report a reproducible finding <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="operator-tour-actions">
+          <button type="button" data-tour-action="previous" disabled>Previous</button>
+          <button type="button" data-tour-action="next">Next proof</button>
+          <button type="button" data-tour-action="close">Exit tour</button>
+        </div>
+      </section>
 
       <div class="scenario-controls" role="group" aria-label="Choose a simulation scenario">
         <button class="scenario-button" type="button" data-scenario="safe" aria-pressed="true">Cleared route</button>

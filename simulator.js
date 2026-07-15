@@ -17,6 +17,10 @@ const fleetFields = Object.fromEntries([...root.querySelectorAll("[data-fleet]")
 const fleetNodes = root.querySelector("[data-fleet-nodes]");
 const playButton = root.querySelector("[data-action='play']");
 const fleetButton = root.querySelector("[data-action='fleet']");
+const tourButton = root.querySelector("[data-action='tour']");
+const operatorTour = root.querySelector("[data-operator-tour]");
+const tourFields = Object.fromEntries([...root.querySelectorAll("[data-tour]")].map((element) => [element.dataset.tour, element]));
+const tourActions = Object.fromEntries([...root.querySelectorAll("[data-tour-action]")].map((element) => [element.dataset.tourAction, element]));
 const resilienceLab = root.querySelector(".resilience-lab");
 const resilienceScenarios = root.querySelector("[data-resilience-scenarios]");
 const resilienceEvents = root.querySelector("[data-resilience-events]");
@@ -25,6 +29,7 @@ const resilienceScrubber = root.querySelector("[data-resilience-scrubber]");
 const resilienceActions = Object.fromEntries([...root.querySelectorAll("[data-resilience-action]")].map((element) => [element.dataset.resilienceAction, element]));
 const continuityProof = root.querySelector("[data-continuity-proof]");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const initialParameters = new URLSearchParams(window.location.search);
 
 const css = getComputedStyle(document.documentElement);
 const cssColour = (name) => css.getPropertyValue(name).trim();
@@ -730,6 +735,57 @@ const scenarioPresentation = Object.freeze({
   replay: { stop: 0, initial: "The supplied policy sequence was already accepted." }
 });
 
+const operatorTourSteps = Object.freeze([
+  {
+    id: "signed-baseline",
+    scenario: "safe",
+    fleet: false,
+    title: "Verify the signed baseline",
+    summary: "A narrow recovery request is permitted only after Bounder verifies its issuer, exact device subject, sequence, validity window, evidence, and local operating state.",
+    proof: "Open the decision receipt and inspect the issuer, subject, sequence, evidence age, and policy hash."
+  },
+  {
+    id: "fleet-projection",
+    scenario: "safe",
+    fleet: true,
+    title: "Project one rule across the fleet",
+    summary: "Creed Space signs a separate subject-bound envelope for every enrolled guardian. Each Bounder instance verifies and enforces locally.",
+    proof: "The Fleet panel reports sixteen distinct guardians and preserves each local decision receipt."
+  },
+  {
+    id: "civilian-protection",
+    scenario: "civilian",
+    fleet: true,
+    title: "Protect civilians at the final boundary",
+    summary: "A route that enters the signed civilian buffer becomes a hold at the vehicle, even if every upstream service remains available.",
+    proof: "The failed rule is civilian protection, the adapter sends no command, and the receipt records civilian_proximity."
+  },
+  {
+    id: "friendly-separation",
+    scenario: "friendly",
+    fleet: true,
+    title: "Prevent blue-on-blue action",
+    summary: "Authenticated friendly presence inside the signed separation distance stops the requested state change locally.",
+    proof: "The friendly-force rule changes to DENY and the adapter retains its safe state."
+  },
+  {
+    id: "evidence-only-roe",
+    scenario: "surrender",
+    fleet: true,
+    title: "Keep high-consequence evidence non-authoritative",
+    summary: "Surrender, incapacitation, identification, proportionality, and human authorization are modelled as evidence-only holds. They cannot become actuator authority.",
+    proof: "The intercept receipt is denied with command_authorized false and command_sent false."
+  },
+  {
+    id: "rollback-proof",
+    resilience: "coherent-snapshot-rollback",
+    fleet: true,
+    title: "Reject a coherent older snapshot",
+    summary: "Fleet's signed receipt floor exposes a locally valid but older guardian state. Authority remains frozen through reconciliation.",
+    proof: "Use Step in the resilience timeline. The local floor trails Fleet, the hold persists, and recovery requires a newer policy plus fresh checkpoint."
+  }
+]);
+
 const expectedScenarioIDs = Object.keys(scenarioPresentation);
 const validRules = new Set(["all", ...[...root.querySelectorAll(".rule-stack li")].map((item) => item.dataset.rule)]);
 let receiptBundle;
@@ -1207,6 +1263,76 @@ const selectScenario = (name) => {
   setDecision(receipt, scenarioPresentation[name], name === "replay");
 };
 
+const setFleetMode = (enabled) => {
+  if (!fleetEvidence) return;
+  fleetMode = enabled;
+  fleetButton.textContent = fleetMode ? "Single guardian" : "Show fleet";
+  fleetButton.setAttribute("aria-pressed", String(fleetMode));
+  root.querySelector(".fleet-control-panel").classList.toggle("is-active", fleetMode);
+  if (!fleetMode) for (const guardian of fleetDrones) guardian.visible = false;
+};
+
+let operatorTourIndex = 0;
+
+const syncOperatorTourURL = (step) => {
+  if (initialParameters.get("embed") === "1") return;
+  const parameters = new URLSearchParams(window.location.search);
+  parameters.set("tour", "1");
+  parameters.set("step", step.id);
+  parameters.delete("scenario");
+  parameters.delete("resilience");
+  if (step.resilience) parameters.set("resilience", step.resilience);
+  else parameters.set("scenario", step.scenario);
+  if (step.fleet) parameters.set("fleet", "1");
+  else parameters.delete("fleet");
+  window.history.replaceState(null, "", `${window.location.pathname}?${parameters.toString()}${window.location.hash}`);
+};
+
+const showOperatorTourStep = (index) => {
+  operatorTourIndex = Math.max(0, Math.min(index, operatorTourSteps.length - 1));
+  const step = operatorTourSteps[operatorTourIndex];
+  clearResilienceTransport();
+  if (step.resilience) selectResilienceScenario(step.resilience);
+  else {
+    resilienceMode = false;
+    selectedResilience = undefined;
+    markAffectedGuardians("");
+    playButton.disabled = false;
+    selectScenario(step.scenario);
+  }
+  setFleetMode(step.fleet);
+  tourFields.position.textContent = `Step ${operatorTourIndex + 1} of ${operatorTourSteps.length}`;
+  tourFields.progress.style.transform = `scaleX(${(operatorTourIndex + 1) / operatorTourSteps.length})`;
+  tourFields.title.textContent = step.title;
+  tourFields.summary.textContent = step.summary;
+  tourFields.proof.textContent = step.proof;
+  tourActions.previous.disabled = operatorTourIndex === 0;
+  tourActions.next.textContent = operatorTourIndex === operatorTourSteps.length - 1 ? "Finish tour" : "Next proof";
+  root.dataset.operatorTourStep = step.id;
+  syncOperatorTourURL(step);
+};
+
+const openOperatorTour = (requestedStep) => {
+  const requestedIndex = operatorTourSteps.findIndex(({ id }) => id === requestedStep);
+  operatorTour.hidden = false;
+  tourButton.setAttribute("aria-expanded", "true");
+  tourButton.textContent = "Tour open";
+  showOperatorTourStep(requestedIndex >= 0 ? requestedIndex : 0);
+};
+
+const closeOperatorTour = () => {
+  operatorTour.hidden = true;
+  tourButton.setAttribute("aria-expanded", "false");
+  tourButton.textContent = "Guided tour";
+  delete root.dataset.operatorTourStep;
+  if (initialParameters.get("embed") !== "1") {
+    const parameters = new URLSearchParams(window.location.search);
+    parameters.delete("tour");
+    parameters.delete("step");
+    window.history.replaceState(null, "", `${window.location.pathname}${parameters.size ? `?${parameters}` : ""}${window.location.hash}`);
+  }
+};
+
 const update = (delta, elapsed) => {
   if (!currentReceipt) return;
   const presentation = scenarioPresentation[selectedScenario];
@@ -1288,12 +1414,15 @@ playButton.addEventListener("click", () => {
 });
 fleetButton.addEventListener("click", () => {
   if (!fleetEvidence) return;
-  fleetMode = !fleetMode;
-  fleetButton.textContent = fleetMode ? "Single guardian" : "Show fleet";
-  fleetButton.setAttribute("aria-pressed", String(fleetMode));
-  root.querySelector(".fleet-control-panel").classList.toggle("is-active", fleetMode);
-  if (!fleetMode) for (const guardian of fleetDrones) guardian.visible = false;
+  setFleetMode(!fleetMode);
 });
+tourButton.addEventListener("click", () => operatorTour.hidden ? openOperatorTour() : closeOperatorTour());
+tourActions.previous.addEventListener("click", () => showOperatorTourStep(operatorTourIndex - 1));
+tourActions.next.addEventListener("click", () => {
+  if (operatorTourIndex === operatorTourSteps.length - 1) closeOperatorTour();
+  else showOperatorTourStep(operatorTourIndex + 1);
+});
+tourActions.close.addEventListener("click", closeOperatorTour);
 resilienceActions.run.addEventListener("click", runResilience);
 resilienceActions.pause.addEventListener("click", () => {
   clearResilienceTransport();
@@ -1353,6 +1482,21 @@ const bootstrap = async () => {
     fleetButton.disabled = false;
     selectScenario("safe");
     selectResilienceScenario(fleetEvidence.resilience.scenarios[0].id);
+    const requestedResilience = initialParameters.get("resilience");
+    const requestedScenario = initialParameters.get("scenario");
+    if (initialParameters.get("tour") === "1") {
+      openOperatorTour(initialParameters.get("step"));
+    } else if (fleetEvidence.resilience.scenarios.some(({ id }) => id === requestedResilience)) {
+      selectResilienceScenario(requestedResilience);
+      setFleetMode(initialParameters.get("fleet") === "1");
+    } else if (expectedScenarioIDs.includes(requestedScenario)) {
+      clearResilienceTransport();
+      resilienceMode = false;
+      selectedResilience = undefined;
+      playButton.disabled = false;
+      selectScenario(requestedScenario);
+      setFleetMode(initialParameters.get("fleet") === "1");
+    }
   } catch (error) {
     console.error("Bounder receipt bundle failed closed", error);
     showRoute(curves.safe);
