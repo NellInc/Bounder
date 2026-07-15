@@ -56,11 +56,19 @@ test("fleet evidence covers every simulated guardian and stays protective", asyn
     assert.equal(device.passed, true);
     assert.equal(device.fleet_audit.action_type, "physical_interlock");
     assert.match(device.fleet_audit.input_hash, /^[0-9a-f]{64}$/);
+    assert.ok(device.fleet_audit.certificate.signature.length > 0);
+    assert.deepEqual(JSON.parse(device.fleet_audit.certificate.payload), device.receipt);
     assert.ok(["loiter", "rtl", "land", "intercept"].includes(device.receipt.action));
     if (device.receipt.action === "intercept") assert.equal(device.receipt.allowed, false);
   }
+  assert.equal(evidence.lab.mode, "real-fleet-postgresql");
+  assert.equal(evidence.lab.enrolled_devices, 16);
+  assert.equal(evidence.lab.persisted_audits, 74);
+  assert.equal(evidence.lab.signed_audits, 74);
+  assert.equal(evidence.lab.stages.length, 14);
+  assert.ok(evidence.lab.stages.every(({ passed }) => passed));
   const serialized = JSON.stringify(evidence);
-  assert.doesNotMatch(serialized, /"target"|"weapon"|"engage"|"payload"/i);
+  assert.doesNotMatch(serialized, /"target"|"weapon"|"engage"/i);
 });
 
 test("fleet resilience evidence covers temporal, transport, trust, and restart faults", async () => {
