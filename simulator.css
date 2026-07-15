@@ -125,6 +125,123 @@
   cursor: not-allowed;
 }
 
+.operator-tour {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.22fr) minmax(0, 1fr) auto;
+  gap: clamp(1.25rem, 3vw, 3rem);
+  align-items: center;
+  margin: 2.2rem 0 0;
+  padding: 2rem;
+  color: var(--ink);
+  background: linear-gradient(120deg, var(--signal), #d9f7ad);
+  border: 1px solid var(--signal);
+}
+
+.operator-tour[hidden] {
+  display: none;
+}
+
+.operator-tour-progress span {
+  display: block;
+  margin-bottom: 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.operator-tour-progress i {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(19, 28, 27, 0.22);
+}
+
+.operator-tour-progress b {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ink);
+  transform: scaleX(0.16666);
+  transform-origin: left center;
+  transition: transform 220ms ease;
+}
+
+.operator-tour-copy .fleet-kicker {
+  color: rgba(19, 28, 27, 0.66);
+}
+
+.operator-tour-copy h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 2.5vw, 2.45rem);
+  line-height: 1;
+}
+
+.operator-tour-copy > p {
+  max-width: 760px;
+  margin: 0.65rem 0 0;
+  line-height: 1.55;
+}
+
+.operator-tour-proof {
+  color: rgba(19, 28, 27, 0.7);
+  font-size: 0.88rem;
+}
+
+.operator-tour-feedback {
+  display: inline-block;
+  margin-top: 0.8rem;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22rem;
+}
+
+.operator-tour-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 250px;
+  border: 1px solid rgba(19, 28, 27, 0.42);
+}
+
+.operator-tour-actions button {
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.operator-tour-actions button + button {
+  border-left: 1px solid rgba(19, 28, 27, 0.42);
+}
+
+.operator-tour-actions button:last-child {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(19, 28, 27, 0.42);
+  border-left: 0;
+}
+
+.operator-tour-actions button:hover:not(:disabled) {
+  color: var(--signal);
+  background: var(--ink);
+}
+
+.operator-tour-actions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .scenario-controls {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -983,6 +1100,9 @@
   .scenario-button:nth-child(odd) { border-left: 1px solid var(--line-light); }
   .scenario-button:nth-child(n+3) { border-top: 0; }
   .fleet-control-panel { grid-template-columns: 1fr; }
+  .operator-tour { grid-template-columns: 100px 1fr; }
+  .operator-tour-actions { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
+  .operator-tour-actions button:last-child { grid-column: auto; border-top: 0; border-left: 1px solid rgba(19, 28, 27, 0.42); }
   .fleet-nodes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .resilience-scenarios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .resilience-scenario:nth-child(odd) { border-left: 1px solid var(--line-light); }
@@ -1004,7 +1124,12 @@
   .simulator-intro aside { grid-column: 1; }
   .workbench-heading { grid-template-columns: 1fr; gap: 1.5rem; align-items: flex-start; }
   .workbench-actions { width: 100%; }
+  .workbench-actions { flex-wrap: wrap; }
   .workbench-actions .sim-control { flex: 1; }
+  .operator-tour { grid-template-columns: 1fr; }
+  .operator-tour { padding: 1.25rem; }
+  .operator-tour-actions { grid-column: 1; grid-template-columns: 1fr 1fr; min-width: 0; }
+  .operator-tour-actions button:last-child { grid-column: 1 / -1; border-top: 1px solid rgba(19, 28, 27, 0.42); border-left: 0; }
   .scenario-controls { grid-template-columns: 1fr 1fr; }
   .fleet-metrics { grid-template-columns: 1fr 1fr; }
   .fleet-nodes { grid-template-columns: 1fr 1fr; }

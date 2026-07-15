@@ -39,7 +39,8 @@ test("Creed Space Fleet control is visible, interactive, and evidence backed", (
   assert.match(simulatorHtml, /data-fleet-nodes/);
   assert.match(simulatorScript, /fleetDrones = Array\.from/);
   assert.match(simulatorScript, /bounder-fleet-evidence\.v1\.json/);
-  assert.match(simulatorScript, /fleetMode = !fleetMode/);
+  assert.match(simulatorScript, /setFleetMode\(!fleetMode\)/);
+  assert.match(simulatorScript, /const setFleetMode = \(enabled\) =>/);
   assert.match(simulatorStyles, /\.fleet-control-panel\.is-active/);
 });
 
@@ -73,4 +74,18 @@ test("rules-of-engagement scenarios are visible and evidence-only", () => {
   }
   assert.match(simulatorScript, /const roeMarkers = Object\.freeze/);
   assert.match(simulatorScript, /evidence-only intercept decision/);
+});
+
+test("guided operator tour deep-links to six evidence-backed proofs", () => {
+  assert.match(simulatorHtml, /data-action="tour"/);
+  assert.match(simulatorHtml, /data-operator-tour/);
+  assert.match(simulatorHtml, /data-tour-action="previous"/);
+  assert.match(simulatorHtml, /data-tour-action="next"/);
+  for (const step of ["signed-baseline", "fleet-projection", "civilian-protection", "friendly-separation", "evidence-only-roe", "rollback-proof"]) {
+    assert.match(simulatorScript, new RegExp(`id: "${step}"`));
+  }
+  assert.match(simulatorScript, /new URLSearchParams\(window\.location\.search\)/);
+  assert.match(simulatorScript, /initialParameters\.get\("tour"\) === "1"/);
+  assert.match(simulatorScript, /selectResilienceScenario\(step\.resilience\)/);
+  assert.match(simulatorStyles, /\.operator-tour/);
 });
