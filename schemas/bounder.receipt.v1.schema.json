@@ -44,7 +44,9 @@
       "required": [
         "gps_fix", "battery_percent", "altitude_metres", "inside_exclusion_zone",
         "civilian_distance_metres", "friendly_distance_metres", "inside_protected_site",
-        "inside_humanitarian_corridor", "wind_speed_metres_per_second", "visibility_metres"
+        "inside_humanitarian_corridor", "wind_speed_metres_per_second", "visibility_metres",
+        "positive_identification", "proportionality_satisfied", "surrender_observed",
+        "incapacitated_observed", "human_authorization_confirmed"
       ],
       "properties": {
         "gps_fix": { "type": "boolean" },
@@ -56,7 +58,12 @@
         "inside_protected_site": { "type": "boolean" },
         "inside_humanitarian_corridor": { "type": "boolean" },
         "wind_speed_metres_per_second": { "type": "number", "minimum": 0 },
-        "visibility_metres": { "type": "number", "minimum": 0 }
+        "visibility_metres": { "type": "number", "minimum": 0 },
+        "positive_identification": { "type": "boolean" },
+        "proportionality_satisfied": { "type": "boolean" },
+        "surrender_observed": { "type": "boolean" },
+        "incapacitated_observed": { "type": "boolean" },
+        "human_authorization_confirmed": { "type": "boolean" }
       }
     },
     "adapter": {
