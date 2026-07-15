@@ -491,6 +491,11 @@ button, a {
   font-size: 1.1rem;
 }
 
+.section-heading-offset h2,
+.section-heading-offset > p {
+  grid-column: 2;
+}
+
 .intro {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr) 290px;
@@ -660,6 +665,7 @@ button, a {
 
 .boundary-note p {
   margin: 0;
+  max-width: 72ch;
   color: rgba(255, 255, 255, 0.72);
 }
 
@@ -729,6 +735,7 @@ button, a {
 
 .home-simulator-heading p {
   margin: 0;
+  max-width: 72ch;
   color: rgba(255, 255, 255, 0.68);
   font-size: 1.08rem;
 }
@@ -1193,6 +1200,11 @@ button, a {
   .section-heading > p {
     grid-column: 1;
     margin-top: 0;
+  }
+
+  .section-heading-offset h2,
+  .section-heading-offset > p {
+    grid-column: 1;
   }
 
   .architecture-flow,

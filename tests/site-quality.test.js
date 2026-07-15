@@ -15,6 +15,7 @@ const historicalPages = [
 test("historical images retain a native fallback source", async () => {
   for (const path of ["docs/gallery-shift.html", "docs/index.html"]) {
     const html = await readSiteFile(path);
+    // impeccable-disable-next-line broken-image: this regex finds image tags so the assertions can reject missing sources
     const images = html.match(/<img\b[^>]*>/gi) ?? [];
 
     for (const image of images) {
@@ -37,6 +38,7 @@ test("archived helpers avoid layout and perpetual bounce animations", async () =
     readSiteFile("docs/assets/js/scroll-arrow.js")
   ]);
 
+  // impeccable-disable-next-line layout-transition: the test forbids this exact layout-triggering transition
   assert.doesNotMatch(parallax, /transition:\s*height/i);
   assert.doesNotMatch(scrollArrow, /bounce/i);
   assert.doesNotMatch(scrollArrow, /transition:\s*all/i);
