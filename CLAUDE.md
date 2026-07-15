@@ -58,7 +58,7 @@ The full scaffold (dimension table, markers, topology suffixes, torch/précis/ed
 
 ## Project Overview
 
-Bounder.io is a static HTML website for drone geofencing technology, converted from Squarespace and hosted on GitHub Pages at www.bounder.io.
+Bounder.io presents an open reference architecture for local, auditable physical interlocks. It covers embodied movement and physical-action boundaries for aircraft, ground robots, boats, warehouse vehicles, inspection platforms, and fixed machinery. The current project is simulation-only and hosted on GitHub Pages at www.bounder.io.
 
 ## Architecture
 
@@ -98,7 +98,8 @@ Root-level pages use CSS custom properties defined in `styles.css`:
 
 ## External Dependencies
 
-- Hero and heritage images: hosted on `images.squarespace-cdn.com`
+- Canonical images: local files under `images/`
+- Simulator runtime: pinned, self-hosted Three.js under `vendor/three/`
 - Contact form delivery: Formspree
 
 ---

@@ -54,8 +54,8 @@ try {
   throw error;
 }
 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
+renderer.setPixelRatio(reduceMotion ? 1 : Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = !reduceMotion;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1388,6 +1388,10 @@ const resize = () => {
 };
 
 const animate = (time) => {
+  if (reduceMotion && time - lastTime < 2000) {
+    requestAnimationFrame(animate);
+    return;
+  }
   const delta = Math.min((time - lastTime) / 1000 || 0, 0.05);
   lastTime = time;
   update(delta, time);

@@ -97,15 +97,14 @@
   border-radius: 0;
   font-family: var(--font-mono);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
 
 .sim-control {
   min-height: 48px;
   padding: 0.75rem 1rem;
-  font-size: 0.74rem;
+  font-size: 0.8rem;
 }
 
 .sim-control:hover,
@@ -251,7 +250,7 @@
 .scenario-button {
   min-height: 72px;
   padding: 0.8rem;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   text-align: center;
 }
 
@@ -274,13 +273,13 @@
   margin: 0 0 1rem;
   padding: 1.25rem;
   border: 1px solid var(--line-light);
-  background: linear-gradient(120deg, rgba(179, 235, 117, 0.075), rgba(255, 255, 255, 0.025));
+  background: #20241e;
   transition: border-color 180ms ease, background 180ms ease;
 }
 
 .fleet-control-panel.is-active {
   border-color: var(--signal);
-  background: linear-gradient(120deg, rgba(179, 235, 117, 0.15), rgba(255, 255, 255, 0.035));
+  background: #252b20;
 }
 
 .fleet-kicker {
@@ -288,10 +287,9 @@
   margin-bottom: 0.45rem;
   color: var(--signal);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .fleet-control-panel > div:first-child strong {
@@ -324,7 +322,7 @@
 .fleet-metrics dt {
   color: rgba(255, 255, 255, 0.48);
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -333,7 +331,7 @@
   margin-top: 0.32rem;
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -396,6 +394,224 @@
 }
 
 .fleet-contract-links a {
+  color: var(--signal);
+}
+
+.policy-roundtrip {
+  margin: 0 0 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line-light);
+  background: #181b17;
+}
+
+.policy-roundtrip-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2rem;
+  align-items: start;
+}
+
+.policy-roundtrip-heading strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+  line-height: 1.35;
+}
+
+.policy-roundtrip-heading p {
+  max-width: 56ch;
+  margin: 0.55rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.875rem;
+}
+
+.policy-roundtrip-actions {
+  display: flex;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
+.policy-roundtrip-actions button,
+.policy-file-control {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.85rem;
+  color: var(--signal);
+  background: transparent;
+  border: 1px solid var(--line-light);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.policy-roundtrip-actions button:hover,
+.policy-roundtrip-actions button:focus-visible,
+.policy-file-control:hover,
+.policy-file-control:focus-within {
+  color: var(--ink);
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+.policy-roundtrip-actions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.policy-file-control input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.policy-roundtrip-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.35rem 1rem;
+  align-items: baseline;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line-light);
+  border-left: 4px solid rgba(255, 255, 255, 0.46);
+  background: #20241e;
+}
+
+.policy-roundtrip-status span {
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.policy-roundtrip-status strong {
+  max-width: 72ch;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.policy-roundtrip-status[data-state="working"] {
+  border-left-color: #8bd4e6;
+}
+
+.policy-roundtrip-status[data-state="verified"] {
+  border-left-color: var(--signal);
+}
+
+.policy-roundtrip-status[data-state="held"],
+.policy-roundtrip-status[data-state="rejected"] {
+  border-left-color: var(--safety);
+}
+
+.policy-roundtrip-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 1rem 0 0;
+  padding: 0;
+  background: var(--line-light);
+  list-style: none;
+}
+
+.policy-roundtrip-steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.85rem;
+  background: #20241e;
+}
+
+.policy-roundtrip-steps i {
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+}
+
+.policy-roundtrip-steps li[data-state="verified"] i,
+.policy-roundtrip-steps li[data-state="evidenced"] i {
+  background: var(--signal);
+  border-color: var(--signal);
+  box-shadow: 0 0 0 4px rgba(179, 235, 117, 0.12);
+}
+
+.policy-roundtrip-steps li[data-state="unmatched"] i,
+.policy-roundtrip-steps li[data-state="rejected"] i {
+  background: var(--safety);
+  border-color: var(--safety);
+  box-shadow: 0 0 0 4px rgba(255, 107, 69, 0.12);
+}
+
+.policy-roundtrip-steps strong,
+.policy-roundtrip-steps small {
+  display: block;
+}
+
+.policy-roundtrip-steps strong {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.policy-roundtrip-steps small {
+  margin-top: 0.28rem;
+  overflow-wrap: anywhere;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.policy-roundtrip-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 1px 0 0;
+  background: var(--line-light);
+}
+
+.policy-roundtrip-fields div {
+  min-width: 0;
+  padding: 0.85rem;
+  background: #20241e;
+}
+
+.policy-roundtrip-fields dt,
+.policy-roundtrip-fields dd {
+  margin: 0;
+}
+
+.policy-roundtrip-fields dt {
+  color: rgba(255, 255, 255, 0.62);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.policy-roundtrip-fields dd {
+  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.policy-roundtrip-note {
+  max-width: 72ch;
+  margin: 0.85rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+.policy-roundtrip-note a {
   color: var(--signal);
 }
 
@@ -752,7 +968,7 @@
 .simulator-grid {
   display: block;
   min-height: 0;
-  border: 1px solid var(--line-light);
+  border: 0;
 }
 
 .simulator-stage {
@@ -762,6 +978,8 @@
   min-width: 0;
   overflow: hidden;
   background: #171a15;
+  border: 1px solid var(--line-light);
+  border-bottom: 0;
 }
 
 .simulator-stage::after {
@@ -880,6 +1098,44 @@
   display: none;
 }
 
+.simulator-stage.is-unavailable canvas,
+.simulator-stage.is-unavailable .stage-legend {
+  display: none;
+}
+
+.simulator-stage.is-unavailable .webgl-fallback {
+  color: white;
+}
+
+@media (max-width: 960px) {
+  .policy-roundtrip-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .policy-roundtrip-actions {
+    flex-wrap: wrap;
+  }
+
+  .policy-roundtrip-steps,
+  .policy-roundtrip-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .policy-roundtrip-actions,
+  .policy-roundtrip-actions button,
+  .policy-file-control {
+    width: 100%;
+  }
+
+  .policy-roundtrip-status,
+  .policy-roundtrip-steps,
+  .policy-roundtrip-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 .decision-panel {
   display: grid;
   grid-template-areas:
@@ -887,7 +1143,7 @@
     "header rules receipt";
   grid-template-columns: minmax(270px, 0.9fr) minmax(460px, 1.8fr) minmax(250px, 0.85fr);
   min-width: 0;
-  border-top: 1px solid var(--line-light);
+  border: 1px solid var(--line-light);
 }
 
 .decision-header {
@@ -901,9 +1157,8 @@
   margin-top: 0.65rem;
   color: rgba(255, 255, 255, 0.52);
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
 }
 
 .decision-outcome {
@@ -953,7 +1208,7 @@
 .rule-stack strong {
   color: var(--signal);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
 .rule-stack li.is-failed {
@@ -1002,8 +1257,7 @@
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
 
@@ -1025,7 +1279,7 @@
 .receipt-details dt,
 .receipt-details dd {
   margin: 0;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
 .receipt-details dt {
@@ -1041,7 +1295,7 @@
 .receipt-details p {
   margin: 0;
   padding: 1rem 1.6rem 1.4rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .receipt-details a {
@@ -1088,7 +1342,7 @@
 }
 
 .simulator-boundary-note p {
-  max-width: 790px;
+  max-width: 68ch;
   margin: 0;
   color: var(--ink-soft);
 }

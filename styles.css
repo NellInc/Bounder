@@ -128,7 +128,8 @@ button, a {
   flex: 0 0 auto;
   width: 7.3rem;
   height: 1.32rem;
-  background: currentColor;
+  color: transparent;
+  background: #f4f4ef;
   mask: url("assets/bounder-wordmark.svg") center / contain no-repeat;
   -webkit-mask: url("assets/bounder-wordmark.svg") center / contain no-repeat;
 }
@@ -835,7 +836,7 @@ button, a {
 }
 
 .section-safety .section-label {
-  color: rgba(255, 255, 255, 0.75);
+  color: white;
 }
 
 .section-safety p {

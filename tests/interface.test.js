@@ -64,6 +64,14 @@ test("resilience laboratory exposes deterministic fault controls and live-stream
   assert.match(simulatorStyles, /\.fleet-node\.is-affected/);
 });
 
+test("simulator exposes a local signed-policy verifier and WebGL-independent evidence view", () => {
+  assert.match(simulatorHtml, /data-policy-roundtrip/);
+  assert.match(simulatorHtml, /data-policy-action="sample"/);
+  assert.match(simulatorHtml, /data-policy-file/);
+  assert.match(simulatorHtml, /policy-roundtrip\.js/);
+  assert.match(simulatorHtml, /simulator-bootstrap\.js/);
+});
+
 test("rollback proof scenarios expose local and Fleet floors plus bounded authority", () => {
   assert.match(simulatorHtml, /Rollback-proof checkpoint/);
   assert.match(simulatorHtml, /data-resilience="local-floor"/);

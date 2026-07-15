@@ -1,0 +1,28 @@
+name: Site quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Deterministic design lint
+        run: npx --yes impeccable@3.2.1 detect .
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:browser

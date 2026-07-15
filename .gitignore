@@ -9,6 +9,8 @@ Thumbs.db
 
 # Node modules
 node_modules/
+test-results/
+playwright-report/
 
 # Build scripts and temporary files
 *.mjs

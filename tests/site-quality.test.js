@@ -43,3 +43,10 @@ test("archived helpers avoid layout and perpetual bounce animations", async () =
   assert.doesNotMatch(scrollArrow, /bounce/i);
   assert.doesNotMatch(scrollArrow, /transition:\s*all/i);
 });
+
+test("every historical page is excluded from search indexing", async () => {
+  for (const path of [...historicalPages, "docs/contact.html", "docs/404.html"]) {
+    const html = await readSiteFile(path);
+    assert.match(html, /<meta name="robots" content="noindex, nofollow, noarchive">/i, `${path} is indexable`);
+  }
+});

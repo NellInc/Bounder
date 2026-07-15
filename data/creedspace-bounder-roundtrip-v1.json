@@ -1,0 +1,69 @@
+{
+  "version": "creedspace-bounder-roundtrip/v1",
+  "generated_at": "2026-07-13T12:00:30Z",
+  "source_vector_sha256": "sha256:3dd2469dc619aed477e8cd2995fc5b99ceeec4b9412d3a5241bb8679927aacb0",
+  "source_payload_sha256": "sha256:a60933967e4571a6edd83c6b5236078f8070a99cc3a27d90435db98d80dbb2c5",
+  "request": {
+    "action": "loiter",
+    "state": {
+      "gps_fix": true,
+      "battery_percent": 80,
+      "altitude_metres": 60,
+      "inside_exclusion_zone": false,
+      "civilian_distance_metres": 500,
+      "friendly_distance_metres": 500,
+      "inside_protected_site": false,
+      "inside_humanitarian_corridor": false,
+      "wind_speed_metres_per_second": 5,
+      "visibility_metres": 2000,
+      "positive_identification": false,
+      "proportionality_satisfied": false,
+      "surrender_observed": false,
+      "incapacitated_observed": false,
+      "human_authorization_confirmed": false
+    },
+    "evidence": {
+      "mettle_tier": "gold",
+      "verified_at": "2026-07-13T12:00:25Z"
+    }
+  },
+  "receipt": {
+    "version": "bounder-creedspace-receipt/v1",
+    "device_id": "bounder-alpha",
+    "fleet_id": "relief-fleet",
+    "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+    "policy_sequence": 42,
+    "signing_key_id": "creed-fleet-simulation-2026",
+    "action": "loiter",
+    "allowed": true,
+    "code": "allowed",
+    "reason": "signature, policy, and local constraints permit the action",
+    "evaluated_at": "2026-07-13T12:00:30Z"
+  },
+  "fleet_audit": {
+    "decision": "allow",
+    "input_hash": "a0511159a590ead12bc99f3ae248bde3998744bfceb22955048de9159a57c12c",
+    "policy_version": "creedspace-bounder-policy/v1#42",
+    "rationale": "signature, policy, and local constraints permit the action",
+    "dimensions_triggered": {
+      "version": "bounder-creedspace-receipt/v1",
+      "device_id": "bounder-alpha",
+      "fleet_id": "relief-fleet",
+      "policy_id": "sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b",
+      "policy_sequence": 42,
+      "signing_key_id": "creed-fleet-simulation-2026",
+      "action": "loiter",
+      "allowed": true,
+      "code": "allowed",
+      "reason": "signature, policy, and local constraints permit the action",
+      "evaluated_at": "2026-07-13T12:00:30Z"
+    },
+    "certificate": {
+      "signature": "QuV8ypVGpLxjXmecHON8lAwKZnG/KWBBSDOBsCeMFd/lR8YucvHxbPvHekvUFXjIFxE5dIjJP9EQyH+qF5KcBA==",
+      "payload": "{\"version\":\"bounder-creedspace-receipt/v1\",\"device_id\":\"bounder-alpha\",\"fleet_id\":\"relief-fleet\",\"policy_id\":\"sha256:4cedf20f3a71f541c019ec22ffcaed53463f496074d6ea5a5c48ff3dca84336b\",\"policy_sequence\":42,\"signing_key_id\":\"creed-fleet-simulation-2026\",\"action\":\"loiter\",\"allowed\":true,\"code\":\"allowed\",\"reason\":\"signature, policy, and local constraints permit the action\",\"evaluated_at\":\"2026-07-13T12:00:30Z\"}",
+      "public_key_id": "bounder-roundtrip-simulation-2026"
+    },
+    "action_type": "physical_interlock"
+  },
+  "audit_public_key": "/RckOFqgx1tk+3jNYC+h2ZH96/drE8WO1wLqyDXp9hg="
+}

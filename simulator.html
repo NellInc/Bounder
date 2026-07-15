@@ -159,6 +159,44 @@
         <p class="fleet-contract-links"><a href="data/bounder-fleet-evidence.v1.json">Fleet evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a> · <a href="schemas/creedspace-bounder-checkpoint-v1.schema.json">Checkpoint schema</a></p>
       </section>
 
+      <section class="policy-roundtrip" data-policy-roundtrip aria-labelledby="policy-roundtrip-title">
+        <div class="policy-roundtrip-heading">
+          <div>
+            <span class="fleet-kicker">Creed Space contract round trip</span>
+            <strong id="policy-roundtrip-title">Verify signed Fleet authority before it reaches motion.</strong>
+            <p>Load the published cross-language vector or inspect your own compatible JSON. Bounder verifies the exact Ed25519-signed payload bytes, validates the device policy, and links the policy profile to a recorded Go interlock receipt. Nothing uploaded leaves this browser.</p>
+          </div>
+          <div class="policy-roundtrip-actions">
+            <button type="button" data-policy-action="sample">Verify published example</button>
+            <label class="policy-file-control">
+              <span>Inspect local JSON</span>
+              <input type="file" accept="application/json,.json" data-policy-file>
+            </label>
+          </div>
+        </div>
+        <div class="policy-roundtrip-status" role="status" aria-live="polite" data-policy-status data-state="idle">
+          <span>Ready</span>
+          <strong>Choose the published vector or a local compatible file.</strong>
+        </div>
+        <ol class="policy-roundtrip-steps" aria-label="Policy verification and evidence path">
+          <li data-policy-step="envelope"><i aria-hidden="true"></i><div><strong>Envelope</strong><small>Awaiting signed bytes</small></div></li>
+          <li data-policy-step="signature"><i aria-hidden="true"></i><div><strong>Signature</strong><small>Awaiting Ed25519 verification</small></div></li>
+          <li data-policy-step="policy"><i aria-hidden="true"></i><div><strong>Policy</strong><small>Awaiting schema checks</small></div></li>
+          <li data-policy-step="receipt"><i aria-hidden="true"></i><div><strong>Receipt</strong><small>Awaiting matching Go evidence</small></div></li>
+        </ol>
+        <dl class="policy-roundtrip-fields">
+          <div><dt>Issuer</dt><dd data-policy-field="issuer">Not loaded</dd></div>
+          <div><dt>Subject</dt><dd data-policy-field="subject">Not loaded</dd></div>
+          <div><dt>Fleet</dt><dd data-policy-field="fleet">Not loaded</dd></div>
+          <div><dt>Sequence</dt><dd data-policy-field="sequence">Not loaded</dd></div>
+          <div><dt>Key</dt><dd data-policy-field="key">Not loaded</dd></div>
+          <div><dt>Policy ID</dt><dd data-policy-field="policy">Not loaded</dd></div>
+          <div><dt>Payload digest</dt><dd data-policy-field="digest">Not loaded</dd></div>
+          <div><dt>Recorded receipt</dt><dd data-policy-field="receipt">Not loaded</dd></div>
+        </dl>
+        <p class="policy-roundtrip-note">The browser verifies the published contract and displays recorded evidence. It does not issue authority or generate a deployment receipt. <a href="data/creedspace-bounder-golden-v1.json">Signed vector</a> · <a href="data/creedspace-bounder-roundtrip-v1.json">Signed receipt</a> · <a href="schemas/creedspace-bounder-roundtrip-v1.schema.json">Receipt schema</a> · <a href="guides/INTEGRATION.md">Integration guide</a></p>
+      </section>
+
       <section class="resilience-lab" aria-labelledby="resilience-title" hidden>
         <div class="resilience-heading">
           <div>
@@ -318,6 +356,7 @@
     </nav>
     <p class="copyright">© 2026 Bounder. Licensed under Apache-2.0.</p>
   </footer>
-  <script type="module" src="simulator.js"></script>
+  <script type="module" src="policy-roundtrip.js"></script>
+  <script type="module" src="simulator-bootstrap.js"></script>
 </body>
 </html>
