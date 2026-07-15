@@ -2,12 +2,20 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [simulatorHtml, simulatorScript, simulatorStyles, styles] = await Promise.all([
+const [indexHtml, simulatorHtml, simulatorScript, simulatorStyles, styles] = await Promise.all([
+  readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../simulator.html", import.meta.url), "utf8"),
   readFile(new URL("../simulator.js", import.meta.url), "utf8"),
   readFile(new URL("../simulator.css", import.meta.url), "utf8"),
   readFile(new URL("../styles.css", import.meta.url), "utf8")
 ]);
+
+test("the homepage positions Bounder within the Guardian and Creed Space Fleet architecture", () => {
+  assert.match(indexHtml, /<strong>Guardian<\/strong> is the general pattern/);
+  assert.match(indexHtml, /<strong>Bounder<\/strong> is the Guardian for embodied movement and physical-action boundaries/);
+  assert.match(indexHtml, /<strong>Creed Space Fleet<\/strong> distributes and governs its policies/);
+  assert.match(indexHtml, /ground robots, autonomous boats, warehouse vehicles, inspection platforms/);
+});
 
 test("simulator exposes focused WASD and altitude navigation", () => {
   assert.match(simulatorHtml, /tabindex="0"/);
