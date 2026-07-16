@@ -5,7 +5,7 @@
   "canonical_interlock": {
     "repository": "https://github.com/NellWatson/Bounder",
     "ref": "master",
-    "commit": "90059bb29b0a11b5bd2f7df98a691a385dc15f2d"
+    "commit": "06e0e36072dbab037b33d32e7d15ee7992ccda57"
   },
   "files": [
     {
