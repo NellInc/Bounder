@@ -300,6 +300,37 @@
   line-height: 1.3;
 }
 
+.fleet-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  padding: 0.34rem 0.55rem;
+  color: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--line-light);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.fleet-source::before {
+  content: "";
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.fleet-source[data-source="live"]::before {
+  background: var(--signal);
+  box-shadow: 0 0 0 3px rgba(179, 235, 117, 0.12);
+}
+
+.fleet-source[data-source="recorded"]::before {
+  background: #8bd4e6;
+}
+
 .fleet-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
