@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { generateKeyPairSync, sign, webcrypto } from "node:crypto";
 import test from "node:test";
 
-import { validateContinuityEvidence, verifyContinuityEnvelope } from "../continuity-evidence.js";
+import { formatEvidenceTime, validateContinuityEvidence, verifyContinuityEnvelope } from "../continuity-evidence.js";
 
 const now = Date.parse("2026-07-16T12:00:00Z");
 const evidence = () => ({
@@ -66,4 +66,9 @@ test("continuity envelope rejects unknown fields and unpinned identities", async
 
   const envelope = { version: "bounder-continuity-envelope/v1", algorithm: "Ed25519", public_key_id: "wrong", payload: "e30=", signature: Buffer.alloc(64).toString("base64") };
   await assert.rejects(() => verifyContinuityEnvelope({ envelope, publicKeyHex: "00".repeat(32), publicKeyID: "bounder_lab_guardian", cryptoImpl: webcrypto, nowMs: now }), /metadata is invalid/);
+});
+
+test("continuity proof timestamp uses compatible explicit date fields", () => {
+  assert.doesNotThrow(() => formatEvidenceTime("2026-07-16T23:10:32.808059651Z"));
+  assert.match(formatEvidenceTime("2026-07-16T23:10:32.808059651Z"), /2026/);
 });

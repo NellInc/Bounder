@@ -89,6 +89,15 @@ export const verifyContinuityEnvelope = async ({ envelope, publicKeyHex, publicK
   return validateContinuityEvidence(evidence, nowMs);
 };
 
+export const formatEvidenceTime = (value) => new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZoneName: "short"
+}).format(new Date(value));
+
 const fetchEnvelope = async (url, timeoutMs = 7000) => {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:" || parsed.hostname !== EXPECTED_HOST || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== "/evidence.json") {
@@ -118,7 +127,7 @@ const renderEvidence = (root, evidence) => {
   root.querySelector("[data-continuity-policies]").textContent = String(evidence.policies_verified);
   root.querySelector("[data-continuity-checkpoints]").textContent = String(evidence.checkpoints_verified);
   root.querySelector("[data-continuity-decisions]").textContent = `${evidence.allowed} allow / ${evidence.held} hold`;
-  root.querySelector("[data-continuity-updated]").textContent = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZoneName: "short" }).format(new Date(evidence.generated_at));
+  root.querySelector("[data-continuity-updated]").textContent = formatEvidenceTime(evidence.generated_at);
   root.querySelector("[data-continuity-note]").textContent = "Exact Ed25519 payload verified in this browser. All 100 software Guardians completed policy sync, signed checkpoint verification, and local interlock evaluation.";
 };
 
