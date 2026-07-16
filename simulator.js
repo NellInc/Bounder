@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/OrbitControls.js";
 import { BUILDING_SPECS, ROUTE_WAYPOINTS, WORLD_BOUNDS } from "./simulator-world.js";
+import { loadPilotEvidence } from "./staging-feed.js";
 
 const root = document.querySelector(".simulator-workbench");
 const stage = root.querySelector(".simulator-stage");
@@ -15,6 +16,7 @@ const receiptSource = root.querySelector(".receipt-source");
 const receiptFields = Object.fromEntries([...root.querySelectorAll("[data-receipt]")].map((element) => [element.dataset.receipt, element]));
 const fleetFields = Object.fromEntries([...root.querySelectorAll("[data-fleet]")].map((element) => [element.dataset.fleet, element]));
 const fleetNodes = root.querySelector("[data-fleet-nodes]");
+const fleetSource = root.querySelector("[data-fleet-source]");
 const playButton = root.querySelector("[data-action='play']");
 const fleetButton = root.querySelector("[data-action='fleet']");
 const tourButton = root.querySelector("[data-action='tour']");
@@ -750,7 +752,7 @@ const operatorTourSteps = Object.freeze([
     fleet: true,
     title: "Project one rule across the fleet",
     summary: "Creed Space signs a separate subject-bound envelope for every enrolled guardian. Each Bounder instance verifies and enforces locally.",
-    proof: "The Fleet panel reports sixteen distinct guardians and preserves each local decision receipt."
+    proof: "The Fleet panel reports one hundred distinct software Guardians across six platform classes and preserves each local decision receipt."
   },
   {
     id: "civilian-protection",
@@ -1175,9 +1177,32 @@ const renderResilienceEvidence = (evidence) => {
 const loadFleetEvidence = async () => {
   const response = await fetch("./data/bounder-fleet-evidence.v1.json", { cache: "no-cache", credentials: "same-origin" });
   if (!response.ok) throw new Error(`fleet evidence request failed with ${response.status}`);
-  fleetEvidence = validateFleetEvidence(await response.json());
-  renderFleetEvidence(fleetEvidence);
-  renderResilienceEvidence(fleetEvidence);
+  const resilienceEvidence = validateFleetEvidence(await response.json());
+  renderResilienceEvidence(resilienceEvidence);
+
+  try {
+    const configuredURL = document.querySelector('meta[name="bounder-staging-feed"]')?.content ?? "";
+    const configuredIntegrity = document.querySelector('meta[name="bounder-staging-feed-integrity"]')?.content ?? "";
+    const pilot = await loadPilotEvidence({ configuredURL, configuredIntegrity });
+    // The staging pilot is the current fleet snapshot; the separately
+    // published laboratory fixture owns the deterministic resilience
+    // timelines. Compose both before bootstrap so a valid pilot without a
+    // `resilience` member cannot accidentally fail the independent receipt
+    // bundle closed.
+    fleetEvidence = {
+      ...pilot.evidence,
+      resilience: resilienceEvidence.resilience
+    };
+    renderFleetEvidence(fleetEvidence);
+    fleetSource.textContent = pilot.warning ? `${pilot.sourceLabel} · ${pilot.warning}` : pilot.sourceLabel;
+    fleetSource.dataset.source = pilot.source;
+  } catch (error) {
+    fleetEvidence = resilienceEvidence;
+    renderFleetEvidence(fleetEvidence);
+    fleetSource.textContent = "Recorded Fleet laboratory · 100-device pilot unavailable";
+    fleetSource.dataset.source = "fallback";
+    console.warn("Bounder staging pilot evidence unavailable", error);
+  }
 };
 
 let selectedScenario = "safe";

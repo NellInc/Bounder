@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
   "license": "Apache-2.0",
-  "generated_at": "2026-07-15T17:08:12Z",
+  "generated_at": "2026-07-16T12:58:43Z",
   "canonical_interlock": {
     "repository": "https://github.com/NellWatson/Bounder",
     "ref": "master",
-    "commit": "0fe6deba07598bbde5cd2d600b61e6cb307dc54d"
+    "commit": "06e0e36072dbab037b33d32e7d15ee7992ccda57"
   },
   "files": [
     {
@@ -20,8 +20,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "3ed017fc2fd5d6f1f05a375abd0e07dc8ab6f26eb7ab1c71c418f4af042b0d91",
-      "bytes": 4595
+      "sha256": "70ee924895a72be7f8b2056e672de01aeb39d3bb1017b62738b0d54820e1a471",
+      "bytes": 4832
     },
     {
       "path": "VERSION",
@@ -37,6 +37,11 @@
       "path": "data/bounder-receipts.v1.json",
       "sha256": "b56f447ed7e548297bbab2246bf35d7d4ece3a016bd0c9da8a5d8fa377e11ddc",
       "bytes": 25352
+    },
+    {
+      "path": "data/bounder-staging-pilot.v1.json",
+      "sha256": "ab1c0277c2fd02041eb282e0ed3ebe5f75d7632b9d45143b60e2b2670a824481",
+      "bytes": 168722
     },
     {
       "path": "data/creedspace-bounder-golden-v1.json",
@@ -120,23 +125,28 @@
     },
     {
       "path": "simulator.css",
-      "sha256": "91d280333b347348a65795595d91a5190fe0cb2ef0a380a37ea69364b7c8d1da",
-      "bytes": 29954
+      "sha256": "85664f1e632ae8b51eb3503db7da168397adb2a921b25eff53b1d772f806a2ec",
+      "bytes": 30598
     },
     {
       "path": "simulator.html",
-      "sha256": "5bf5f86746d0a19c29f12f68ceee0fb8c59fbef1594570ee5f36126824f9ed20",
-      "bytes": 24364
+      "sha256": "064ee150a234b48026896ccd19ff082244a0cffa1e71a650b3ea3c942f31b572",
+      "bytes": 24651
     },
     {
       "path": "simulator.js",
-      "sha256": "09d513d564ca535905ecce2d72c74cd866add166430d5a0d4ad279e89fa2f65d",
-      "bytes": 69942
+      "sha256": "6701170a68a54d5ed6668b8d8281f093901586b68ef1763e971d336f7a86b5ad",
+      "bytes": 71315
     },
     {
       "path": "site.js",
       "sha256": "c79c0dffccc9d67e17c2df9106d64f339c8fa8385f3a68ce5095d8a062eed3d1",
       "bytes": 523
+    },
+    {
+      "path": "staging-feed.js",
+      "sha256": "57cd6bade63ec953d317871ef7d44672af055179a27aac3c1a193df7868e0349",
+      "bytes": 8180
     },
     {
       "path": "styles.css",
