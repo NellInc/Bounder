@@ -10,6 +10,9 @@
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="https://www.bounder.io/">
   <meta name="theme-color" content="#11130f">
+  <meta name="bounder-continuity-feed" content="https://bounder-fleet-continuity-staging.onrender.com/evidence.json">
+  <meta name="bounder-continuity-public-key" content="58b6b539f1d80b507dffc545297fa4e4b40dbaba85466d824f4afb1cea8970bc">
+  <meta name="bounder-continuity-key-id" content="bounder_continuity_evidence_2026">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Bounder">
@@ -436,6 +439,31 @@
       </div>
     </section>
 
+    <section class="continuity section" aria-labelledby="continuity-title" data-continuity data-state="loading">
+      <div class="continuity-heading" data-reveal>
+        <div>
+          <p class="continuity-kicker">Creed Space Fleet staging</p>
+          <h2 id="continuity-title">A living proof, with no actuator attached.</h2>
+        </div>
+        <span class="continuity-state" data-continuity-state role="status" aria-live="polite">Verifying live proof</span>
+      </div>
+      <p class="continuity-summary" data-reveal>One hundred software Guardians across aerial, ground, marine, warehouse, inspection, and fixed-machinery classes continuously fetch device-bound policy from Creed Space Fleet, verify signed checkpoints locally, exercise protective decisions, and return sampled signed audits.</p>
+      <dl class="continuity-metrics" data-reveal>
+        <div><dt>Guardians</dt><dd data-continuity-devices>Checking</dd></div>
+        <div><dt>Policies verified</dt><dd data-continuity-policies>Checking</dd></div>
+        <div><dt>Checkpoints</dt><dd data-continuity-checkpoints>Checking</dd></div>
+        <div><dt>Local decisions</dt><dd data-continuity-decisions>Checking</dd></div>
+        <div><dt>Proof issued</dt><dd data-continuity-updated>Checking</dd></div>
+      </dl>
+      <div class="continuity-proof" data-reveal>
+        <p data-continuity-note>The browser is fetching a signed aggregate payload and will accept it only after Ed25519 verification, strict field validation, and freshness checks.</p>
+        <div class="continuity-links">
+          <a href="https://bounder-fleet-continuity-staging.onrender.com/evidence.json" target="_blank" rel="noopener noreferrer">Inspect signed payload <span aria-hidden="true">↗</span></a>
+          <a href="data/bounder-staging-pilot.v1.json">Recorded 100-Guardian proof</a>
+        </div>
+      </div>
+    </section>
+
     <section class="home-simulator section-dark" aria-labelledby="simulator-preview-title">
       <div class="home-simulator-heading" data-reveal>
         <div>
@@ -483,5 +511,6 @@
     <p class="copyright">© 2026 Bounder. Licensed under Apache-2.0.</p>
   </footer>
   <script src="site.js" defer></script>
+  <script type="module" src="continuity-evidence.js"></script>
 </body>
 </html>

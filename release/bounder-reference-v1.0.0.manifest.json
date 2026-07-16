@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
   "license": "Apache-2.0",
-  "generated_at": "2026-07-16T12:58:43Z",
+  "generated_at": "2026-07-16T22:42:48Z",
   "canonical_interlock": {
     "repository": "https://github.com/NellWatson/Bounder",
     "ref": "master",
-    "commit": "06e0e36072dbab037b33d32e7d15ee7992ccda57"
+    "commit": "8dc18c8492f406a8c886e35a9d1e3748d9fb40bb"
   },
   "files": [
     {
@@ -27,6 +27,11 @@
       "path": "VERSION",
       "sha256": "59854984853104df5c353e2f681a15fc7924742f9a2e468c29af248dce45ce03",
       "bytes": 6
+    },
+    {
+      "path": "continuity-evidence.js",
+      "sha256": "cc6d7734e7f38d7ed0a4e4d1557fba896aa8360a3e76a09b59d7e5cc10c23264",
+      "bytes": 9276
     },
     {
       "path": "data/bounder-fleet-evidence.v1.json",
@@ -60,8 +65,8 @@
     },
     {
       "path": "index.html",
-      "sha256": "0bb2a2f2d6a7711f1beb65497d6de1a2c0fd1377f191984270a314ef64a05bc3",
-      "bytes": 25692
+      "sha256": "75eb2f4ca8ec47656fa828f753d0b3b7033f77ebe9642a8c95ff28fcd53e0eea",
+      "bytes": 27969
     },
     {
       "path": "policy-roundtrip.js",
@@ -150,8 +155,8 @@
     },
     {
       "path": "styles.css",
-      "sha256": "51cfcb425ddc7084d9860332f564b7f42d52c2608e62729192a43483e4d5f942",
-      "bytes": 29171
+      "sha256": "6620fa1d85e6bd5ba64188f6f5e6cdda39279e97099f9b7178638612f7289178",
+      "bytes": 33041
     }
   ]
 }
