@@ -193,7 +193,7 @@
   margin-top: 0.8rem;
   color: var(--ink);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   text-decoration-thickness: 1px;
@@ -214,7 +214,7 @@
   background: transparent;
   border: 0;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -309,7 +309,7 @@
   color: rgba(255, 255, 255, 0.68);
   border: 1px solid var(--line-light);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   line-height: 1.35;
 }
 
@@ -683,7 +683,7 @@
   color: var(--signal);
   border: 1px solid var(--line-light);
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-decoration: none;
@@ -709,7 +709,7 @@
   background: transparent;
   border: 1px solid var(--line-light);
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.35;
   text-align: left;
@@ -819,7 +819,7 @@
 .continuity-proof-heading span,
 .continuity-proof-heading strong {
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -1077,7 +1077,7 @@
   color: rgba(255, 255, 255, 0.75);
   background: rgba(17, 19, 15, 0.78);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   pointer-events: none;
   backdrop-filter: blur(10px);
 }
@@ -1286,7 +1286,7 @@
   padding: 1rem 1.6rem;
   color: white;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
