@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "license": "Apache-2.0",
-  "generated_at": "2026-07-16T23:14:07Z",
+  "generated_at": "2026-07-17T00:23:29Z",
   "canonical_interlock": {
     "repository": "https://github.com/NellWatson/Bounder",
     "ref": "master",
@@ -65,8 +65,8 @@
     },
     {
       "path": "index.html",
-      "sha256": "75eb2f4ca8ec47656fa828f753d0b3b7033f77ebe9642a8c95ff28fcd53e0eea",
-      "bytes": 27969
+      "sha256": "bce0a2427cbfed9172d553961f2664cd7143a79fc84ec3f16237aad15c4f69e7",
+      "bytes": 27972
     },
     {
       "path": "policy-roundtrip.js",
