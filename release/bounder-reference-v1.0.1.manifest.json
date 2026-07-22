@@ -1,0 +1,167 @@
+{
+  "version": "1.0.1",
+  "license": "Apache-2.0",
+  "generated_at": "2026-07-17T00:23:29Z",
+  "canonical_interlock": {
+    "repository": "https://github.com/NellInc/Bounder",
+    "ref": "main",
+    "commit": "73eec7a344be6d1433fc77fe520c3cbca4ed00c2"
+  },
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 2174,
+      "sha256": "ef4ff3aa32ab54764db39afb566b5eac8db7785e9b08478f2020e612a105c972"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4832,
+      "sha256": "70ee924895a72be7f8b2056e672de01aeb39d3bb1017b62738b0d54820e1a471"
+    },
+    {
+      "path": "SECURITY.md",
+      "bytes": 2000,
+      "sha256": "44fb0feb800136cde17c5f2468e1484a589d1d8a174aaf6bad877faf7213e8e6"
+    },
+    {
+      "path": "VERSION",
+      "bytes": 6,
+      "sha256": "44e161e4495cac2cf7858043e9e6418e9579f0ddcfae826f9a372622968ce066"
+    },
+    {
+      "path": "continuity-evidence.js",
+      "bytes": 9405,
+      "sha256": "f96187b21d4ed9ecef008f6a47a066235dd103c6d8bad18a20b3c765cca6ff2f"
+    },
+    {
+      "path": "data/bounder-fleet-evidence.v1.json",
+      "bytes": 60714,
+      "sha256": "bd11ce7ffd6f36eaed048d0aef646d4df06527e77ebb6d0640e3ff42244aa893"
+    },
+    {
+      "path": "data/bounder-receipts.v1.json",
+      "bytes": 25352,
+      "sha256": "b56f447ed7e548297bbab2246bf35d7d4ece3a016bd0c9da8a5d8fa377e11ddc"
+    },
+    {
+      "path": "data/bounder-staging-pilot.v1.json",
+      "bytes": 168722,
+      "sha256": "ab1c0277c2fd02041eb282e0ed3ebe5f75d7632b9d45143b60e2b2670a824481"
+    },
+    {
+      "path": "data/creedspace-bounder-golden-v1.json",
+      "bytes": 2074,
+      "sha256": "3dd2469dc619aed477e8cd2995fc5b99ceeec4b9412d3a5241bb8679927aacb0"
+    },
+    {
+      "path": "data/creedspace-bounder-roundtrip-v1.json",
+      "bytes": 3088,
+      "sha256": "80e755711d72a16f8d90a21f827602d52e35f952b87eeaee8de86139a5e29a70"
+    },
+    {
+      "path": "guides/INTEGRATION.md",
+      "bytes": 5605,
+      "sha256": "192540abb02cc5608eef0cef6f479598447816a412feb1d9b074a285d7e3c995"
+    },
+    {
+      "path": "index.html",
+      "bytes": 28073,
+      "sha256": "24ea46aedcf925f2cc0c34411abb7a480d306c94ec41849754d52040e409f793"
+    },
+    {
+      "path": "policy-roundtrip.js",
+      "bytes": 10939,
+      "sha256": "9776e78280e0ff9d11921eba2ff2a6842acf893760764a460860e0664f07730b"
+    },
+    {
+      "path": "schemas/bounder-resilience-evidence.v1.schema.json",
+      "bytes": 1944,
+      "sha256": "3ea4e91073daab6b170152ce9765766e108a41a2a08f8f00be6948053c8c0791"
+    },
+    {
+      "path": "schemas/bounder.receipt-bundle.v1.schema.json",
+      "bytes": 659,
+      "sha256": "6ab481e9bf88db7e20e634da5d35bfb8e2f0ee9eed2d55554b92ff8f042e1cd6"
+    },
+    {
+      "path": "schemas/bounder.receipt.v1.schema.json",
+      "bytes": 3795,
+      "sha256": "176e11b6bd07c340848abeaae5feff029f66262d51fd1a4bb92e781007d8d244"
+    },
+    {
+      "path": "schemas/creedspace-bounder-checkpoint-v1.schema.json",
+      "bytes": 2157,
+      "sha256": "2a80e2b3945f6442a0bfce6ab71cb6e27119235506905ae3d0a798de56570e1c"
+    },
+    {
+      "path": "schemas/creedspace-bounder-envelope-v1.schema.json",
+      "bytes": 890,
+      "sha256": "d65c2db20192530620b02f2ef4ed68038e69fc30d668167dbfbbb56a8bb30bba"
+    },
+    {
+      "path": "schemas/creedspace-bounder-policy-v1.schema.json",
+      "bytes": 1527,
+      "sha256": "da67096057d442938073a1d2f053a6d0026839f0c32cfa3f9b7a19b3e0f61bc7"
+    },
+    {
+      "path": "schemas/creedspace-bounder-profile-v1.schema.json",
+      "bytes": 2748,
+      "sha256": "cfe898db59664ec1abe2c98611e7737cbee92375b09ce26655d1d58877674924"
+    },
+    {
+      "path": "schemas/creedspace-bounder-roundtrip-v1.schema.json",
+      "bytes": 6721,
+      "sha256": "d0bfb77f9d790b5d0fcb7390199a1ae66bd98508e9b8874b86ea7faad6f464d3"
+    },
+    {
+      "path": "simulator-bootstrap.js",
+      "bytes": 871,
+      "sha256": "a164d459fe2b2ffe37c22eb91d0eac3bfe0dcb74d501d586bd0127171b96d7e9"
+    },
+    {
+      "path": "simulator-fallback.js",
+      "bytes": 4057,
+      "sha256": "23df6e44d3a311c2c23fc73b95820915427a689d4f733dc7a5ac17aecc520553"
+    },
+    {
+      "path": "simulator-world.js",
+      "bytes": 4731,
+      "sha256": "0050009ed55f6ccdaf2e49efcc6399ea17e4d7758f8acdc79653f7fb5066a416"
+    },
+    {
+      "path": "simulator.css",
+      "bytes": 30598,
+      "sha256": "85664f1e632ae8b51eb3503db7da168397adb2a921b25eff53b1d772f806a2ec"
+    },
+    {
+      "path": "simulator.html",
+      "bytes": 24722,
+      "sha256": "56205ca8bc052b33ac78a74c91e1b6b5dea8eabc73165be8aad785a5b461699f"
+    },
+    {
+      "path": "simulator.js",
+      "bytes": 71315,
+      "sha256": "6701170a68a54d5ed6668b8d8281f093901586b68ef1763e971d336f7a86b5ad"
+    },
+    {
+      "path": "site.js",
+      "bytes": 523,
+      "sha256": "c79c0dffccc9d67e17c2df9106d64f339c8fa8385f3a68ce5095d8a062eed3d1"
+    },
+    {
+      "path": "staging-feed.js",
+      "bytes": 8180,
+      "sha256": "57cd6bade63ec953d317871ef7d44672af055179a27aac3c1a193df7868e0349"
+    },
+    {
+      "path": "styles.css",
+      "bytes": 33543,
+      "sha256": "0c4eeb962ecf2b7ccf24470e6cda2e84b1d3cc2f4b17da2883bf0ae88ef7666e"
+    }
+  ]
+}

@@ -49,6 +49,11 @@ button, a {
   outline-offset: 4px;
 }
 
+/* Lime on white is ~1.4:1 — keyboard focus needs ink on light interior pages. */
+.interior-page :focus-visible {
+  outline-color: var(--ink);
+}
+
 /* Icon system: one 24px stroke grid, inherited colour, drawn from the inline sprite. */
 .icon-sprite {
   position: absolute;
@@ -941,7 +946,7 @@ button, a {
 
 .guardian-pattern-lines strong {
   color: var(--ink);
-  font-family: var(--font-heading);
+  font-family: var(--font-display);
   font-weight: 600;
 }
 

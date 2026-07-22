@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.1 · 2026-07-23
+
+Site polish and link-integrity patch. No changes to the interlock, receipts, or
+simulator behaviour. Ships together with the staging-evidence work merged on
+main since 1.0.0 (integrity-pinned Bounder staging pilot, signed live
+continuity feed, GitHub Pages Actions deploy, accessible page transitions).
+
+### Fixed
+
+1. Canonical header and footer navigation across all pages (previously every page carried a different link set), pinned by a new browser test.
+2. All thirteen repository links now point to the canonical `NellInc/Bounder` (previously the retired `NellWatson/Bounder` mirror).
+3. Security-policy link resolves: `SECURITY.md` ported from the retired mirror and linked on `main`.
+4. Brand emphasis words render in the display face (`--font-heading` referenced an undefined token).
+5. Twitter-card image alt text matches the actual Open Graph image; homepage card gained its missing alt.
+6. Interior-page `theme-color` matches the rendered white surface.
+7. Keyboard focus ring uses ink on light interior pages (lime was ~1.4:1 on white).
+8. Accessibility (axe) release gate extended to contact, privacy, terms, and 404 pages.
+9. Release manifest v1.0.1 re-pins published artifacts with the canonical-interlock reference corrected to `NellInc/Bounder@main`.
+
 ## 1.0.0 · 2026-07-15
 
 First release of Bounder as a simulation-only physical-interlock reference architecture.

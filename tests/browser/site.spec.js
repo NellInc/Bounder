@@ -96,3 +96,35 @@ test("mobile pages do not overflow and retain usable controls", async ({ page })
     }
   }
 });
+
+test("interior pages have no detectable accessibility violations", async ({ page }) => {
+  // Audit 2026-07: axe previously ran only on the homepage and simulator, so
+  // contrast/focus regressions on interior pages went unguarded.
+  test.setTimeout(90_000);
+  for (const path of ["/contact.html", "/privacy.html", "/terms.html", "/404.html"]) {
+    const errors = collectErrors(page);
+    await page.goto(path);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations, `${path} has accessibility violations`).toEqual([]);
+    expect(errors, `${path} logged console errors`).toEqual([]);
+  }
+});
+
+test("primary and footer navigation are consistent across pages", async ({ page }) => {
+  // Audit 2026-07: every page carried a different nav set. Interior headers and
+  // all footers are now canonical; this pins them.
+  const interior = ["/simulator.html?webgl=off", "/contact.html", "/privacy.html", "/terms.html"];
+  // Compare lowercased: CSS text-transform is styling, not content.
+  const expectedHeader = ["architecture", "applications", "simulator", "safety", "contact"];
+  const expectedFooter = ["terms", "privacy", "contact", "github"];
+  for (const path of interior) {
+    await page.goto(path);
+    const header = (await page.locator("nav.header-nav a").allInnerTexts()).map((s) => s.trim().toLowerCase());
+    expect(header, `${path} header nav diverges`).toEqual(expectedHeader);
+  }
+  for (const path of ["/", ...interior]) {
+    await page.goto(path);
+    const footer = (await page.locator("nav.secondary-nav a").allInnerTexts()).map((s) => s.trim().toLowerCase());
+    expect(footer, `${path} footer nav diverges`).toEqual(expectedFooter);
+  }
+});

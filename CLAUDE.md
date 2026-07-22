@@ -89,6 +89,24 @@ npx serve .
 
 **Canonical URL:** All pages should use `https://www.bounder.io/` (with www prefix) in canonical tags and Open Graph metadata.
 
+**Release procedure** (learned the hard way cutting v1.0.1, 2026-07-18):
+
+1. Land all content/code changes first — including CHANGELOG and VERSION, which are
+   themselves pinned artifacts.
+2. **Manifest generation is the LAST step before commit.** Regenerate
+   `release/bounder-reference-v<VERSION>.manifest.json` (recompute bytes + sha256 for
+   every pinned file) only after every other file is final; any later edit to a pinned
+   file drifts the manifest and re-reds the suite.
+3. The manifest test derives the expected manifest filename from `VERSION` — a release
+   bump needs no test edit.
+4. `canonical_interlock` must reference the canonical repo (`NellInc/Bounder`, ref
+   `main`) and a commit that exists there — never the retired `NellWatson/Bounder`
+   mirror (v1.0.0's interlock pointed at the mirror; corrected in v1.0.1).
+5. Keep prior-release manifests untouched as historical records; each release adds a
+   new manifest file.
+6. Green `npm test` + `npx playwright test`, then commit (`release: …`) and tag
+   `v<VERSION>`.
+
 ## CSS Design System
 
 Root-level pages use CSS custom properties defined in `styles.css`:
