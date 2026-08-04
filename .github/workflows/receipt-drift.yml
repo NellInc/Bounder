@@ -30,23 +30,49 @@ jobs:
         with:
           node-version: 22
       - run: npm test
-      - name: Compare receipts and schemas with the canonical interlock repository
+      - name: Compare receipts and schemas with the pinned canonical release
         shell: bash
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
-          base="https://raw.githubusercontent.com/NellWatson/Bounder/master"
+          version="$(tr -d '[:space:]' < VERSION)"
+          manifest="release/bounder-reference-v${version}.manifest.json"
+          IFS=$'\t' read -r canonical_repository canonical_commit < <(node - "$manifest" <<'NODE'
+          const { readFileSync } = require("node:fs");
+
+          const manifest = JSON.parse(readFileSync(process.argv[2], "utf8"));
+          const repository = new URL(manifest.canonical_interlock.repository);
+          const repositoryPath = repository.pathname.replace(/^\/+|\/+$/g, "");
+          const commit = manifest.canonical_interlock.commit;
+
+          if (repository.protocol !== "https:" || repository.hostname !== "github.com") {
+            throw new Error("canonical_interlock.repository must be an HTTPS GitHub URL");
+          }
+          if (!/^[^/]+\/[^/]+$/.test(repositoryPath)) {
+            throw new Error("canonical_interlock.repository must identify one GitHub repository");
+          }
+          if (manifest.canonical_interlock.ref !== "main") {
+            throw new Error("canonical_interlock.ref must be main");
+          }
+          if (!/^[0-9a-f]{40}$/.test(commit)) {
+            throw new Error("canonical_interlock.commit must be a full Git commit SHA");
+          }
+
+          console.log(`${repositoryPath}\t${commit}`);
+          NODE
+          )
+          base="https://raw.githubusercontent.com/${canonical_repository}/${canonical_commit}"
           nonce="$(date +%s)"
-          curl -fsSL --retry 4 --retry-all-errors "$base/fixtures/web-simulator-receipts.v1.json?cache=$nonce" -o "$tmp/receipts.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/bounder.receipt.v1.schema.json?cache=$nonce" -o "$tmp/receipt-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/bounder.receipt-bundle.v1.schema.json?cache=$nonce" -o "$tmp/bundle-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/creedspace-bounder-golden-v1.json?cache=$nonce" -o "$tmp/fleet-golden.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/creedspace-bounder-envelope-v1.schema.json?cache=$nonce" -o "$tmp/fleet-envelope-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/creedspace-bounder-policy-v1.schema.json?cache=$nonce" -o "$tmp/fleet-policy-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/creedspace-bounder-profile-v1.schema.json?cache=$nonce" -o "$tmp/fleet-profile-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/creedspace-bounder-roundtrip-v1.json?cache=$nonce" -o "$tmp/fleet-roundtrip.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/contracts/creedspace-bounder-roundtrip-v1.schema.json?cache=$nonce" -o "$tmp/fleet-roundtrip-schema.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/data/bounder-receipts.v1.json?cache=$nonce" -o "$tmp/receipts.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/bounder.receipt.v1.schema.json?cache=$nonce" -o "$tmp/receipt-schema.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/bounder.receipt-bundle.v1.schema.json?cache=$nonce" -o "$tmp/bundle-schema.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/data/creedspace-bounder-golden-v1.json?cache=$nonce" -o "$tmp/fleet-golden.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-envelope-v1.schema.json?cache=$nonce" -o "$tmp/fleet-envelope-schema.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-policy-v1.schema.json?cache=$nonce" -o "$tmp/fleet-policy-schema.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-profile-v1.schema.json?cache=$nonce" -o "$tmp/fleet-profile-schema.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/data/creedspace-bounder-roundtrip-v1.json?cache=$nonce" -o "$tmp/fleet-roundtrip.json"
+          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-roundtrip-v1.schema.json?cache=$nonce" -o "$tmp/fleet-roundtrip-schema.json"
           cmp data/bounder-receipts.v1.json "$tmp/receipts.json"
           cmp schemas/bounder.receipt.v1.schema.json "$tmp/receipt-schema.json"
           cmp schemas/bounder.receipt-bundle.v1.schema.json "$tmp/bundle-schema.json"
