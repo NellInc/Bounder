@@ -12,8 +12,7 @@ node_modules/
 test-results/
 playwright-report/
 
-# Build scripts and temporary files
-*.mjs
+# Temporary files
 *.log
 *.tmp
 
@@ -31,3 +30,4 @@ playwright-report/
 
 # Machine-local agent state (locks are per-machine, not project content)
 .claude/*.lock
+_site/

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.2 · 2026-08-12
+
+Repository-wide trust and publication hardening. The simulator decision model and
+canonical evidence fixtures are unchanged.
+
+### Changed
+
+1. GitHub Pages now deploys an explicit public allowlist, excluding historical snapshots, tests, working assets, and repository automation.
+2. Deployment verifies the test suite before assembling the public artifact.
+3. Security guidance now describes this repository's actual static-site and simulator threat surface, with a working private-reporting route.
+4. Documentation consistently names the canonical `NellInc/Bounder` repository.
+5. Canonical pages publish a strict cross-origin referrer policy, and sitemap modification dates reflect the update.
+6. Playwright and axe-core development dependencies were refreshed to their current compatible releases.
+7. New regression tests pin publication boundaries, local references, canonical metadata, and repository guidance.
+8. Privileged GitHub Actions now use immutable commit pins; invalid checkout v7 references were replaced with the verified v6 release.
+9. The footer is timeless, removing an annual bot that would have changed release-pinned pages and broken manifest verification.
+
 ## 1.0.1 · 2026-07-23
 
 Site polish and link-integrity patch. No changes to the interlock, receipts, or

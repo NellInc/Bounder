@@ -2,21 +2,38 @@
 
 ## Supported surface
 
-The signed policy core, METTLE verifier, Go server, and hardware-independent Python safety module receive best-effort security maintenance. Historical browser assets and disabled prototype servers are retained for research and are not production-supported.
+The supported surface in this repository is the canonical root website, its
+browser simulator, published schemas and evidence fixtures, vendored Three.js
+runtime, and GitHub Pages automation. The `docs/` tree is a preserved historical
+snapshot and is not production-supported. Bounder is simulation-only: this
+repository does not provide a production control service or a supported hardware
+adapter.
 
 ## Reporting
 
-Please report suspected vulnerabilities privately to the repository owner. Do not test against public infrastructure, third-party aircraft, or devices you do not control.
+Please report suspected vulnerabilities through GitHub's private vulnerability
+reporting for [`NellInc/Bounder`](https://github.com/NellInc/Bounder/security/advisories/new).
+Do not test against public infrastructure, third-party aircraft, or devices you
+do not control.
 
 Include the affected revision, entry point, expected trust boundary, reproduction steps that do not endanger people or property, and suggested containment if known.
 
 ## Threat model summary
 
-Protected assets include physical safety, device authority, geofence integrity, policy keys, device tokens, operator accounts, telemetry privacy, and audit integrity.
+Protected assets include the integrity of published evidence, policy examples,
+schemas, release manifests, the simulator's fail-closed decisions, visitor
+privacy, and the distinction between simulation evidence and operational proof.
 
-Primary adversaries include an unauthenticated network client, a malicious website targeting a signed-in browser, a stolen device token, a compromised policy service, a replaying intermediary, an overprivileged user, and an operator making an unsafe configuration choice.
+Primary threats include tampered evidence, replayed or expired policy examples,
+unexpected cross-origin data, compromised dependencies or deployment automation,
+unsafe file uploads to the local verifier, and claims that overstate what the
+simulation demonstrates.
 
-Critical controls include exact JWT algorithms, short expiry, origin restrictions, per-device authentication, owner scoping, command allowlists, signed short-lived policies, sequence replay protection, pinned evidence keys, local sensor constraints, and device-specific safe states. The complete repository threat model is in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
+Critical controls include exact Ed25519 payload verification, pinned evidence
+keys and hashes, strict schemas, sequence and expiry checks, same-origin runtime
+fixtures, bounded cross-origin continuity fetching, fail-closed UI states,
+self-hosted runtime dependencies, immutable release manifests, and an allowlisted
+deployment artifact.
 
 ## Explicit non-guarantees
 
@@ -24,4 +41,7 @@ This repository has no current evidence of certification, production deployment,
 
 ## Security gates
 
-No live hardware connection should occur until the hardware gates in [`docs/LEGACY_STATUS.md`](docs/LEGACY_STATUS.md) are complete and independently reviewed.
+Do not connect this reference site or its simulator to live hardware. A physical
+deployment requires a separately reviewed implementation, hazard analysis,
+device-specific safe states, hardware-in-the-loop testing, operational controls,
+and applicable regulatory approval.
