@@ -4,7 +4,7 @@ if (embeddedSimulator) {
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin || event.source !== embeddedSimulator.contentWindow) return;
     if (event.data?.type !== "bounder-simulator-height") return;
-    const height = Number(event.data.height);
+    const height = event.data.height;
     if (Number.isFinite(height) && height >= 500 && height <= 2400) {
       embeddedSimulator.style.height = `${Math.ceil(height)}px`;
     }

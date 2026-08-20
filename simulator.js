@@ -1,7 +1,23 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/OrbitControls.js";
-import { BUILDING_SPECS, ROUTE_WAYPOINTS, WORLD_BOUNDS } from "./simulator-world.js";
+import { BUILDING_SPECS, ROUTE_WAYPOINTS, WORLD_BOUNDS, findPolylineBuildingCollisions } from "./simulator-world.js";
 import { loadPilotEvidence } from "./staging-feed.js";
+import {
+  FLEET_AUDIT_AUTHENTICATION,
+  MAX_FLEET_EVIDENCE_BYTES,
+  MAX_RECEIPT_BUNDLE_BYTES,
+  RESILIENCE_CONTRACTS,
+  SIMULATOR_SCENARIOS,
+  MAX_RESILIENCE_EVENT_CHARACTERS,
+  createResilienceStreamSequence,
+  fetchSimulatorJSON,
+  parseSimulatorJSON,
+  resolveAffectedGuardianIDs,
+  resolveFleetGuardianAliases,
+  resolveResilienceStreamURL,
+  validateFleetEvidence,
+  validateReceiptBundle
+} from "./simulator-contracts.js";
 
 const root = document.querySelector(".simulator-workbench");
 const stage = root.querySelector(".simulator-stage");
@@ -21,6 +37,7 @@ const playButton = root.querySelector("[data-action='play']");
 const fleetButton = root.querySelector("[data-action='fleet']");
 const tourButton = root.querySelector("[data-action='tour']");
 const operatorTour = root.querySelector("[data-operator-tour]");
+const receiptSummary = root.querySelector(".receipt-details summary");
 const tourFields = Object.fromEntries([...root.querySelectorAll("[data-tour]")].map((element) => [element.dataset.tour, element]));
 const tourActions = Object.fromEntries([...root.querySelectorAll("[data-tour-action]")].map((element) => [element.dataset.tourAction, element]));
 const resilienceLab = root.querySelector(".resilience-lab");
@@ -84,20 +101,37 @@ const pressedNavigationKeys = new Set();
 const cameraForward = new THREE.Vector3();
 const cameraRight = new THREE.Vector3();
 const cameraMovement = new THREE.Vector3();
+const syncNavigationState = () => {
+  stage.dataset.navigationActive = String(pressedNavigationKeys.size > 0);
+};
+syncNavigationState();
 
-canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
+const focusWithoutScroll = (element) => {
+  try {
+    element.focus({ preventScroll: true });
+  } catch (error) {
+    console.warn("Bounder could not move keyboard focus", error);
+  }
+};
+
+canvas.addEventListener("pointerdown", () => focusWithoutScroll(canvas));
 canvas.addEventListener("keydown", (event) => {
   if (!navigationCodes.has(event.code)) return;
   event.preventDefault();
   pressedNavigationKeys.add(event.code);
   stage.dataset.lastNavigationKey = event.code;
+  syncNavigationState();
 });
 canvas.addEventListener("keyup", (event) => {
   if (!navigationCodes.has(event.code)) return;
   event.preventDefault();
   pressedNavigationKeys.delete(event.code);
+  syncNavigationState();
 });
-canvas.addEventListener("blur", () => pressedNavigationKeys.clear());
+canvas.addEventListener("blur", () => {
+  pressedNavigationKeys.clear();
+  syncNavigationState();
+});
 
 const updateCameraNavigation = (delta) => {
   if (pressedNavigationKeys.size === 0) return;
@@ -288,7 +322,7 @@ const addBuilding = (spec, index) => {
   awning.position.set(door.position.x, 1.08, spec.depth / 2 + 0.24);
   awning.rotation.x = -0.18;
   group.add(awning);
-  if (index % 3 === 0) {
+  if (spec.hasChimney) {
     const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.75, 0.3), doorMaterial);
     chimney.position.set(spec.width * 0.25, spec.height + 0.55, 0);
     chimney.castShadow = true;
@@ -658,20 +692,13 @@ const curves = Object.fromEntries(Object.entries(ROUTE_WAYPOINTS).map(([name, wa
   new THREE.CatmullRomCurve3(waypoints.map(([x, y, z]) => new THREE.Vector3(x, y, z)), false, "centripetal", 0.35)
 ]));
 
-const findCurveBuildingCollisions = (curve, clearance = 0.45) => {
-  const collisions = new Set();
-  for (const point of curve.getPoints(500)) {
-    for (const building of BUILDING_SPECS) {
-      const insideX = Math.abs(point.x - building.x) <= building.width / 2 + clearance;
-      const insideZ = Math.abs(point.z - building.z) <= building.depth / 2 + clearance;
-      if (insideX && insideZ && point.y <= building.height + 0.8 + clearance) collisions.add(building.name);
-    }
-  }
-  return [...collisions];
-};
-const routeClearanceAudit = Object.fromEntries(Object.entries(curves).map(([name, curve]) => [name, findCurveBuildingCollisions(curve)]));
+const routeClearanceAudit = Object.fromEntries(Object.entries(curves).map(([name, curve]) => [
+  name,
+  findPolylineBuildingCollisions(curve.getPoints(500).map(({ x, y, z }) => [x, y, z]), 0.45)
+]));
 window.__bounderSceneAudit = {
   buildingCount: BUILDING_SPECS.length,
+  buildingBounds: BUILDING_SPECS.map(({ name, visibleBounds }) => ({ name, ...visibleBounds })),
   routeClearance: routeClearanceAudit,
   routesClear: Object.values(routeClearanceAudit).every((collisions) => collisions.length === 0)
 };
@@ -742,7 +769,7 @@ const operatorTourSteps = Object.freeze([
     id: "signed-baseline",
     scenario: "safe",
     fleet: false,
-    title: "Verify the signed baseline",
+    title: "Inspect the recorded baseline",
     summary: "A narrow recovery request is permitted only after Bounder verifies its issuer, exact device subject, sequence, validity window, evidence, and local operating state.",
     proof: "Open the decision receipt and inspect the issuer, subject, sequence, evidence age, and policy hash."
   },
@@ -768,7 +795,7 @@ const operatorTourSteps = Object.freeze([
     fleet: true,
     title: "Prevent blue-on-blue action",
     summary: "Authenticated friendly presence inside the signed separation distance stops the requested state change locally.",
-    proof: "The friendly-force rule changes to DENY and the adapter retains its safe state."
+    proof: "The friendly-force rule changes to HOLD and the adapter retains its safe state."
   },
   {
     id: "evidence-only-roe",
@@ -788,44 +815,18 @@ const operatorTourSteps = Object.freeze([
   }
 ]);
 
-const expectedScenarioIDs = Object.keys(scenarioPresentation);
-const validRules = new Set(["all", ...[...root.querySelectorAll(".rule-stack li")].map((item) => item.dataset.rule)]);
+const expectedScenarioIDs = SIMULATOR_SCENARIOS;
 let receiptBundle;
 let receiptsByScenario = new Map();
 let fleetEvidence;
+let fleetGuardianAliases = new Map();
 let fleetMode = false;
 
-const validateReceiptBundle = (bundle) => {
-  if (!bundle || bundle.version !== "bounder-receipt-bundle/v1" || bundle.engine !== "bounder-io/interlock" || !Array.isArray(bundle.receipts)) {
-    throw new Error("receipt bundle metadata is invalid");
-  }
-  if (bundle.receipts.length !== expectedScenarioIDs.length) throw new Error("receipt bundle scenario count is invalid");
-  const receipts = new Map();
-  for (const receipt of bundle.receipts) {
-    if (!receipt || receipt.version !== "bounder-receipt/v1" || !expectedScenarioIDs.includes(receipt.scenario)) {
-      throw new Error("receipt scenario or version is invalid");
-    }
-    if (receipts.has(receipt.scenario) || !validRules.has(receipt.rule)) throw new Error("receipt scenario or rule is duplicated or unknown");
-    if (typeof receipt.allowed !== "boolean" || typeof receipt.code !== "string" || typeof receipt.reason !== "string") {
-      throw new Error("receipt decision is invalid");
-    }
-    if (typeof receipt.signature_verified !== "boolean" || !/^sha256:[0-9a-f]{64}$/.test(receipt.policy_hash)) {
-      throw new Error("receipt provenance is invalid");
-    }
-    if (!receipt.adapter || receipt.adapter.command_sent !== false || typeof receipt.adapter.output !== "string") {
-      throw new Error("receipt adapter state is invalid");
-    }
-    if ((receipt.scenario === "safe") !== receipt.allowed) throw new Error("receipt allow set is invalid");
-    receipts.set(receipt.scenario, receipt);
-  }
-  if (expectedScenarioIDs.some((name) => !receipts.has(name))) throw new Error("receipt bundle is incomplete");
-  return receipts;
-};
-
 const loadReceiptBundle = async () => {
-  const response = await fetch("./data/bounder-receipts.v1.json", { cache: "no-cache", credentials: "same-origin" });
-  if (!response.ok) throw new Error(`receipt bundle request failed with ${response.status}`);
-  const bundle = await response.json();
+  const bundle = await fetchSimulatorJSON("./data/bounder-receipts.v1.json", {
+    maxBytes: MAX_RECEIPT_BUNDLE_BYTES,
+    label: "receipt bundle"
+  });
   const receipts = validateReceiptBundle(bundle);
   receiptBundle = bundle;
   receiptsByScenario = receipts;
@@ -833,49 +834,13 @@ const loadReceiptBundle = async () => {
   stage.dataset.receiptEngine = bundle.engine;
   stage.dataset.receiptCount = String(receipts.size);
   stage.dataset.receiptsReady = "true";
+  if (rendererOperational) delete stage.dataset.failClosed;
 };
 
-const validateFleetEvidence = (evidence) => {
-  if (!evidence || evidence.version !== "bounder-fleet-evidence/v1" || evidence.fleet_id !== "relief-fleet") {
-    throw new Error("fleet evidence metadata is invalid");
-  }
-  if (!evidence.summary || evidence.summary.devices !== 16 || evidence.summary.passed !== 16 || evidence.summary.allowed + evidence.summary.blocked !== 16 || typeof evidence.policy_profile !== "string" || !Array.isArray(evidence.devices) || evidence.devices.length !== 16) {
-    throw new Error("fleet evidence summary is invalid");
-  }
-  const deviceIDs = new Set();
-  for (const device of evidence.devices) {
-    if (!device?.passed || typeof device.device_id !== "string" || typeof device.scenario !== "string" || typeof device.receipt?.code !== "string" || typeof device.receipt.allowed !== "boolean") {
-      throw new Error("fleet device evidence is invalid");
-    }
-    if (deviceIDs.has(device.device_id)) throw new Error("fleet device evidence is duplicated");
-    deviceIDs.add(device.device_id);
-  }
-  if (!evidence.resilience || evidence.resilience.version !== "bounder-resilience-evidence/v1" || evidence.resilience.mode !== "deterministic-live-replay" || !Array.isArray(evidence.resilience.scenarios) || evidence.resilience.scenarios.length < 8) {
-    throw new Error("fleet resilience evidence is invalid");
-  }
-  const resilienceIDs = new Set();
-  for (const scenario of evidence.resilience.scenarios) {
-    if (!scenario?.id || resilienceIDs.has(scenario.id) || !scenario.name || !scenario.expected_code || !scenario.safe_response || !scenario.proof || !Array.isArray(scenario.events) || scenario.events.length < 3) {
-      throw new Error("fleet resilience scenario is invalid");
-    }
-    let previousTime = -1;
-    for (const event of scenario.events) {
-      if (!Number.isInteger(event.at_ms) || event.at_ms < previousTime || !event.kind || !event.status || !event.code || !event.message) {
-        throw new Error("fleet resilience timeline is invalid");
-      }
-      previousTime = event.at_ms;
-    }
-    resilienceIDs.add(scenario.id);
-  }
-  for (const required of ["coherent-snapshot-rollback", "continuity-lease-expiry"]) {
-    if (!resilienceIDs.has(required)) throw new Error(`fleet resilience evidence is missing ${required}`);
-  }
-  return evidence;
-};
 
 const renderFleetEvidence = (evidence) => {
   fleetFields.name.textContent = evidence.fleet_id;
-  fleetFields.devices.textContent = `${evidence.summary.devices} verified`;
+  fleetFields.devices.textContent = `${evidence.summary.devices} recorded`;
   fleetFields.policy.textContent = evidence.policy_profile;
   fleetFields.policy.title = evidence.policy_profile;
   fleetFields.evidence.textContent = `${evidence.summary.allowed} allow · ${evidence.summary.blocked} hold`;
@@ -893,6 +858,8 @@ const renderFleetEvidence = (evidence) => {
     const code = document.createElement("small");
     code.textContent = device.receipt.code.replaceAll("_", " ");
     node.append(marker, label, code);
+    node.dataset.baseLabel = `${device.device_id}: ${device.scenario}; ${device.receipt.code}`;
+    node.setAttribute("aria-label", node.dataset.baseLabel);
     fragment.append(node);
   }
   fleetNodes.replaceChildren(fragment);
@@ -901,40 +868,14 @@ const renderFleetEvidence = (evidence) => {
   stage.dataset.fleetReady = "true";
 };
 
-const resilienceRoute = Object.freeze({
-  "network-partition": "civilian",
-  "audit-outage": "civilian",
-  "corrupted-envelope": "replay",
-  "clock-rollback": "window",
-  "guardian-restart": "replay",
-  "key-revocation": "replay",
-  "stale-evidence": "weather",
-  "partial-rollout": "civilian",
-  "fleet-revocation": "link",
-  "offline-expiry": "link",
-  "coherent-snapshot-rollback": "replay",
-  "continuity-lease-expiry": "link"
-});
-const resilienceRule = Object.freeze({
-  "network-partition": "link",
-  "audit-outage": "fleet",
-  "corrupted-envelope": "fleet",
-  "clock-rollback": "operating",
-  "guardian-restart": "fleet",
-  "key-revocation": "fleet",
-  "stale-evidence": "authority",
-  "partial-rollout": "fleet",
-  "fleet-revocation": "fleet",
-  "offline-expiry": "authority",
-  "coherent-snapshot-rollback": "fleet",
-  "continuity-lease-expiry": "authority"
-});
+const resilienceRoute = Object.freeze(Object.fromEntries(Object.entries(RESILIENCE_CONTRACTS).map(([id, contract]) => [id, contract.route])));
+const resilienceRule = Object.freeze(Object.fromEntries(Object.entries(RESILIENCE_CONTRACTS).map(([id, contract]) => [id, contract.rule])));
 
 const continuityFrames = Object.freeze({
   "coherent-snapshot-rollback": [
     { status: "Floors agree", local: "Current durable receipt floor", fleet: "Matching signed receipt floor", lease: "05:00 signed", authority: "ACTIVE", held: false },
     { status: "Rollback exposed", local: "Coherent older snapshot", fleet: "Newer signed receipt floor", lease: "Revoked", authority: "FROZEN", held: true },
-    { status: "Durable hold", local: "Rollback marker persisted", fleet: "Signed proof verified", lease: "None", authority: "HOLD", held: true },
+    { status: "Durable hold", local: "Rollback marker persisted", fleet: "Recorded signed proof", lease: "None", authority: "HOLD", held: true },
     { status: "Reconciliation required", local: "Awaiting floor adoption", fleet: "Hold receipt recorded", lease: "New policy required", authority: "HOLD", held: true }
   ],
   "continuity-lease-expiry": [
@@ -948,16 +889,21 @@ let selectedResilience;
 let resilienceCursor = -1;
 let resilienceTimers = [];
 let resilienceSource;
+let resilienceStreamTimeout;
+let resilienceTransportGeneration = 0;
 let resilienceMode = false;
 
 const clearResilienceTransport = () => {
+  resilienceTransportGeneration += 1;
   for (const timer of resilienceTimers) window.clearTimeout(timer);
   resilienceTimers = [];
-  if (resilienceSource) {
-    resilienceSource.close();
-    resilienceSource = undefined;
-  }
+  if (resilienceStreamTimeout) window.clearTimeout(resilienceStreamTimeout);
+  resilienceStreamTimeout = undefined;
+  const source = resilienceSource;
+  resilienceSource = undefined;
+  if (source) source.close();
   resilienceActions.pause.disabled = true;
+  return resilienceTransportGeneration;
 };
 
 const renderResilienceTimeline = () => {
@@ -998,9 +944,13 @@ const renderContinuityProof = (cursor = resilienceCursor) => {
 };
 
 const markAffectedGuardians = (device) => {
-  for (const node of fleetNodes.querySelectorAll(".fleet-node")) {
-    const all = device === "all guardians" || device === "six canaries";
-    node.classList.toggle("is-affected", all || node.dataset.deviceId === device);
+  const nodes = [...fleetNodes.querySelectorAll(".fleet-node")];
+  const guardianIDs = nodes.map((node) => node.dataset.deviceId);
+  const affected = device ? new Set(resolveAffectedGuardianIDs(device, guardianIDs, fleetGuardianAliases)) : new Set();
+  for (const node of nodes) {
+    const isAffected = affected.has(node.dataset.deviceId);
+    node.classList.toggle("is-affected", isAffected);
+    node.setAttribute("aria-label", `${node.dataset.baseLabel}${isAffected ? "; affected by selected fault" : ""}`);
   }
 };
 
@@ -1017,7 +967,7 @@ const applyResilienceEvent = (event) => {
   markAffectedGuardians(event.device_id || selectedResilience.affected_device);
   receiptSource.textContent = "Fleet resilience evidence";
   receiptFields.engine.textContent = "Creed Space Fleet + Bounder guardian";
-  receiptFields.signature.textContent = "Verified in Fleet laboratory";
+  receiptFields.signature.textContent = FLEET_AUDIT_AUTHENTICATION.label;
   receiptFields.policy.textContent = fleetEvidence.policy_profile;
   receiptFields.issuer.textContent = "creed.space/fleet";
   receiptFields.subject.textContent = event.device_id || selectedResilience.affected_device;
@@ -1053,6 +1003,7 @@ const applyResilienceEvent = (event) => {
 
 const resetResilience = () => {
   clearResilienceTransport();
+  delete stage.dataset.resilienceFallback;
   resilienceCursor = -1;
   resilienceScrubber.value = "0";
   resilienceFields.time.textContent = "0.00 s";
@@ -1072,7 +1023,7 @@ const resetResilience = () => {
     adapterOutput.textContent = "No state change yet";
     receiptSource.textContent = "Fleet resilience evidence";
     receiptFields.engine.textContent = "Creed Space Fleet + Bounder guardian";
-    receiptFields.signature.textContent = "Verified in Fleet laboratory";
+    receiptFields.signature.textContent = FLEET_AUDIT_AUTHENTICATION.label;
     receiptFields.policy.textContent = fleetEvidence.policy_profile;
     receiptFields.issuer.textContent = "creed.space/fleet";
     receiptFields.subject.textContent = selectedResilience.affected_device;
@@ -1085,50 +1036,96 @@ const resetResilience = () => {
 };
 
 const playResilienceLocally = () => {
-  clearResilienceTransport();
+  const generation = clearResilienceTransport();
+  if (!selectedResilience) return;
+  const scenarioID = selectedResilience.id;
   const origin = resilienceCursor >= 0 ? selectedResilience.events[resilienceCursor].at_ms : 0;
+  let pending = 0;
   selectedResilience.events.forEach((event, index) => {
     if (index <= resilienceCursor) return;
+    pending += 1;
     resilienceTimers.push(window.setTimeout(() => {
+      if (generation !== resilienceTransportGeneration || selectedResilience?.id !== scenarioID) return;
       applyResilienceEvent(event);
       if (index === selectedResilience.events.length - 1) resilienceActions.pause.disabled = true;
     }, Math.max(0, event.at_ms - origin)));
   });
-  resilienceActions.pause.disabled = false;
-  resilienceFields.transport.textContent = "Deterministic evidence replay";
+  resilienceActions.pause.disabled = pending === 0;
+  resilienceFields.transport.textContent = pending === 0 ? "Evidence recorded" : "Deterministic evidence replay";
 };
 
 const runResilience = () => {
   if (!selectedResilience) return;
   resetResilience();
-  if (!("EventSource" in window)) {
+  const scenario = selectedResilience;
+  const configuredEndpoint = document.querySelector('meta[name="bounder-resilience-stream"]')?.content ?? "";
+  let endpoint;
+  try {
+    endpoint = resolveResilienceStreamURL(configuredEndpoint, window.location.href, scenario.id);
+  } catch (error) {
+    console.warn("Bounder resilience stream configuration is invalid; using recorded evidence", error);
+  }
+  if (!endpoint || !("EventSource" in window)) {
     playResilienceLocally();
     return;
   }
-  let received = false;
-  const source = new EventSource(`./api/resilience/events?scenario=${encodeURIComponent(selectedResilience.id)}`);
+
+  const generation = resilienceTransportGeneration;
+  const sequence = createResilienceStreamSequence(scenario);
+  let source;
+  const isCurrent = () => generation === resilienceTransportGeneration && selectedResilience?.id === scenario.id && resilienceSource === source;
+  const fallBack = (error) => {
+    if (!isCurrent()) return;
+    console.warn("Bounder resilience stream was rejected; continuing with recorded evidence", error);
+    stage.dataset.resilienceFallback = "true";
+    playResilienceLocally();
+  };
+  const armTimeout = () => {
+    if (resilienceStreamTimeout) window.clearTimeout(resilienceStreamTimeout);
+    resilienceStreamTimeout = window.setTimeout(() => fallBack(new Error("resilience stream timed out")), 2500);
+  };
+  try {
+    source = new EventSource(endpoint);
+  } catch (error) {
+    playResilienceLocally();
+    return;
+  }
   resilienceSource = source;
   resilienceActions.pause.disabled = false;
   resilienceFields.transport.textContent = "Connecting to local Fleet stream";
+  armTimeout();
   source.addEventListener("resilience", ({ data }) => {
-    received = true;
+    if (!isCurrent()) return;
     try {
-      applyResilienceEvent(JSON.parse(data));
+      if (typeof data !== "string" || data.length > MAX_RESILIENCE_EVENT_CHARACTERS) {
+        throw new Error("resilience stream event is malformed or oversized");
+      }
+      const { event, complete } = sequence.push(parseSimulatorJSON(data, "resilience stream event", {
+        maxBytes: MAX_RESILIENCE_EVENT_CHARACTERS
+      }));
+      applyResilienceEvent(event);
+      if (complete) {
+        sequence.finish();
+        clearResilienceTransport();
+        resilienceFields.transport.textContent = "Evidence recorded";
+      } else {
+        armTimeout();
+      }
     } catch (error) {
-      console.error("Invalid resilience stream event", error);
-      source.close();
+      fallBack(error);
     }
   });
   source.addEventListener("complete", () => {
-    source.close();
-    resilienceSource = undefined;
-    resilienceActions.pause.disabled = true;
+    if (!isCurrent()) return;
+    try {
+      sequence.finish();
+      clearResilienceTransport();
+      resilienceFields.transport.textContent = "Evidence recorded";
+    } catch (error) {
+      fallBack(error);
+    }
   });
-  source.onerror = () => {
-    source.close();
-    resilienceSource = undefined;
-    if (!received) playResilienceLocally();
-  };
+  source.onerror = () => fallBack(new Error("resilience stream failed"));
 };
 
 const selectResilienceScenario = (id) => {
@@ -1138,8 +1135,7 @@ const selectResilienceScenario = (id) => {
   resilienceMode = false;
   selectScenario(resilienceRoute[id]);
   resilienceMode = true;
-  playing = false;
-  playButton.textContent = "Play simulation";
+  setPlaying(false);
   playButton.disabled = true;
   for (const button of root.querySelectorAll("[data-scenario]")) {
     button.setAttribute("aria-pressed", "false");
@@ -1166,6 +1162,7 @@ const renderResilienceEvidence = (evidence) => {
     button.className = "resilience-scenario";
     button.dataset.resilienceScenario = scenario.id;
     button.setAttribute("aria-pressed", "false");
+    button.disabled = true;
     button.textContent = scenario.name;
     button.addEventListener("click", () => selectResilienceScenario(scenario.id));
     fragment.append(button);
@@ -1175,10 +1172,11 @@ const renderResilienceEvidence = (evidence) => {
 };
 
 const loadFleetEvidence = async () => {
-  const response = await fetch("./data/bounder-fleet-evidence.v1.json", { cache: "no-cache", credentials: "same-origin" });
-  if (!response.ok) throw new Error(`fleet evidence request failed with ${response.status}`);
-  const resilienceEvidence = validateFleetEvidence(await response.json());
-  renderResilienceEvidence(resilienceEvidence);
+  const fixture = await fetchSimulatorJSON("./data/bounder-fleet-evidence.v1.json", {
+    maxBytes: MAX_FLEET_EVIDENCE_BYTES,
+    label: "Fleet evidence"
+  });
+  const resilienceEvidence = await validateFleetEvidence(fixture);
 
   try {
     const configuredURL = document.querySelector('meta[name="bounder-staging-feed"]')?.content ?? "";
@@ -1193,38 +1191,54 @@ const loadFleetEvidence = async () => {
       ...pilot.evidence,
       resilience: resilienceEvidence.resilience
     };
-    renderFleetEvidence(fleetEvidence);
+    fleetGuardianAliases = resolveFleetGuardianAliases(
+      resilienceEvidence.devices.map(({ device_id: id }) => id),
+      fleetEvidence.devices.map(({ device_id: id }) => id)
+    );
     fleetSource.textContent = pilot.warning ? `${pilot.sourceLabel} · ${pilot.warning}` : pilot.sourceLabel;
     fleetSource.dataset.source = pilot.source;
   } catch (error) {
     fleetEvidence = resilienceEvidence;
-    renderFleetEvidence(fleetEvidence);
+    fleetGuardianAliases = new Map(resilienceEvidence.devices.map((device) => [device.device_id, device.device_id]));
     fleetSource.textContent = "Recorded Fleet laboratory · 100-device pilot unavailable";
     fleetSource.dataset.source = "fallback";
     console.warn("Bounder staging pilot evidence unavailable", error);
   }
+  renderFleetEvidence(fleetEvidence);
+  renderResilienceEvidence(fleetEvidence);
 };
 
 let selectedScenario = "safe";
 let progress = 0;
-let playing = !reduceMotion;
+let playing = false;
 let lastTime = 0;
 let deniedTime = 0;
 let currentReceipt;
+let animationFrame;
+let rendererOperational = true;
+
+const setPlaying = (enabled) => {
+  playing = Boolean(enabled) && rendererOperational && !document.hidden;
+  playButton.textContent = playing ? "Pause simulation" : "Play simulation";
+  playButton.setAttribute("aria-pressed", String(playing));
+  stage.dataset.playing = String(playing);
+};
+
+setPlaying(false);
 
 const setRuleState = (failedRule, triggered) => {
   for (const item of root.querySelectorAll(".rule-stack li")) {
     const isTarget = item.dataset.rule === failedRule;
     item.classList.toggle("is-failed", isTarget && triggered);
     item.classList.toggle("is-monitoring", isTarget && !triggered);
-    item.querySelector("strong").textContent = isTarget ? (triggered ? "DENY" : "CHECK") : "PASS";
+    item.querySelector("strong").textContent = isTarget ? (triggered ? "HOLD" : "CHECK") : "PASS";
   }
 };
 
 const renderReceiptMetadata = (receipt) => {
   receiptSource.textContent = receipt.decision_source === receiptBundle.engine ? "Go interlock receipt" : "Adapter receipt after Go verification";
   receiptFields.engine.textContent = receipt.decision_source;
-  receiptFields.signature.textContent = receipt.signature_verified ? "Ed25519 verified by engine" : "Verification precondition failed";
+  receiptFields.signature.textContent = receipt.signature_verified ? "Recorded as verified by Go engine" : "Recorded verification failed";
   receiptFields.policy.textContent = receipt.policy_id;
   receiptFields.issuer.textContent = receipt.issuer;
   receiptFields.subject.textContent = receipt.subject;
@@ -1262,9 +1276,7 @@ const selectScenario = (name) => {
   currentReceipt = receipt;
   progress = 0;
   deniedTime = 0;
-  playing = !reduceMotion;
-  playButton.textContent = playing ? "Pause simulation" : "Play simulation";
-  playButton.setAttribute("aria-pressed", String(!playing));
+  setPlaying(!reduceMotion);
   for (const button of root.querySelectorAll("[data-scenario]")) {
     button.setAttribute("aria-pressed", String(button.dataset.scenario === name));
   }
@@ -1285,7 +1297,7 @@ const selectScenario = (name) => {
   drone.position.copy(curves[name].getPointAt(0));
   bounderEnvelope.material.color.set(colours.signal);
   bounderEnvelope.scale.setScalar(1);
-  setDecision(receipt, scenarioPresentation[name], name === "replay");
+  setDecision(receipt, scenarioPresentation[name], name === "replay" || reduceMotion);
 };
 
 const setFleetMode = (enabled) => {
@@ -1345,7 +1357,9 @@ const openOperatorTour = (requestedStep) => {
   showOperatorTourStep(requestedIndex >= 0 ? requestedIndex : 0);
 };
 
-const closeOperatorTour = () => {
+const closeOperatorTour = (options = {}) => {
+  const restoreFocus = options?.restoreFocus !== false;
+  const shouldRestoreFocus = restoreFocus && operatorTour.contains(document.activeElement);
   operatorTour.hidden = true;
   tourButton.setAttribute("aria-expanded", "false");
   tourButton.textContent = "Guided tour";
@@ -1356,6 +1370,7 @@ const closeOperatorTour = () => {
     parameters.delete("step");
     window.history.replaceState(null, "", `${window.location.pathname}${parameters.size ? `?${parameters}` : ""}${window.location.hash}`);
   }
+  if (shouldRestoreFocus) focusWithoutScroll(tourButton);
 };
 
 const update = (delta, elapsed) => {
@@ -1405,6 +1420,7 @@ const update = (delta, elapsed) => {
 };
 
 const resize = () => {
+  if (!rendererOperational) return;
   const width = stage.clientWidth;
   const height = stage.clientHeight;
   renderer.setSize(width, height, false);
@@ -1413,17 +1429,79 @@ const resize = () => {
 };
 
 const animate = (time) => {
+  animationFrame = undefined;
+  if (!rendererOperational) {
+    stage.dataset.animationState = "unavailable";
+    return;
+  }
+  if (document.hidden) {
+    stage.dataset.animationState = "hidden";
+    return;
+  }
   if (reduceMotion && time - lastTime < 2000) {
-    requestAnimationFrame(animate);
+    scheduleAnimation();
     return;
   }
   const delta = Math.min((time - lastTime) / 1000 || 0, 0.05);
   lastTime = time;
-  update(delta, time);
-  updateCameraNavigation(delta);
-  controls.update();
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+  try {
+    update(delta, time);
+    updateCameraNavigation(delta);
+    controls.update();
+    renderer.render(scene, camera);
+  } catch (error) {
+    console.error("Bounder WebGL rendering stopped", error);
+    handleWebGLRuntimeFailure();
+    return;
+  }
+  scheduleAnimation();
+};
+
+const scheduleAnimation = () => {
+  if (animationFrame === undefined && rendererOperational && !document.hidden) {
+    animationFrame = requestAnimationFrame(animate);
+    stage.dataset.animationState = "scheduled";
+  }
+};
+
+const stopAnimation = (state = "stopped") => {
+  if (animationFrame !== undefined) cancelAnimationFrame(animationFrame);
+  animationFrame = undefined;
+  stage.dataset.animationState = state;
+};
+
+const handleWebGLRuntimeFailure = () => {
+  if (!rendererOperational) return;
+  const focusedElement = document.activeElement;
+  const shouldMoveFocus = focusedElement instanceof Element && (
+    focusedElement === canvas ||
+    operatorTour.contains(focusedElement) ||
+    focusedElement.matches("[data-action='play'], [data-action='fleet'], [data-action='tour'], [data-scenario], [data-resilience-action], [data-resilience-scrubber], .resilience-scenario")
+  );
+  rendererOperational = false;
+  stopAnimation("unavailable");
+  setPlaying(false);
+  pressedNavigationKeys.clear();
+  syncNavigationState();
+  clearResilienceTransport();
+  playButton.disabled = true;
+  fleetButton.disabled = true;
+  tourButton.disabled = true;
+  setScenarioControlsEnabled(false);
+  setResilienceControlsEnabled(false);
+  closeOperatorTour({ restoreFocus: false });
+  stage.classList.remove("is-ready");
+  stage.classList.add("is-unavailable");
+  stage.dataset.webgl = "runtime-error";
+  stage.dataset.failClosed = "true";
+  phaseElement.textContent = "Simulation paused";
+  statusCode.textContent = "renderer_unavailable";
+  outcomeElement.textContent = "Unavailable";
+  decisionCode.textContent = "renderer_unavailable";
+  reasonElement.textContent = "The rendering context was lost. Bounder retained no command authority.";
+  adapterOutput.textContent = "No command authority";
+  setRulesUnavailable();
+  if (shouldMoveFocus) focusWithoutScroll(receiptSummary);
 };
 
 for (const button of root.querySelectorAll("[data-scenario]")) {
@@ -1437,9 +1515,7 @@ for (const button of root.querySelectorAll("[data-scenario]")) {
   });
 }
 playButton.addEventListener("click", () => {
-  playing = !playing;
-  playButton.textContent = playing ? "Pause simulation" : "Play simulation";
-  playButton.setAttribute("aria-pressed", String(!playing));
+  setPlaying(!playing);
 });
 fleetButton.addEventListener("click", () => {
   if (!fleetEvidence) return;
@@ -1474,25 +1550,57 @@ resilienceScrubber.addEventListener("input", () => {
 });
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
-    playing = false;
+    setPlaying(false);
+    pressedNavigationKeys.clear();
+    syncNavigationState();
     clearResilienceTransport();
+    if (selectedResilience) resilienceFields.transport.textContent = "Paused while this page is hidden";
+    stopAnimation("hidden");
+  } else {
+    lastTime = 0;
+    scheduleAnimation();
   }
 });
+canvas.addEventListener("webglcontextlost", (event) => {
+  event.preventDefault();
+  handleWebGLRuntimeFailure();
+});
+canvas.addEventListener("webglcontextrestored", () => {
+  stage.dataset.webgl = "runtime-error";
+});
 new ResizeObserver(resize).observe(stage);
-const reportEmbeddedHeight = () => {
-  if (window.parent !== window) {
-    window.parent.postMessage({ type: "bounder-simulator-height", height: document.documentElement.scrollHeight }, window.location.origin);
+
+const setScenarioControlsEnabled = (enabled) => {
+  const available = Boolean(enabled) && rendererOperational;
+  for (const button of root.querySelectorAll("[data-scenario]")) {
+    button.disabled = !available;
+    if (!available) button.setAttribute("aria-pressed", "false");
   }
 };
-new ResizeObserver(reportEmbeddedHeight).observe(document.body);
+
+const setResilienceControlsEnabled = (enabled) => {
+  const available = Boolean(enabled) && rendererOperational;
+  for (const button of resilienceScenarios.querySelectorAll("button")) button.disabled = !available;
+  for (const [name, control] of Object.entries(resilienceActions)) control.disabled = !available || name === "pause";
+  resilienceScrubber.disabled = !available;
+};
+
+const setRulesUnavailable = () => {
+  for (const item of root.querySelectorAll(".rule-stack li")) {
+    item.classList.remove("is-failed", "is-monitoring");
+    item.querySelector("strong").textContent = "UNAVAILABLE";
+  }
+};
 
 const showReceiptLoadFailure = () => {
-  playing = false;
+  setPlaying(false);
   playButton.disabled = true;
   fleetButton.disabled = true;
-  for (const button of root.querySelectorAll("[data-scenario]")) button.disabled = true;
+  tourButton.disabled = true;
+  setScenarioControlsEnabled(false);
+  setResilienceControlsEnabled(false);
   stage.dataset.receiptsReady = "false";
-  stage.dataset.fleetReady = "false";
+  stage.dataset.failClosed = "true";
   receiptSource.textContent = "Receipt fixture unavailable";
   phaseElement.textContent = "Simulation paused";
   statusCode.textContent = "fixture_unavailable";
@@ -1500,19 +1608,58 @@ const showReceiptLoadFailure = () => {
   decisionCode.textContent = "fixture_unavailable";
   reasonElement.textContent = "The Go interlock receipt bundle could not be loaded or validated. The simulation remains paused.";
   adapterOutput.textContent = "No command authority";
-  setRuleState("all", false);
+  setRulesUnavailable();
+};
+
+const showFleetLoadFailure = () => {
+  stage.dataset.fleetReady = "false";
+  fleetButton.disabled = true;
+  tourButton.disabled = true;
+  setResilienceControlsEnabled(false);
+  resilienceLab.hidden = true;
+  fleetSource.textContent = "Fleet evidence unavailable · local receipts remain usable";
+  fleetSource.dataset.source = "unavailable";
 };
 
 const bootstrap = async () => {
+  stage.dataset.receiptsReady = "false";
+  stage.dataset.fleetReady = "false";
   playButton.disabled = true;
-  try {
-    await Promise.all([loadReceiptBundle(), loadFleetEvidence()]);
+  fleetButton.disabled = true;
+  tourButton.disabled = true;
+  setScenarioControlsEnabled(false);
+  setResilienceControlsEnabled(false);
+
+  const settle = (promise) => promise.then((value) => ({ ok: true, value }), (error) => ({ ok: false, error }));
+  const receiptTask = settle(loadReceiptBundle());
+  const fleetTask = settle(loadFleetEvidence());
+  const requestedResilience = initialParameters.get("resilience");
+  const requestedScenario = initialParameters.get("scenario");
+
+  const receiptResult = await receiptTask;
+  const receiptReady = receiptResult.ok;
+  if (receiptReady && rendererOperational) {
+    setScenarioControlsEnabled(true);
     playButton.disabled = false;
+    selectScenario(expectedScenarioIDs.includes(requestedScenario) ? requestedScenario : "safe");
+  } else if (!receiptReady) {
+    console.warn("Bounder receipt bundle failed closed", receiptResult.error);
+    showRoute(curves.safe);
+    drone.position.copy(curves.safe.getPointAt(0));
+    showReceiptLoadFailure();
+  }
+
+  const fleetResult = await fleetTask;
+  const fleetReady = fleetResult.ok;
+  if (!fleetReady) {
+    console.warn("Bounder Fleet evidence is unavailable", fleetResult.error);
+    showFleetLoadFailure();
+  }
+
+  if (receiptReady && fleetReady && rendererOperational) {
     fleetButton.disabled = false;
-    selectScenario("safe");
-    selectResilienceScenario(fleetEvidence.resilience.scenarios[0].id);
-    const requestedResilience = initialParameters.get("resilience");
-    const requestedScenario = initialParameters.get("scenario");
+    tourButton.disabled = false;
+    setResilienceControlsEnabled(true);
     if (initialParameters.get("tour") === "1") {
       openOperatorTour(initialParameters.get("step"));
     } else if (fleetEvidence.resilience.scenarios.some(({ id }) => id === requestedResilience)) {
@@ -1525,16 +1672,13 @@ const bootstrap = async () => {
       playButton.disabled = false;
       selectScenario(requestedScenario);
       setFleetMode(initialParameters.get("fleet") === "1");
+    } else {
+      selectResilienceScenario(fleetEvidence.resilience.scenarios[0].id);
+      setFleetMode(initialParameters.get("fleet") === "1");
     }
-  } catch (error) {
-    console.error("Bounder receipt bundle failed closed", error);
-    showRoute(curves.safe);
-    drone.position.copy(curves.safe.getPointAt(0));
-    showReceiptLoadFailure();
   }
   resize();
-  reportEmbeddedHeight();
-  requestAnimationFrame(animate);
+  scheduleAnimation();
 };
 
 bootstrap();

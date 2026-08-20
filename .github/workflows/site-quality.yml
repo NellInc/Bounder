@@ -20,9 +20,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run test:coverage
       - name: Deterministic design lint
         run: npx --yes impeccable@3.2.1 detect .
+      - name: Assemble the allowlisted public artifact
+        run: npm run build
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser

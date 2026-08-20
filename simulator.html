@@ -12,6 +12,7 @@
   <meta name="theme-color" content="#11130f">
   <meta name="bounder-staging-feed" content="">
   <meta name="bounder-staging-feed-integrity" content="">
+  <meta name="bounder-resilience-stream" content="">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Bounder">
   <meta property="og:locale" content="en_GB">
@@ -93,7 +94,7 @@
       </div>
       <aside>
         <span>What you are seeing</span>
-        <p>A software-only town replays deterministic receipts from Bounder’s Go verifier. The local Fleet laboratory can also stream its signed fault evidence into the controls below.</p>
+        <p>A software-only town replays deterministic receipts from Bounder’s Go verifier. The local Fleet laboratory can also stream its recorded fault evidence into the controls below.</p>
       </aside>
     </section>
 
@@ -105,9 +106,9 @@
           <p class="workbench-summary">Change one condition at a time. Watch the same request move from permitted to held as the local evidence changes.</p>
         </div>
         <div class="workbench-actions">
-          <button class="sim-control sim-tour" type="button" data-action="tour" aria-expanded="false">Guided tour</button>
+          <button class="sim-control sim-tour" type="button" data-action="tour" aria-expanded="false" disabled>Guided tour</button>
           <button class="sim-control sim-fleet" type="button" data-action="fleet" aria-pressed="false" disabled>Show fleet</button>
-          <button class="sim-control sim-play" type="button" data-action="play" aria-pressed="false">Pause simulation</button>
+          <button class="sim-control sim-play" type="button" data-action="play" aria-pressed="false" disabled>Play simulation</button>
         </div>
       </div>
 
@@ -118,8 +119,8 @@
         </div>
         <div class="operator-tour-copy" aria-live="polite">
           <span class="fleet-kicker">Guided operator demonstration</span>
-          <h3 id="operator-tour-title" data-tour="title">Verify the signed baseline</h3>
-          <p data-tour="summary">Start with a permitted recovery state and inspect the signed decision receipt.</p>
+          <h3 id="operator-tour-title" data-tour="title">Inspect the recorded baseline</h3>
+          <p data-tour="summary">Start with a permitted recovery state and inspect the recorded decision receipt.</p>
           <p class="operator-tour-proof"><strong>Inspect:</strong> <span data-tour="proof">The issuer, subject, sequence, evidence age, and policy hash.</span></p>
           <a class="operator-tour-feedback" href="https://github.com/NellInc/Bounder/issues/new?template=operator-demo.yml" target="_blank" rel="noopener noreferrer">Report a reproducible finding <span aria-hidden="true">↗</span></a>
         </div>
@@ -131,27 +132,27 @@
       </section>
 
       <div class="scenario-controls" role="group" aria-label="Choose a simulation scenario">
-        <button class="scenario-button" type="button" data-scenario="safe" aria-pressed="true">Cleared route</button>
-        <button class="scenario-button" type="button" data-scenario="civilian" aria-pressed="false">Civilian buffer</button>
-        <button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false">Friendly separation</button>
-        <button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false">Protected site</button>
-        <button class="scenario-button" type="button" data-scenario="humanitarian" aria-pressed="false">Humanitarian corridor</button>
-        <button class="scenario-button" type="button" data-scenario="surrender" aria-pressed="false">Surrender observed</button>
-        <button class="scenario-button" type="button" data-scenario="incapacitated" aria-pressed="false">Incapacitated person</button>
-        <button class="scenario-button" type="button" data-scenario="identification" aria-pressed="false">Positive identification</button>
-        <button class="scenario-button" type="button" data-scenario="proportionality" aria-pressed="false">Proportionality</button>
-        <button class="scenario-button" type="button" data-scenario="human_authorization" aria-pressed="false">Human authorization</button>
-        <button class="scenario-button" type="button" data-scenario="altitude" aria-pressed="false">Altitude ceiling</button>
-        <button class="scenario-button" type="button" data-scenario="weather" aria-pressed="false">Weather limit</button>
-        <button class="scenario-button" type="button" data-scenario="window" aria-pressed="false">Operating window</button>
-        <button class="scenario-button" type="button" data-scenario="link" aria-pressed="false">Lost link</button>
-        <button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false">Policy replay</button>
+        <button class="scenario-button" type="button" data-scenario="safe" aria-pressed="false" disabled>Cleared route</button>
+        <button class="scenario-button" type="button" data-scenario="civilian" aria-pressed="false" disabled>Civilian buffer</button>
+        <button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false" disabled>Friendly separation</button>
+        <button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false" disabled>Protected site</button>
+        <button class="scenario-button" type="button" data-scenario="humanitarian" aria-pressed="false" disabled>Humanitarian corridor</button>
+        <button class="scenario-button" type="button" data-scenario="surrender" aria-pressed="false" disabled>Surrender observed</button>
+        <button class="scenario-button" type="button" data-scenario="incapacitated" aria-pressed="false" disabled>Incapacitated person</button>
+        <button class="scenario-button" type="button" data-scenario="identification" aria-pressed="false" disabled>Positive identification</button>
+        <button class="scenario-button" type="button" data-scenario="proportionality" aria-pressed="false" disabled>Proportionality</button>
+        <button class="scenario-button" type="button" data-scenario="human_authorization" aria-pressed="false" disabled>Human authorization</button>
+        <button class="scenario-button" type="button" data-scenario="altitude" aria-pressed="false" disabled>Altitude ceiling</button>
+        <button class="scenario-button" type="button" data-scenario="weather" aria-pressed="false" disabled>Weather limit</button>
+        <button class="scenario-button" type="button" data-scenario="window" aria-pressed="false" disabled>Operating window</button>
+        <button class="scenario-button" type="button" data-scenario="link" aria-pressed="false" disabled>Lost link</button>
+        <button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false" disabled>Policy replay</button>
       </div>
 
       <section class="fleet-control-panel" aria-labelledby="fleet-control-title">
         <div>
           <span class="fleet-kicker">Creed Space Fleet</span>
-          <strong id="fleet-control-title">One signed protective rule, locally enforced by every Guardian.</strong>
+          <strong id="fleet-control-title">One protective rule, recorded as locally enforced by every Guardian.</strong>
           <small class="fleet-source" data-fleet-source>Loading software pilot evidence</small>
         </div>
         <dl class="fleet-metrics">
@@ -161,6 +162,7 @@
           <div><dt>Evidence</dt><dd data-fleet="evidence">Loading</dd></div>
         </dl>
         <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder guardian outcomes"></div>
+        <p class="fleet-evidence-caveat">This browser checks the published Fleet records for exact contracts, payload mirrors, digests, and signature encoding. The fixture omits the audit public key bytes, so its audit signatures are recorded evidence rather than authenticated here.</p>
         <p class="fleet-contract-links"><a href="data/bounder-staging-pilot.v1.json">100-Guardian pilot evidence</a> · <a href="data/bounder-fleet-evidence.v1.json">Resilience evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a> · <a href="schemas/creedspace-bounder-checkpoint-v1.schema.json">Checkpoint schema</a></p>
       </section>
 
@@ -207,7 +209,7 @@
           <div>
             <span class="fleet-kicker">Fleet resilience laboratory</span>
             <strong id="resilience-title">Introduce a failure. Watch every boundary fail safe.</strong>
-            <p>The local laboratory streams verified Fleet events. The public demonstrator replays the same deterministic evidence when no laboratory endpoint is present.</p>
+            <p>The local laboratory streams contract-checked Fleet events. The public demonstrator replays the same deterministic evidence when no laboratory endpoint is present. Audit signatures remain recorded rather than authenticated because this fixture includes no audit public key.</p>
           </div>
           <a class="resilience-download" href="data/bounder-fleet-evidence.v1.json" download>Download evidence</a>
         </div>
@@ -226,30 +228,30 @@
             <section class="continuity-proof" data-continuity-proof hidden aria-labelledby="continuity-proof-title">
               <div class="continuity-proof-heading">
                 <span>Rollback-proof checkpoint</span>
-                <strong id="continuity-proof-title" data-resilience="checkpoint-status">Verified</strong>
+                <strong id="continuity-proof-title" data-resilience="checkpoint-status">Recorded</strong>
               </div>
               <div class="continuity-rail" aria-hidden="true">
                 <i class="continuity-local"></i><span></span><i class="continuity-fleet"></i>
               </div>
               <dl>
                 <div><dt>Local</dt><dd data-resilience="local-floor">Current floor</dd></div>
-                <div><dt>Fleet</dt><dd data-resilience="fleet-floor">Matching signed floor</dd></div>
-                <div><dt>Lease</dt><dd data-resilience="lease">05:00 signed</dd></div>
+                <div><dt>Fleet</dt><dd data-resilience="fleet-floor">Recorded matching floor</dd></div>
+                <div><dt>Lease</dt><dd data-resilience="lease">Recorded 05:00 lease</dd></div>
                 <div><dt>Authority</dt><dd data-resilience="authority">ACTIVE</dd></div>
               </dl>
             </section>
           </div>
           <div class="resilience-timeline">
             <div class="resilience-transport">
-              <button type="button" data-resilience-action="run">Run fault</button>
+              <button type="button" data-resilience-action="run" disabled>Run fault</button>
               <button type="button" data-resilience-action="pause" disabled>Pause</button>
-              <button type="button" data-resilience-action="step">Step</button>
-              <button type="button" data-resilience-action="reset">Reset</button>
+              <button type="button" data-resilience-action="step" disabled>Step</button>
+              <button type="button" data-resilience-action="reset" disabled>Reset</button>
               <span data-resilience="transport" aria-live="polite">Ready</span>
             </div>
             <label class="resilience-scrubber">
               <span>Event time <output data-resilience="time">0.00 s</output></span>
-              <input type="range" min="0" max="2100" step="50" value="0" data-resilience-scrubber aria-label="Resilience event time">
+              <input type="range" min="0" max="2100" step="50" value="0" data-resilience-scrubber aria-label="Resilience event time" disabled>
             </label>
             <ol class="resilience-events" data-resilience-events aria-label="Scenario event timeline"></ol>
           </div>
@@ -260,8 +262,8 @@
         <div class="simulator-stage">
           <canvas tabindex="0" role="img" aria-keyshortcuts="W A S D Q E" aria-describedby="simulator-navigation-help" aria-label="Three-dimensional simulation of an autonomous aircraft flying above a detailed town while Bounder evaluates local protection rules"></canvas>
           <div class="stage-status" aria-live="polite">
-            <span class="status-phase">Bounder monitoring</span>
-            <code class="status-code">evaluating</code>
+            <span class="status-phase">Evidence loading</span>
+            <code class="status-code">evidence_pending</code>
           </div>
           <div class="stage-legend" aria-hidden="true">
             <span><i class="legend-route"></i>Route projection</span>
@@ -277,29 +279,29 @@
           <div class="decision-header">
             <div class="section-label">Decision receipt</div>
             <span class="receipt-source">Loading Go interlock receipt</span>
-            <strong class="decision-outcome" id="decision-title">Monitoring</strong>
-            <code class="decision-code">evaluating</code>
-            <p class="decision-reason">Checking signed authority and local operating conditions.</p>
+            <strong class="decision-outcome" id="decision-title">Unavailable</strong>
+            <code class="decision-code">evidence_pending</code>
+            <p class="decision-reason">Waiting for signed evidence before enabling the simulator.</p>
           </div>
           <ol class="rule-stack" aria-label="Evaluated rule stack">
-            <li data-rule="fleet"><span>Fleet signature and device binding</span><strong>PASS</strong></li>
-            <li data-rule="authority"><span>Signed authority</span><strong>PASS</strong></li>
-            <li data-rule="civilian"><span>Civilian protection</span><strong>PASS</strong></li>
-            <li data-rule="friendly"><span>Friendly-force separation</span><strong>PASS</strong></li>
-            <li data-rule="protected"><span>Protected sites</span><strong>PASS</strong></li>
-            <li data-rule="humanitarian"><span>Humanitarian corridors</span><strong>PASS</strong></li>
-            <li data-rule="surrender"><span>Surrender protection</span><strong>PASS</strong></li>
-            <li data-rule="incapacitated"><span>Incapacitated-person protection</span><strong>PASS</strong></li>
-            <li data-rule="identification"><span>Positive identification</span><strong>PASS</strong></li>
-            <li data-rule="proportionality"><span>Proportionality condition</span><strong>PASS</strong></li>
-            <li data-rule="authorization"><span>Human authorization</span><strong>PASS</strong></li>
-            <li data-rule="operating"><span>Operating envelope</span><strong>PASS</strong></li>
-            <li data-rule="weather"><span>Weather and visibility</span><strong>PASS</strong></li>
-            <li data-rule="link"><span>Link and telemetry</span><strong>PASS</strong></li>
+            <li data-rule="fleet"><span>Fleet signature and device binding</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="authority"><span>Signed authority</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="civilian"><span>Civilian protection</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="friendly"><span>Friendly-force separation</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="protected"><span>Protected sites</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="humanitarian"><span>Humanitarian corridors</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="surrender"><span>Surrender protection</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="incapacitated"><span>Incapacitated-person protection</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="identification"><span>Positive identification</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="proportionality"><span>Proportionality condition</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="authorization"><span>Human authorization</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="operating"><span>Operating envelope</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="weather"><span>Weather and visibility</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="link"><span>Link and telemetry</span><strong>UNAVAILABLE</strong></li>
           </ol>
           <div class="actuation-state">
             <span>Adapter output</span>
-            <strong class="adapter-output">No state change yet</strong>
+            <strong class="adapter-output">No command authority</strong>
           </div>
           <details class="receipt-details">
             <summary>Inspect receipt evidence</summary>
@@ -345,7 +347,7 @@
       </div>
       <div class="simulator-boundary-note">
         <strong>Demonstrator, not deployment assurance.</strong>
-        <p>The displayed decisions come from deterministic Go interlock receipts and a signed Fleet contract published with their JSON schemas. Bounder is a simulation-only reference, not certified safety software or an engagement system.</p>
+        <p>The displayed decisions come from deterministic Go interlock receipts and a recorded Fleet contract published with their JSON schemas. Bounder is a simulation-only reference, not certified safety software or an engagement system.</p>
       </div>
     </section>
   </main>

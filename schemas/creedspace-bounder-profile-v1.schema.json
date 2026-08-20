@@ -1,56 +1,160 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bounder.io/contracts/creedspace-bounder-profile-v1.schema.json",
+  "$id": "https://www.bounder.io/schemas/creedspace-bounder-profile-v1.schema.json",
   "title": "Creed Space Bounder Profile v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "ttl_seconds", "constraints"],
+  "required": [
+    "version",
+    "ttl_seconds",
+    "constraints"
+  ],
   "properties": {
-    "version": { "const": "creedspace-bounder-profile/v1" },
-    "ttl_seconds": { "type": "integer", "minimum": 30, "maximum": 3600 },
-    "constraints": { "$ref": "#/$defs/constraints" }
+    "version": {
+      "const": "creedspace-bounder-profile/v1"
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 3600
+    },
+    "constraints": {
+      "$ref": "#/$defs/constraints"
+    }
   },
   "$defs": {
     "constraints": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["allowed_actions"],
+      "required": [
+        "allowed_actions"
+      ],
       "properties": {
         "allowed_actions": {
           "type": "array",
           "minItems": 1,
+          "maxItems": 4,
           "uniqueItems": true,
-          "items": { "enum": ["land", "loiter", "rtl", "intercept"] }
+          "items": {
+            "enum": [
+              "land",
+              "loiter",
+              "rtl",
+              "intercept"
+            ]
+          }
         },
-        "require_gps_fix": { "type": "boolean", "default": false },
-        "require_outside_exclusion_zones": { "type": "boolean", "default": false },
-        "min_battery_percent": { "type": "number", "minimum": 0, "maximum": 100, "default": 0 },
-        "max_altitude_metres": { "type": "number", "minimum": 0, "default": 0 },
-        "required_mettle_tier": { "enum": ["", "bronze", "silver", "gold", "platinum"], "default": "" },
-        "max_evidence_age_seconds": { "type": "integer", "minimum": 0, "maximum": 604800, "default": 0 },
-        "min_civilian_distance_metres": { "type": "number", "minimum": 0, "default": 0 },
-        "min_friendly_distance_metres": { "type": "number", "minimum": 0, "default": 0 },
-        "require_outside_protected_sites": { "type": "boolean", "default": false },
-        "require_outside_humanitarian_corridors": { "type": "boolean", "default": false },
-        "max_wind_speed_metres_per_second": { "type": "number", "minimum": 0, "default": 0 },
-        "min_visibility_metres": { "type": "number", "minimum": 0, "default": 0 },
+        "require_gps_fix": {
+          "type": "boolean",
+          "default": false
+        },
+        "require_outside_exclusion_zones": {
+          "type": "boolean",
+          "default": false
+        },
+        "min_battery_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 0
+        },
+        "max_altitude_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000,
+          "default": 0
+        },
+        "required_mettle_tier": {
+          "enum": [
+            "",
+            "bronze",
+            "silver",
+            "gold",
+            "platinum"
+          ],
+          "default": ""
+        },
+        "max_evidence_age_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 604800,
+          "default": 0
+        },
+        "min_civilian_distance_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000,
+          "default": 0
+        },
+        "min_friendly_distance_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000,
+          "default": 0
+        },
+        "require_outside_protected_sites": {
+          "type": "boolean",
+          "default": false
+        },
+        "require_outside_humanitarian_corridors": {
+          "type": "boolean",
+          "default": false
+        },
+        "max_wind_speed_metres_per_second": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 0
+        },
+        "min_visibility_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000,
+          "default": 0
+        },
         "rules_of_engagement_actions": {
           "type": "array",
+          "maxItems": 4,
           "uniqueItems": true,
-          "items": { "enum": ["land", "loiter", "rtl", "intercept"] },
+          "items": {
+            "enum": [
+              "land",
+              "loiter",
+              "rtl",
+              "intercept"
+            ]
+          },
           "default": []
         },
         "evidence_only_actions": {
           "type": "array",
+          "maxItems": 1,
           "uniqueItems": true,
-          "items": { "enum": ["intercept"] },
+          "items": {
+            "const": "intercept"
+          },
           "default": []
         },
-        "require_positive_identification": { "type": "boolean", "default": false },
-        "require_proportionality_satisfied": { "type": "boolean", "default": false },
-        "prohibit_action_on_surrender": { "type": "boolean", "default": false },
-        "prohibit_action_on_incapacitated": { "type": "boolean", "default": false },
-        "require_human_authorization": { "type": "boolean", "default": false }
+        "require_positive_identification": {
+          "type": "boolean",
+          "default": false
+        },
+        "require_proportionality_satisfied": {
+          "type": "boolean",
+          "default": false
+        },
+        "prohibit_action_on_surrender": {
+          "type": "boolean",
+          "default": false
+        },
+        "prohibit_action_on_incapacitated": {
+          "type": "boolean",
+          "default": false
+        },
+        "require_human_authorization": {
+          "type": "boolean",
+          "default": false
+        }
       }
     }
   }

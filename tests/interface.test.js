@@ -21,8 +21,6 @@ test("simulator exposes focused WASD and altitude navigation", () => {
   assert.match(simulatorHtml, /tabindex="0"/);
   assert.match(simulatorHtml, /aria-keyshortcuts="W A S D Q E"/);
   assert.match(simulatorHtml, /Use Q to descend and E to climb/);
-  assert.match(simulatorScript, /navigationCodes = new Set\(\["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE"\]\)/);
-  assert.match(simulatorScript, /updateCameraNavigation\(delta\)/);
 });
 
 test("town buildings use footprint-aware ridged roofs", () => {
@@ -45,10 +43,6 @@ test("Creed Space Fleet control is visible, interactive, and evidence backed", (
   assert.match(simulatorHtml, /Creed Space Fleet/);
   assert.match(simulatorHtml, /data-action="fleet"/);
   assert.match(simulatorHtml, /data-fleet-nodes/);
-  assert.match(simulatorScript, /fleetDrones = Array\.from/);
-  assert.match(simulatorScript, /bounder-fleet-evidence\.v1\.json/);
-  assert.match(simulatorScript, /setFleetMode\(!fleetMode\)/);
-  assert.match(simulatorScript, /const setFleetMode = \(enabled\) =>/);
   assert.match(simulatorStyles, /\.fleet-control-panel\.is-active/);
 });
 
@@ -58,10 +52,20 @@ test("resilience laboratory exposes deterministic fault controls and live-stream
   assert.match(simulatorHtml, /data-resilience-action="step"/);
   assert.match(simulatorHtml, /data-resilience-scrubber/);
   assert.match(simulatorHtml, /bounder-resilience-evidence\.v1\.schema\.json/);
-  assert.match(simulatorScript, /new EventSource\(`\.\/api\/resilience\/events\?scenario=/);
-  assert.match(simulatorScript, /playResilienceLocally\(\)/);
+  assert.match(simulatorHtml, /name="bounder-resilience-stream"/);
   assert.match(simulatorStyles, /\.resilience-console/);
   assert.match(simulatorStyles, /\.fleet-node\.is-affected/);
+});
+
+test("recorded evidence is labelled without claiming unavailable browser authentication", () => {
+  assert.match(simulatorHtml, /fixture omits the audit public key bytes/);
+  assert.match(simulatorHtml, /audit signatures are recorded evidence rather than authenticated here/);
+  assert.doesNotMatch(simulatorHtml, /streams verified Fleet events/);
+  assert.match(simulatorHtml, /inspect the recorded decision receipt/);
+  assert.doesNotMatch(simulatorHtml, /signed decision receipt/);
+  assert.doesNotMatch(simulatorScript, /Verify the signed baseline/);
+  assert.match(simulatorScript, /Recorded as verified by Go engine/);
+  assert.doesNotMatch(simulatorScript, /"Ed25519 verified by engine"/);
 });
 
 test("simulator exposes a local signed-policy verifier and WebGL-independent evidence view", () => {
@@ -78,9 +82,6 @@ test("rollback proof scenarios expose local and Fleet floors plus bounded author
   assert.match(simulatorHtml, /data-resilience="fleet-floor"/);
   assert.match(simulatorHtml, /data-resilience="lease"/);
   assert.match(simulatorHtml, /creedspace-bounder-checkpoint-v1\.schema\.json/);
-  assert.match(simulatorScript, /coherent-snapshot-rollback/);
-  assert.match(simulatorScript, /continuity-lease-expiry/);
-  assert.match(simulatorScript, /renderContinuityProof/);
   assert.match(simulatorStyles, /\.continuity-proof\.is-held/);
 });
 
@@ -88,8 +89,7 @@ test("rules-of-engagement scenarios are visible and evidence-only", () => {
   for (const scenario of ["surrender", "incapacitated", "identification", "proportionality", "human_authorization"]) {
     assert.match(simulatorHtml, new RegExp(`data-scenario="${scenario}"`));
   }
-  assert.match(simulatorScript, /const roeMarkers = Object\.freeze/);
-  assert.match(simulatorScript, /evidence-only intercept decision/);
+  assert.match(simulatorHtml, /does not issue authority or generate a deployment receipt/);
 });
 
 test("guided operator tour deep-links to six evidence-backed proofs", () => {
@@ -97,11 +97,5 @@ test("guided operator tour deep-links to six evidence-backed proofs", () => {
   assert.match(simulatorHtml, /data-operator-tour/);
   assert.match(simulatorHtml, /data-tour-action="previous"/);
   assert.match(simulatorHtml, /data-tour-action="next"/);
-  for (const step of ["signed-baseline", "fleet-projection", "civilian-protection", "friendly-separation", "evidence-only-roe", "rollback-proof"]) {
-    assert.match(simulatorScript, new RegExp(`id: "${step}"`));
-  }
-  assert.match(simulatorScript, /new URLSearchParams\(window\.location\.search\)/);
-  assert.match(simulatorScript, /initialParameters\.get\("tour"\) === "1"/);
-  assert.match(simulatorScript, /selectResilienceScenario\(step\.resilience\)/);
   assert.match(simulatorStyles, /\.operator-tour/);
 });

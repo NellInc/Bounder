@@ -5,76 +5,993 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "version", "scenario", "rule", "decision_source", "signature_verified",
-    "allowed", "code", "reason", "action", "subject", "policy_id", "issuer",
-    "sequence", "evaluated_at", "policy_hash", "evidence", "state", "adapter"
+    "version",
+    "scenario",
+    "rule",
+    "decision_source",
+    "signature_verified",
+    "allowed",
+    "code",
+    "reason",
+    "action",
+    "subject",
+    "policy_id",
+    "issuer",
+    "sequence",
+    "evaluated_at",
+    "policy_hash",
+    "evidence",
+    "state",
+    "adapter"
   ],
   "properties": {
-    "version": { "const": "bounder-receipt/v1" },
-    "scenario": { "type": "string", "minLength": 1 },
-    "rule": { "type": "string", "minLength": 1 },
-    "decision_source": { "enum": ["bounder-io/interlock", "bounder-io/adapter"] },
-    "signature_verified": { "type": "boolean" },
-    "allowed": { "type": "boolean" },
-    "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-    "reason": { "type": "string", "minLength": 1 },
-    "action": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-    "subject": { "type": "string", "minLength": 1 },
-    "policy_id": { "type": "string", "minLength": 1 },
-    "issuer": { "type": "string", "minLength": 1 },
-    "sequence": { "type": "integer", "minimum": 1 },
-    "evaluated_at": { "type": "string", "format": "date-time" },
-    "policy_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "version": {
+      "const": "bounder-receipt/v1"
+    },
+    "scenario": {
+      "enum": [
+        "safe",
+        "civilian",
+        "friendly",
+        "protected",
+        "humanitarian",
+        "surrender",
+        "incapacitated",
+        "identification",
+        "proportionality",
+        "human_authorization",
+        "altitude",
+        "weather",
+        "window",
+        "link",
+        "replay"
+      ]
+    },
+    "rule": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "decision_source": {
+      "enum": [
+        "bounder-io/interlock",
+        "bounder-io/adapter"
+      ]
+    },
+    "signature_verified": {
+      "const": true
+    },
+    "allowed": {
+      "type": "boolean"
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "\\S"
+    },
+    "action": {
+      "enum": [
+        "land",
+        "loiter",
+        "rtl",
+        "intercept"
+      ]
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "\\S"
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "\\S"
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "\\S"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "evaluated_at": {
+      "$ref": "#/$defs/utcDateTime"
+    },
+    "policy_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
     "evidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tier", "session_id", "auditor", "auditor_key_id", "verified_at", "age_seconds"],
+      "required": [
+        "tier",
+        "session_id",
+        "auditor",
+        "auditor_key_id",
+        "verified_at",
+        "age_seconds"
+      ],
       "properties": {
-        "tier": { "enum": ["bronze", "silver", "gold", "platinum"] },
-        "session_id": { "type": "string", "minLength": 1 },
-        "auditor": { "type": "string", "minLength": 1 },
-        "auditor_key_id": { "type": "string", "minLength": 1 },
-        "verified_at": { "type": "string", "format": "date-time" },
-        "age_seconds": { "type": "integer", "minimum": 0 }
+        "tier": {
+          "enum": [
+            "bronze",
+            "silver",
+            "gold",
+            "platinum"
+          ]
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "\\S"
+        },
+        "auditor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "\\S"
+        },
+        "auditor_key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "\\S"
+        },
+        "verified_at": {
+          "$ref": "#/$defs/utcDateTime"
+        },
+        "age_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 604800
+        }
       }
     },
     "state": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "gps_fix", "battery_percent", "altitude_metres", "inside_exclusion_zone",
-        "civilian_distance_metres", "friendly_distance_metres", "inside_protected_site",
-        "inside_humanitarian_corridor", "wind_speed_metres_per_second", "visibility_metres",
-        "positive_identification", "proportionality_satisfied", "surrender_observed",
-        "incapacitated_observed", "human_authorization_confirmed"
+        "gps_fix",
+        "battery_percent",
+        "altitude_metres",
+        "inside_exclusion_zone",
+        "civilian_distance_metres",
+        "friendly_distance_metres",
+        "inside_protected_site",
+        "inside_humanitarian_corridor",
+        "wind_speed_metres_per_second",
+        "visibility_metres",
+        "positive_identification",
+        "proportionality_satisfied",
+        "surrender_observed",
+        "incapacitated_observed",
+        "human_authorization_confirmed"
       ],
       "properties": {
-        "gps_fix": { "type": "boolean" },
-        "battery_percent": { "type": "number", "minimum": 0, "maximum": 100 },
-        "altitude_metres": { "type": "number", "minimum": 0 },
-        "inside_exclusion_zone": { "type": "boolean" },
-        "civilian_distance_metres": { "type": "number", "minimum": 0 },
-        "friendly_distance_metres": { "type": "number", "minimum": 0 },
-        "inside_protected_site": { "type": "boolean" },
-        "inside_humanitarian_corridor": { "type": "boolean" },
-        "wind_speed_metres_per_second": { "type": "number", "minimum": 0 },
-        "visibility_metres": { "type": "number", "minimum": 0 },
-        "positive_identification": { "type": "boolean" },
-        "proportionality_satisfied": { "type": "boolean" },
-        "surrender_observed": { "type": "boolean" },
-        "incapacitated_observed": { "type": "boolean" },
-        "human_authorization_confirmed": { "type": "boolean" }
+        "gps_fix": {
+          "type": "boolean"
+        },
+        "battery_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "altitude_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "inside_exclusion_zone": {
+          "type": "boolean"
+        },
+        "civilian_distance_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "friendly_distance_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "inside_protected_site": {
+          "type": "boolean"
+        },
+        "inside_humanitarian_corridor": {
+          "type": "boolean"
+        },
+        "wind_speed_metres_per_second": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "visibility_metres": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "positive_identification": {
+          "type": "boolean"
+        },
+        "proportionality_satisfied": {
+          "type": "boolean"
+        },
+        "surrender_observed": {
+          "type": "boolean"
+        },
+        "incapacitated_observed": {
+          "type": "boolean"
+        },
+        "human_authorization_confirmed": {
+          "type": "boolean"
+        }
       }
     },
     "adapter": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command_authorized", "command_sent", "output"],
+      "required": [
+        "command_authorized",
+        "command_sent",
+        "output"
+      ],
       "properties": {
-        "command_authorized": { "type": "boolean" },
-        "command_sent": { "const": false },
-        "output": { "type": "string", "minLength": 1 }
+        "command_authorized": {
+          "type": "boolean"
+        },
+        "command_sent": {
+          "const": false
+        },
+        "output": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "\\S"
+        }
       }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "allowed": {
+            "const": true
+          }
+        },
+        "required": [
+          "allowed"
+        ]
+      },
+      "then": {
+        "properties": {
+          "adapter": {
+            "type": "object",
+            "properties": {
+              "command_authorized": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "adapter": {
+            "type": "object",
+            "properties": {
+              "command_authorized": {
+                "const": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/safeSemantics"
+        },
+        {
+          "$ref": "#/$defs/civilianSemantics"
+        },
+        {
+          "$ref": "#/$defs/friendlySemantics"
+        },
+        {
+          "$ref": "#/$defs/protectedSemantics"
+        },
+        {
+          "$ref": "#/$defs/humanitarianSemantics"
+        },
+        {
+          "$ref": "#/$defs/surrenderSemantics"
+        },
+        {
+          "$ref": "#/$defs/incapacitatedSemantics"
+        },
+        {
+          "$ref": "#/$defs/identificationSemantics"
+        },
+        {
+          "$ref": "#/$defs/proportionalitySemantics"
+        },
+        {
+          "$ref": "#/$defs/human_authorizationSemantics"
+        },
+        {
+          "$ref": "#/$defs/altitudeSemantics"
+        },
+        {
+          "$ref": "#/$defs/weatherSemantics"
+        },
+        {
+          "$ref": "#/$defs/windowSemantics"
+        },
+        {
+          "$ref": "#/$defs/linkSemantics"
+        },
+        {
+          "$ref": "#/$defs/replaySemantics"
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "utcDateTime": {
+      "type": "string",
+      "maxLength": 64,
+      "format": "date-time",
+      "pattern": "^(?!0000-)\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,9})?Z$"
+    },
+    "safeSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "safe"
+        },
+        "rule": {
+          "const": "all"
+        },
+        "code": {
+          "const": "allowed"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": true
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "gps_fix": {
+              "const": true
+            },
+            "battery_percent": {
+              "const": 80
+            },
+            "altitude_metres": {
+              "const": 30
+            },
+            "inside_exclusion_zone": {
+              "const": false
+            },
+            "civilian_distance_metres": {
+              "const": 120
+            },
+            "friendly_distance_metres": {
+              "const": 150
+            },
+            "inside_protected_site": {
+              "const": false
+            },
+            "inside_humanitarian_corridor": {
+              "const": false
+            },
+            "wind_speed_metres_per_second": {
+              "const": 4
+            },
+            "visibility_metres": {
+              "const": 8000
+            },
+            "positive_identification": {
+              "const": true
+            },
+            "proportionality_satisfied": {
+              "const": true
+            },
+            "surrender_observed": {
+              "const": false
+            },
+            "incapacitated_observed": {
+              "const": false
+            },
+            "human_authorization_confirmed": {
+              "const": true
+            }
+          },
+          "required": [
+            "gps_fix",
+            "battery_percent",
+            "altitude_metres",
+            "inside_exclusion_zone",
+            "civilian_distance_metres",
+            "friendly_distance_metres",
+            "inside_protected_site",
+            "inside_humanitarian_corridor",
+            "wind_speed_metres_per_second",
+            "visibility_metres",
+            "positive_identification",
+            "proportionality_satisfied",
+            "surrender_observed",
+            "incapacitated_observed",
+            "human_authorization_confirmed"
+          ]
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "civilianSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "civilian"
+        },
+        "rule": {
+          "const": "civilian"
+        },
+        "code": {
+          "const": "civilian_proximity"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "civilian_distance_metres": {
+              "const": 5
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "friendlySemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "friendly"
+        },
+        "rule": {
+          "const": "friendly"
+        },
+        "code": {
+          "const": "friendly_force_proximity"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "friendly_distance_metres": {
+              "const": 10
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "protectedSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "protected"
+        },
+        "rule": {
+          "const": "protected"
+        },
+        "code": {
+          "const": "protected_site"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "inside_protected_site": {
+              "const": true
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "humanitarianSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "humanitarian"
+        },
+        "rule": {
+          "const": "humanitarian"
+        },
+        "code": {
+          "const": "humanitarian_corridor_protected"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "inside_humanitarian_corridor": {
+              "const": true
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "surrenderSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "surrender"
+        },
+        "rule": {
+          "const": "surrender"
+        },
+        "code": {
+          "const": "surrender_protected"
+        },
+        "action": {
+          "const": "intercept"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "surrender_observed": {
+              "const": true
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "incapacitatedSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "incapacitated"
+        },
+        "rule": {
+          "const": "incapacitated"
+        },
+        "code": {
+          "const": "incapacitated_person_protected"
+        },
+        "action": {
+          "const": "intercept"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "incapacitated_observed": {
+              "const": true
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "identificationSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "identification"
+        },
+        "rule": {
+          "const": "identification"
+        },
+        "code": {
+          "const": "positive_identification_required"
+        },
+        "action": {
+          "const": "intercept"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "positive_identification": {
+              "const": false
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "proportionalitySemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "proportionality"
+        },
+        "rule": {
+          "const": "proportionality"
+        },
+        "code": {
+          "const": "proportionality_unconfirmed"
+        },
+        "action": {
+          "const": "intercept"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "proportionality_satisfied": {
+              "const": false
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "human_authorizationSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "human_authorization"
+        },
+        "rule": {
+          "const": "authorization"
+        },
+        "code": {
+          "const": "human_authorization_required"
+        },
+        "action": {
+          "const": "intercept"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "human_authorization_confirmed": {
+              "const": false
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "altitudeSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "altitude"
+        },
+        "rule": {
+          "const": "operating"
+        },
+        "code": {
+          "const": "altitude_above_maximum"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "altitude_metres": {
+              "const": 120
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "weatherSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "weather"
+        },
+        "rule": {
+          "const": "weather"
+        },
+        "code": {
+          "const": "weather_outside_envelope"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "wind_speed_metres_per_second": {
+              "const": 26
+            }
+          }
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source",
+        "state"
+      ]
+    },
+    "windowSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "window"
+        },
+        "rule": {
+          "const": "operating"
+        },
+        "code": {
+          "const": "operating_window_closed"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source"
+      ]
+    },
+    "linkSemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "link"
+        },
+        "rule": {
+          "const": "link"
+        },
+        "code": {
+          "const": "transport_unavailable"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/adapter"
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source"
+      ]
+    },
+    "replaySemantics": {
+      "type": "object",
+      "properties": {
+        "scenario": {
+          "const": "replay"
+        },
+        "rule": {
+          "const": "authority"
+        },
+        "code": {
+          "const": "policy_replay"
+        },
+        "action": {
+          "const": "loiter"
+        },
+        "allowed": {
+          "const": false
+        },
+        "decision_source": {
+          "const": "bounder-io/interlock"
+        }
+      },
+      "required": [
+        "scenario",
+        "rule",
+        "code",
+        "action",
+        "allowed",
+        "decision_source"
+      ]
     }
   }
 }

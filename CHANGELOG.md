@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.3 · 2026-08-20
+
+Adversarial correctness and evidence-contract hardening for the simulation,
+browser runtime, release tooling, and automated acceptance gates.
+
+### Changed
+
+1. Receipt, Fleet, resilience, staging, continuity, policy, and checkpoint inputs now use exact bounded contracts with canonical timestamps, strict provenance relations, immutable snapshots, and fail-closed error states.
+2. Network readers enforce exact origins and media types, cumulative byte and chunk limits, authoritative deadlines, abort cleanup, fatal UTF-8 decoding, and protection from late or reordered completions.
+3. The simulator independently gates receipt and Fleet readiness, validates every recorded decision before enabling controls, rejects malformed or partial event streams, and preserves local evidence when optional Fleet data fails.
+4. Fleet resilience mappings are deterministic across the 100-Guardian pilot, including exact six-canary behavior, while recorded Fleet signatures are explicitly labelled unauthenticated because the fixture does not publish the audit public key.
+5. Route collision checks use constant-work exact slab clipping against frozen visible building bounds and reject malformed, mutable, nonfinite, or resource-exhausting geometry.
+6. Policy round-trip verification re-evaluates the signed policy against snapshotted request state, evidence, and global rules, preserves nanosecond time semantics, and prevents stale asynchronous results from changing the interface.
+7. Every published JSON Schema now pins practical size, shape, time, encoding, scenario, ordering, and relational constraints, with local cryptographic verification of the published signed vectors.
+8. Publication and manifest generation reject symlinks, aliases, special files, resource exhaustion, corrupt history, concurrent mutation, ambiguous filesystem outcomes, and ownership races without damaging a prior valid artifact.
+9. Browser acceptance always builds and serves the allowlisted `_site` artifact, and now covers readiness races, malformed evidence, stream fallback, visibility, WebGL loss, the full operator tour, embedded-message trust, inline query states, accessibility, and mobile layout.
+10. Unit coverage uses an all-source, per-file gate of 85% lines, 75% branches, and 85% functions. Weak implementation-text assertions duplicated by behavior tests were removed.
+11. GitHub Pages separates unprivileged verification from the privileged deployment job, and both quality workflows gate the exact dependency install, strong unit coverage, allowlisted build, design lint, and Chromium acceptance.
+
 ## 1.0.2 · 2026-08-12
 
 Repository-wide trust and publication hardening. The simulator decision model and

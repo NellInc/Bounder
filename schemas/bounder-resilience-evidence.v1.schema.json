@@ -1,51 +1,1265 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bounder.io/schemas/bounder-resilience-evidence.v1.schema.json",
+  "$id": "https://www.bounder.io/schemas/bounder-resilience-evidence.v1.schema.json",
   "title": "Bounder resilience evidence",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "mode", "scenarios"],
+  "required": [
+    "version",
+    "mode",
+    "scenarios"
+  ],
   "properties": {
-    "version": {"const": "bounder-resilience-evidence/v1"},
-    "mode": {"enum": ["deterministic-live-replay"]},
+    "version": {
+      "const": "bounder-resilience-evidence/v1"
+    },
+    "mode": {
+      "const": "deterministic-live-replay"
+    },
     "scenarios": {
       "type": "array",
-      "minItems": 1,
-      "items": {"$ref": "#/$defs/scenario"}
+      "minItems": 12,
+      "maxItems": 12,
+      "items": false,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "network-partition"
+                },
+                "expected_code": {
+                  "const": "civilian_proximity"
+                },
+                "affected_device": {
+                  "const": "bounder-alpha"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "fleet_unreachable"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "civilian_proximity"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "audit-outage"
+                },
+                "expected_code": {
+                  "const": "civilian_proximity"
+                },
+                "affected_device": {
+                  "const": "bounder-alpha"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "audit_unreachable"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "civilian_proximity"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "corrupted-envelope"
+                },
+                "expected_code": {
+                  "const": "invalid_signature"
+                },
+                "affected_device": {
+                  "const": "bounder-bravo"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-bravo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "signature_corrupted"
+                        },
+                        "device_id": {
+                          "const": "bounder-bravo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "invalid_signature"
+                        },
+                        "device_id": {
+                          "const": "bounder-bravo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-bravo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "clock-rollback"
+                },
+                "expected_code": {
+                  "const": "clock_rollback"
+                },
+                "affected_device": {
+                  "const": "bounder-charlie"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "time_rollback"
+                        },
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "clock_rollback"
+                        },
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "guardian-restart"
+                },
+                "expected_code": {
+                  "const": "policy_replay"
+                },
+                "affected_device": {
+                  "const": "bounder-charlie"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "process_restart"
+                        },
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "policy_replay"
+                        },
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-charlie"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "key-revocation"
+                },
+                "expected_code": {
+                  "const": "unknown_key"
+                },
+                "affected_device": {
+                  "const": "bounder-alpha"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "retired_key_used"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "unknown_key"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "stale-evidence"
+                },
+                "expected_code": {
+                  "const": "evidence_stale"
+                },
+                "affected_device": {
+                  "const": "bounder-hotel"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-hotel"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "evidence_aged_out"
+                        },
+                        "device_id": {
+                          "const": "bounder-hotel"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "evidence_stale"
+                        },
+                        "device_id": {
+                          "const": "bounder-hotel"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-hotel"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "partial-rollout"
+                },
+                "expected_code": {
+                  "const": "civilian_proximity"
+                },
+                "affected_device": {
+                  "const": "six canaries"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "six canaries"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "mixed_policy_sequences"
+                        },
+                        "device_id": {
+                          "const": "six canaries"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "civilian_proximity"
+                        },
+                        "device_id": {
+                          "const": "six canaries"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "six canaries"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "fleet-revocation"
+                },
+                "expected_code": {
+                  "const": "policy_unavailable"
+                },
+                "affected_device": {
+                  "const": "all guardians"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "all guardians"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "policy_removed"
+                        },
+                        "device_id": {
+                          "const": "all guardians"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "policy_unavailable"
+                        },
+                        "device_id": {
+                          "const": "all guardians"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "all guardians"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "offline-expiry"
+                },
+                "expected_code": {
+                  "const": "policy_expired"
+                },
+                "affected_device": {
+                  "const": "bounder-alpha"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "cache_expired"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "policy_expired"
+                        },
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-alpha"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "coherent-snapshot-rollback"
+                },
+                "expected_code": {
+                  "const": "state_rollback_detected"
+                },
+                "affected_device": {
+                  "const": "bounder-delta"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-delta"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "snapshot_restored"
+                        },
+                        "device_id": {
+                          "const": "bounder-delta"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "state_rollback_detected"
+                        },
+                        "device_id": {
+                          "const": "bounder-delta"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-delta"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/scenario"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "const": "continuity-lease-expiry"
+                },
+                "expected_code": {
+                  "const": "continuity_lease_expired"
+                },
+                "affected_device": {
+                  "const": "bounder-echo"
+                },
+                "events": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-echo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "lease_expired"
+                        },
+                        "device_id": {
+                          "const": "bounder-echo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "const": "continuity_lease_expired"
+                        },
+                        "device_id": {
+                          "const": "bounder-echo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "device_id": {
+                          "const": "bounder-echo"
+                        }
+                      },
+                      "required": [
+                        "device_id"
+                      ]
+                    }
+                  ],
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": false
+                }
+              },
+              "required": [
+                "id",
+                "expected_code",
+                "affected_device",
+                "events"
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   "$defs": {
     "scenario": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "fault", "expected_code", "safe_response", "proof", "affected_device", "events"],
+      "required": [
+        "id",
+        "name",
+        "fault",
+        "expected_code",
+        "safe_response",
+        "proof",
+        "affected_device",
+        "events"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
-        "name": {"type": "string", "minLength": 1},
-        "fault": {"type": "string", "minLength": 1},
-        "expected_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-        "safe_response": {"type": "string", "minLength": 1},
-        "proof": {"type": "string", "minLength": 1},
-        "affected_device": {"type": "string", "minLength": 1},
+        "id": {
+          "enum": [
+            "network-partition",
+            "audit-outage",
+            "corrupted-envelope",
+            "clock-rollback",
+            "guardian-restart",
+            "key-revocation",
+            "stale-evidence",
+            "partial-rollout",
+            "fleet-revocation",
+            "offline-expiry",
+            "coherent-snapshot-rollback",
+            "continuity-lease-expiry"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "\\S"
+        },
+        "fault": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "\\S"
+        },
+        "expected_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "safe_response": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "\\S"
+        },
+        "proof": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "\\S"
+        },
+        "affected_device": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "\\S"
+        },
         "events": {
           "type": "array",
-          "minItems": 3,
-          "items": {"$ref": "#/$defs/event"}
+          "minItems": 4,
+          "maxItems": 4,
+          "items": false,
+          "prefixItems": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/event"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "baseline"
+                    },
+                    "status": {
+                      "const": "verified"
+                    },
+                    "code": {
+                      "const": "policy_active"
+                    },
+                    "at_ms": {
+                      "const": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/event"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "fault"
+                    },
+                    "status": {
+                      "const": "fault"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/event"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "decision"
+                    },
+                    "status": {
+                      "const": "held"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/event"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "audit"
+                    },
+                    "status": {
+                      "const": "recorded"
+                    },
+                    "code": {
+                      "const": "signed_receipt"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         }
       }
     },
     "event": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["at_ms", "kind", "status", "code", "message"],
+      "required": [
+        "at_ms",
+        "kind",
+        "device_id",
+        "status",
+        "code",
+        "message",
+        "policy_sequence"
+      ],
       "properties": {
-        "at_ms": {"type": "integer", "minimum": 0},
-        "kind": {"enum": ["baseline", "fault", "decision", "audit"]},
-        "device_id": {"type": "string"},
-        "status": {"enum": ["verified", "fault", "held", "recorded"]},
-        "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-        "message": {"type": "string", "minLength": 1},
-        "policy_sequence": {"type": "integer", "minimum": 0}
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60000
+        },
+        "kind": {
+          "enum": [
+            "baseline",
+            "fault",
+            "decision",
+            "audit"
+          ]
+        },
+        "device_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "\\S"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "fault",
+            "held",
+            "recorded"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "\\S"
+        },
+        "policy_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
       }
     }
   }

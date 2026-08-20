@@ -13,6 +13,7 @@ The root directory is the canonical website:
 | `index.html` | Project positioning, architecture, applications, maturity, and contribution path |
 | `simulator.html` | Interactive 3D demonstration of local interlock decisions and protection rules |
 | `simulator.js` and `simulator.css` | Three.js scene, scenario logic, accessibility, and responsive simulator presentation |
+| `simulator-contracts.js` | Exact immutable receipt, Fleet, resilience, URL, and bounded-transport contracts shared by simulator runtimes |
 | `staging-feed.js` | Optional read-only Creed Space staging evidence loader with strict validation and deterministic fallback |
 | `data/bounder-staging-pilot.v1.json` | Recorded 100-Guardian pilot across six physical platform classes |
 | `simulator-world.js` | Town geometry, named building footprints, and collision-checkable route waypoints |
@@ -45,19 +46,36 @@ Open `http://127.0.0.1:8000/`.
 ## Validation
 
 ```bash
-# Route, receipt, archive, policy-verification, and dependency invariants.
-npm test
+# All first-party unit surfaces with per-file coverage floors.
+npm run test:coverage
 
 # Browser-level responsive, accessibility, failure, and keyboard checks.
 npm run test:browser
+
+# Assemble and byte-check the exact allowlisted publication artifact.
+npm run build
 
 # Deterministic design lint. Triage results rather than bulk-fixing.
 npx --yes impeccable@3.2.1 detect .
 ```
 
-`npm run build` assembles the exact GitHub Pages payload in `_site/`. For a
-release, update all pinned files first, bump `VERSION`, then run
-`npm run release:manifest` as the final content step before validation.
+`npm run build` assembles the exact GitHub Pages payload in `_site/`. A release
+deliberately uses two commits. First, finalize every pinned file, including
+`CHANGELOG.md`, `README.md`, and `VERSION`, review the staged changes, and create
+source commit A. Then generate the manifest with commit A as its provenance:
+
+```bash
+git commit -m "release: prepare Bounder vX.Y.Z sources"
+SOURCE_COMMIT="$(git rev-parse HEAD)"
+BOUNDER_CANONICAL_COMMIT="$SOURCE_COMMIT" npm run release:manifest
+```
+
+The generator requires commit A to exist locally as a Git commit. Every pinned
+path in it must be an ordinary non-executable Git blob whose bytes equal the
+working-tree source. After the complete validation gates pass, commit the new
+manifest separately as manifest commit B. Never amend source commit A after
+generating the manifest; any source change requires a new source commit and a
+newly generated manifest.
 
 Before publishing, verify desktop and mobile layouts, keyboard focus, one `<h1>` per page, local links and fragments, images, console errors, and the contact success state without submitting the form. The browser suite automates the deterministic parts of this release gate.
 

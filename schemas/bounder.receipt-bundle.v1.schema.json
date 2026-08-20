@@ -4,16 +4,302 @@
   "title": "Bounder decision receipt bundle v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "engine", "generated_at", "receipts"],
+  "required": [
+    "version",
+    "engine",
+    "generated_at",
+    "receipts"
+  ],
   "properties": {
-    "version": { "const": "bounder-receipt-bundle/v1" },
-    "engine": { "const": "bounder-io/interlock" },
-    "generated_at": { "type": "string", "format": "date-time" },
+    "version": {
+      "const": "bounder-receipt-bundle/v1"
+    },
+    "engine": {
+      "const": "bounder-io/interlock"
+    },
+    "generated_at": {
+      "type": "string",
+      "maxLength": 64,
+      "format": "date-time",
+      "pattern": "^(?!0000-)\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,9})?Z$"
+    },
     "receipts": {
       "type": "array",
       "minItems": 15,
       "maxItems": 15,
-      "items": { "$ref": "bounder.receipt.v1.schema.json" }
+      "items": false,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "safe"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "civilian"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "friendly"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "protected"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "humanitarian"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "surrender"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "incapacitated"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "identification"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "proportionality"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "human_authorization"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "altitude"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "weather"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "window"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "link"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "bounder.receipt.v1.schema.json"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scenario": {
+                  "const": "replay"
+                }
+              },
+              "required": [
+                "scenario"
+              ]
+            }
+          ]
+        }
+      ]
     }
   }
 }

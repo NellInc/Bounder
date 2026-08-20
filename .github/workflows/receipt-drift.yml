@@ -6,11 +6,21 @@ on:
     paths:
       - "data/**"
       - "schemas/**"
-      - "simulator.js"
+      - "continuity-evidence.js"
+      - "policy-roundtrip.js"
+      - "simulator-bootstrap.js"
+      - "simulator-contracts.js"
+      - "simulator-fallback.js"
       - "simulator.html"
       - "simulator-world.js"
+      - "simulator.js"
+      - "staging-feed.js"
+      - "release/**"
+      - "VERSION"
+      - "scripts/generate-release-manifest.js"
       - "tests/**"
       - "package.json"
+      - "package-lock.json"
       - ".github/workflows/receipt-drift.yml"
   pull_request:
   schedule:
@@ -29,6 +39,7 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
+      - run: npm ci --ignore-scripts
       - run: npm test
       - name: Compare receipts and schemas with the pinned canonical release
         shell: bash
@@ -62,23 +73,19 @@ jobs:
           console.log(`${repositoryPath}\t${commit}`);
           NODE
           )
+          node --input-type=module - "$manifest" "$tmp/pinned-evidence-paths" <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          import { pinnedEvidenceAndSchemaPaths } from "./scripts/generate-release-manifest.js";
+
+          const manifest = JSON.parse(readFileSync(process.argv[2], "utf8"));
+          const paths = pinnedEvidenceAndSchemaPaths(manifest);
+          writeFileSync(process.argv[3], `${paths.join("\n")}\n`, { flag: "wx" });
+          NODE
+
           base="https://raw.githubusercontent.com/${canonical_repository}/${canonical_commit}"
           nonce="$(date +%s)"
-          curl -fsSL --retry 4 --retry-all-errors "$base/data/bounder-receipts.v1.json?cache=$nonce" -o "$tmp/receipts.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/bounder.receipt.v1.schema.json?cache=$nonce" -o "$tmp/receipt-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/bounder.receipt-bundle.v1.schema.json?cache=$nonce" -o "$tmp/bundle-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/data/creedspace-bounder-golden-v1.json?cache=$nonce" -o "$tmp/fleet-golden.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-envelope-v1.schema.json?cache=$nonce" -o "$tmp/fleet-envelope-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-policy-v1.schema.json?cache=$nonce" -o "$tmp/fleet-policy-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-profile-v1.schema.json?cache=$nonce" -o "$tmp/fleet-profile-schema.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/data/creedspace-bounder-roundtrip-v1.json?cache=$nonce" -o "$tmp/fleet-roundtrip.json"
-          curl -fsSL --retry 4 --retry-all-errors "$base/schemas/creedspace-bounder-roundtrip-v1.schema.json?cache=$nonce" -o "$tmp/fleet-roundtrip-schema.json"
-          cmp data/bounder-receipts.v1.json "$tmp/receipts.json"
-          cmp schemas/bounder.receipt.v1.schema.json "$tmp/receipt-schema.json"
-          cmp schemas/bounder.receipt-bundle.v1.schema.json "$tmp/bundle-schema.json"
-          cmp data/creedspace-bounder-golden-v1.json "$tmp/fleet-golden.json"
-          cmp schemas/creedspace-bounder-envelope-v1.schema.json "$tmp/fleet-envelope-schema.json"
-          cmp schemas/creedspace-bounder-policy-v1.schema.json "$tmp/fleet-policy-schema.json"
-          cmp schemas/creedspace-bounder-profile-v1.schema.json "$tmp/fleet-profile-schema.json"
-          cmp data/creedspace-bounder-roundtrip-v1.json "$tmp/fleet-roundtrip.json"
-          cmp schemas/creedspace-bounder-roundtrip-v1.schema.json "$tmp/fleet-roundtrip-schema.json"
+          while IFS= read -r path; do
+            mkdir -p "$tmp/$(dirname "$path")"
+            curl -fsSL --retry 4 --retry-all-errors "$base/$path?cache=$nonce" -o "$tmp/$path"
+            cmp "$path" "$tmp/$path"
+          done < "$tmp/pinned-evidence-paths"

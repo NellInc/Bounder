@@ -19,8 +19,7 @@
       "const": "creedspace-bounder-roundtrip/v1"
     },
     "generated_at": {
-      "type": "string",
-      "format": "date-time"
+      "$ref": "#/$defs/utcDateTime"
     },
     "source_vector_sha256": {
       "$ref": "#/$defs/sha256"
@@ -70,18 +69,22 @@
               "maximum": 100
             },
             "altitude_metres": {
-              "type": "number"
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
             },
             "inside_exclusion_zone": {
               "type": "boolean"
             },
             "civilian_distance_metres": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 10000000
             },
             "friendly_distance_metres": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 10000000
             },
             "inside_protected_site": {
               "type": "boolean"
@@ -91,11 +94,13 @@
             },
             "wind_speed_metres_per_second": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 1000
             },
             "visibility_metres": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 10000000
             },
             "positive_identification": {
               "type": "boolean"
@@ -123,12 +128,15 @@
           ],
           "properties": {
             "mettle_tier": {
-              "type": "string",
-              "minLength": 1
+              "enum": [
+                "bronze",
+                "silver",
+                "gold",
+                "platinum"
+              ]
             },
             "verified_at": {
-              "type": "string",
-              "format": "date-time"
+              "$ref": "#/$defs/utcDateTime"
             }
           }
         }
@@ -162,11 +170,15 @@
         },
         "policy_version": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 320,
+          "pattern": "\\S"
         },
         "rationale": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "\\S"
         },
         "dimensions_triggered": {
           "$ref": "#/$defs/receipt"
@@ -181,15 +193,19 @@
           ],
           "properties": {
             "signature": {
-              "$ref": "#/$defs/base64"
+              "$ref": "#/$defs/signature64"
             },
             "payload": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 16384,
+              "pattern": "\\S"
             },
             "public_key_id": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "\\S"
             }
           }
         },
@@ -199,10 +215,16 @@
       }
     },
     "audit_public_key": {
-      "$ref": "#/$defs/base64"
+      "$ref": "#/$defs/publicKey32"
     }
   },
   "$defs": {
+    "utcDateTime": {
+      "type": "string",
+      "maxLength": 64,
+      "format": "date-time",
+      "pattern": "^(?!0000-)\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,9})?Z$"
+    },
     "sha256": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
@@ -229,48 +251,101 @@
         },
         "device_id": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "\\S"
         },
         "fleet_id": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "\\S"
         },
         "policy_id": {
           "$ref": "#/$defs/sha256"
         },
         "policy_sequence": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 1,
+          "maximum": 9007199254740991
         },
         "signing_key_id": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "\\S"
         },
         "action": {
-          "type": "string",
-          "minLength": 1
+          "enum": [
+            "land",
+            "loiter",
+            "rtl",
+            "intercept"
+          ]
         },
         "allowed": {
           "type": "boolean"
         },
         "code": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$"
         },
         "reason": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "\\S"
         },
         "evaluated_at": {
-          "type": "string",
-          "format": "date-time"
+          "$ref": "#/$defs/utcDateTime"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "allowed": {
+                "const": true
+              }
+            },
+            "required": [
+              "allowed"
+            ]
+          },
+          "then": {
+            "properties": {
+              "code": {
+                "const": "allowed"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "code": {
+                "not": {
+                  "const": "allowed"
+                }
+              }
+            }
+          }
+        }
+      ]
     },
-    "base64": {
+    "signature64": {
       "type": "string",
-      "minLength": 4,
-      "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+      "minLength": 88,
+      "maxLength": 88,
+      "pattern": "^(?:[A-Za-z0-9+/]{4}){21}[A-Za-z0-9+/][AQgw]==$",
+      "contentEncoding": "base64"
+    },
+    "publicKey32": {
+      "type": "string",
+      "minLength": 44,
+      "maxLength": 44,
+      "pattern": "^(?:[A-Za-z0-9+/]{4}){10}[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=$",
+      "contentEncoding": "base64"
     }
   }
 }

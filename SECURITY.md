@@ -39,6 +39,15 @@ deployment artifact.
 
 This repository has no current evidence of certification, production deployment, flight testing, current Raspberry Pi or Pixhawk compatibility, radio-link resilience, or compliance with a specific aviation regime. Passing software tests does not establish any of those properties.
 
+The browser structurally validates the recorded Fleet audit payloads, hashes,
+signature encodings, and key identifier, but the published Fleet fixture omits
+the audit public key and therefore cannot authenticate those signatures. The
+separate golden policy vector is cryptographically verified. Continuity replay
+protection is local to the current page process rather than a durable,
+cross-client high-water mark. The version 1 receipt signature also does not bind
+the accompanying unsigned request provenance, although the verifier re-evaluates
+that request against the signed policy before displaying a result.
+
 ## Security gates
 
 Do not connect this reference site or its simulator to live hardware. A physical

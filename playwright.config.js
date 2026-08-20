@@ -7,7 +7,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
+  retries: 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: "http://127.0.0.1:4173",
@@ -15,9 +15,9 @@ export default defineConfig({
     trace: "retain-on-failure"
   },
   webServer: {
-    command: "python3 -m http.server 4173 --bind 127.0.0.1",
+    command: "npm run build && python3 -m http.server 4173 --bind 127.0.0.1 --directory _site",
     url: "http://127.0.0.1:4173/",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 30_000
   }
 });
