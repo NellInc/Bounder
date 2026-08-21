@@ -480,7 +480,14 @@ test("ambiguous rename outcomes are authenticated and byte-verified before repla
   };
   await assert.rejects(
     buildSite({ ...falsePostcondition, publicPaths: ["public"], fsApi: falseTargetFs, logger: quietLogger }),
-    /false rename postcondition/
+    (error) => {
+      const errors = error instanceof AggregateError ? [error, ...error.errors] : [error];
+      assert.match(
+        errors.map((candidate) => candidate?.message ?? String(candidate)).join("\n"),
+        /false rename postcondition/
+      );
+      return true;
+    }
   );
   assert.equal(injectedFalseTarget, true);
   assert.equal(
