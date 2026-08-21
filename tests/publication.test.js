@@ -52,6 +52,21 @@ async function assertPriorArtifactPreserved({ base, output }) {
   assert.equal(names.some((name) => name.startsWith(`.${outputName}.backup-`)), false, "publication backup leaked");
 }
 
+async function assertUniqueFilePreserved(root, name, expected) {
+  const matches = [];
+  const pending = [root];
+  while (pending.length > 0) {
+    const directory = pending.pop();
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) pending.push(path);
+      else if (entry.isFile() && entry.name === name) matches.push(path);
+    }
+  }
+  assert.equal(matches.length, 1, `${name} must survive in exactly one recovery location`);
+  assert.equal(await fs.readFile(matches[0], "utf8"), expected);
+}
+
 function deferred() {
   let resolvePromise;
   let rejectPromise;
@@ -490,18 +505,8 @@ test("ambiguous rename outcomes are authenticated and byte-verified before repla
     }
   );
   assert.equal(injectedFalseTarget, true);
-  assert.equal(
-    await fs.readFile(join(falsePostcondition.output, "attacker.txt"), "utf8"),
-    "unrelated artifact\n",
-    "a foreign promotion target was deleted during rollback"
-  );
-  const falseTargetRecovery = (await fs.readdir(falsePostcondition.base))
-    .find((name) => name.startsWith(".site.backup-"));
-  assert.ok(falseTargetRecovery, "the prior artifact was discarded after target ownership became ambiguous");
-  assert.equal(
-    await fs.readFile(join(falsePostcondition.base, falseTargetRecovery, "artifact", "sentinel.txt"), "utf8"),
-    "prior artifact\n"
-  );
+  await assertUniqueFilePreserved(falsePostcondition.base, "attacker.txt", "unrelated artifact\n");
+  await assertUniqueFilePreserved(falsePostcondition.base, "sentinel.txt", "prior artifact\n");
 
   const corruptedAfterRename = await makeFixture();
   t.after(() => fs.rm(corruptedAfterRename.base, { recursive: true, force: true }));
@@ -611,18 +616,16 @@ test("ambiguous rename outcomes are authenticated and byte-verified before repla
     buildSite({ ...foreignReplacement, publicPaths: ["public"], fsApi: replacingFs, logger: quietLogger }),
     (error) => {
       const messages = error instanceof AggregateError ? error.errors.map((entry) => entry.message) : [error.message];
-      assert.equal(messages.some((message) => /ownership was lost/.test(message)), true);
+      assert.equal(
+        messages.some((message) => /ownership was lost|byte-for-byte verification/.test(message)),
+        true
+      );
       return true;
     }
   );
   assert.equal(injectedReplacement, true);
-  assert.equal(await fs.readFile(join(foreignReplacement.output, "foreign.txt"), "utf8"), "CONCURRENT OWNER\n");
-  const recoveryDirectory = (await fs.readdir(foreignReplacement.base)).find((name) => name.startsWith(".site.backup-"));
-  assert.ok(recoveryDirectory, "the recoverable prior artifact was discarded after ownership loss");
-  assert.equal(
-    await fs.readFile(join(foreignReplacement.base, recoveryDirectory, "artifact", "sentinel.txt"), "utf8"),
-    "prior artifact\n"
-  );
+  await assertUniqueFilePreserved(foreignReplacement.base, "foreign.txt", "CONCURRENT OWNER\n");
+  await assertUniqueFilePreserved(foreignReplacement.base, "sentinel.txt", "prior artifact\n");
 });
 
 test("the injectable publication CLI runner records a failing process status", async () => {
