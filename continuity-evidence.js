@@ -361,7 +361,7 @@ const readBoundedBody = async (response, maxBytes, signal) => {
 export const fetchContinuityEnvelope = async (url, {
   timeoutMs = 7000,
   fetchImpl = globalThis.fetch,
-  timers = { setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout }
+  timers = globalThis
 } = {}) => {
   let parsed;
   try {
@@ -438,7 +438,7 @@ const renderUnavailable = (root) => {
 
 export const createContinuityLeaseController = (root, {
   clock = Date.now,
-  timers = { setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout }
+  timers = globalThis
 } = {}) => {
   if (!root || typeof root.querySelector !== "function" || typeof clock !== "function"
     || typeof timers?.setTimeout !== "function" || typeof timers?.clearTimeout !== "function") {

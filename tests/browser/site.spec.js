@@ -10,6 +10,54 @@ const collectErrors = (page) => {
   return errors;
 };
 
+test("continuity transport and proof lease work with native browser timers", async ({ page }) => {
+  await page.goto("/404.html");
+  const result = await page.evaluate(async () => {
+    const {
+      createContinuityLeaseController,
+      fetchContinuityEnvelope
+    } = await import("/continuity-evidence.js");
+    const envelope = await fetchContinuityEnvelope(
+      "https://bounder-fleet-continuity-staging.onrender.com/evidence.json",
+      {
+        fetchImpl: async () => new Response('{"ok":true}', {
+          headers: { "content-type": "application/json" }
+        })
+      }
+    );
+    const root = document.createElement("section");
+    root.innerHTML = `
+      <span data-continuity-state></span>
+      <span data-continuity-devices></span>
+      <span data-continuity-policies></span>
+      <span data-continuity-checkpoints></span>
+      <span data-continuity-decisions></span>
+      <span data-continuity-updated></span>
+      <span data-continuity-note></span>
+    `;
+    const now = Date.parse("2026-08-25T12:00:00Z");
+    const controller = createContinuityLeaseController(root, { clock: () => now });
+    const shown = controller.showVerified({
+      generated_at: "2026-08-25T11:59:00Z",
+      expires_at: "2026-08-25T12:15:00Z",
+      device_count: 100,
+      policies_verified: 100,
+      checkpoints_verified: 100,
+      allowed: 15,
+      held: 85
+    });
+    controller.dispose();
+    return {
+      envelope,
+      shown,
+      state: root.dataset.state,
+      devices: root.querySelector("[data-continuity-devices]").textContent
+    };
+  });
+
+  expect(result).toEqual({ envelope: { ok: true }, shown: true, state: "verified", devices: "100" });
+});
+
 test("homepage is responsive and has no detectable accessibility violations", async ({ page }) => {
   test.setTimeout(90_000);
   const errors = collectErrors(page);
