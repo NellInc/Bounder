@@ -53,10 +53,12 @@ const previouslyPinnedSourcePaths = Object.freeze([
   "styles.css"
 ]);
 
-export const canonicalPinnedSourcePaths = Object.freeze([
+const version103PinnedSourcePaths = Object.freeze([
   ...previouslyPinnedSourcePaths,
   "simulator-contracts.js"
 ].sort());
+
+export const canonicalPinnedSourcePaths = Object.freeze([...version103PinnedSourcePaths]);
 
 const version100PinnedSourcePaths = Object.freeze(
   previouslyPinnedSourcePaths.filter((path) => path !== "SECURITY.md")
@@ -65,13 +67,15 @@ const version100PinnedSourcePaths = Object.freeze(
 export const historicalPinnedSourcePaths = Object.freeze({
   "1.0.0": version100PinnedSourcePaths,
   "1.0.1": previouslyPinnedSourcePaths,
-  "1.0.2": previouslyPinnedSourcePaths
+  "1.0.2": previouslyPinnedSourcePaths,
+  "1.0.3": version103PinnedSourcePaths
 });
 
 export const historicalManifestSha256 = Object.freeze({
   "1.0.0": "4f01487f7c31897d8b9210c6efbd1971f1877eed510ad1d975ead72d46202e17",
   "1.0.1": "05ffe834e1f1d4d2c28980be95e12c2cb8d66bbaf89f89a379f3150be3f9b170",
-  "1.0.2": "9aeabbc5da421e53535281cc67a59706ad0ccad3a67b7006dc1380977a68c785"
+  "1.0.2": "9aeabbc5da421e53535281cc67a59706ad0ccad3a67b7006dc1380977a68c785",
+  "1.0.3": "656d39ffdf319e59098a0f42e52a72f62bb50855eba3e7bff5aeb228926ba7b4"
 });
 
 const historicalCanonicalInterlocks = Object.freeze({
@@ -89,6 +93,11 @@ const historicalCanonicalInterlocks = Object.freeze({
     repository: CANONICAL_INTERLOCK_REPOSITORY,
     ref: CANONICAL_INTERLOCK_REF,
     commit: "73eec7a344be6d1433fc77fe520c3cbca4ed00c2"
+  }),
+  "1.0.3": Object.freeze({
+    repository: CANONICAL_INTERLOCK_REPOSITORY,
+    ref: CANONICAL_INTERLOCK_REF,
+    commit: "7f49fd218e31f47c3528f42269e2c6287a55e26d"
   })
 });
 

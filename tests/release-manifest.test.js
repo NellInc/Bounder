@@ -563,7 +563,7 @@ test("historical release manifests remain pinned byte-for-byte", async (t) => {
     await fs.copyFile(join(root, "release", name), join(fixture, "release", name));
   }
 
-  const selected = await selectBaseline({ root: fixture, version: "1.0.3" });
+  const selected = await selectBaseline({ root: fixture, version: "1.0.4" });
   assert.deepEqual(
     selected.history.map(({ version }) => version),
     Object.keys(historicalManifestSha256).sort().reverse()
@@ -574,7 +574,7 @@ test("historical release manifests remain pinned byte-for-byte", async (t) => {
   parsed.generated_at = "2026-07-17T00:23:30Z";
   await writeJson(historical, parsed);
   await assert.rejects(
-    selectBaseline({ root: fixture, version: "1.0.3" }),
+    selectBaseline({ root: fixture, version: "1.0.4" }),
     /differs from its immutable digest/
   );
 });

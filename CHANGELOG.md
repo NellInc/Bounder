@@ -8,6 +8,7 @@ Browser continuity-proof hotfix.
 
 1. Live proof transport deadlines and freshness leases now invoke native browser timers with the correct `Window` receiver, restoring the signed 100-Guardian proof on the homepage.
 2. Chromium acceptance now exercises the default browser timer path so an illegal native-function invocation cannot silently downgrade valid live evidence again.
+3. Release generation now pins the immutable v1.0.3 manifest and provenance, allowing subsequent release manifests to be sealed without weakening historical integrity checks.
 
 ## 1.0.3 · 2026-08-20
 
