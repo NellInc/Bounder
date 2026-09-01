@@ -9,6 +9,12 @@ import {
 } from "../runtime/observability/guardian-fleet-state.js";
 
 export const BENCHMARK_NOW_MS = Date.parse("2026-08-31T12:00:00.000Z");
+export const PROCESS_CPU_CLOCK = Object.freeze({
+  now() {
+    const usage = process.cpuUsage();
+    return (usage.user + usage.system) / 1_000;
+  }
+});
 
 export function makeBenchmarkHeartbeat(index, nowMs = BENCHMARK_NOW_MS) {
   const platform = PLATFORMS[index % PLATFORMS.length];
@@ -55,7 +61,8 @@ export async function runObservabilityBenchmark({
   guardianCount = DEFAULT_OBSERVABILITY_BUDGETS.fleet_max_guardians,
   budgets: budgetOverrides = {},
   nowMs = BENCHMARK_NOW_MS,
-  clock = performance,
+  cpuClock = PROCESS_CPU_CLOCK,
+  wallClock = performance,
   warmupRuns = 1,
   measuredRuns = 3
 } = {}) {
@@ -71,17 +78,26 @@ export async function runObservabilityBenchmark({
   const expectedGuardians = heartbeats.map(({ guardian_id, platform }) => ({ guardian_id, platform }));
   const aggregate = () => aggregateFleetSnapshot({ fleetId: "relief-fleet", expectedGuardians, heartbeats, nowMs, cycleStartedAtMs: nowMs, budgets });
   for (let run = 0; run < warmupRuns; run += 1) aggregate();
-  const samples = [];
+  const cpuSamples = [];
+  const wallSamples = [];
   let snapshot;
   for (let run = 0; run < measuredRuns; run += 1) {
-    const started = clock.now();
+    const cpuStarted = cpuClock.now();
+    const wallStarted = wallClock.now();
     snapshot = aggregate();
-    const duration = clock.now() - started;
-    if (typeof duration !== "number" || !Number.isFinite(duration) || duration < 0) throw new Error("benchmark clock is invalid");
-    samples.push(duration);
+    const wallDuration = wallClock.now() - wallStarted;
+    const cpuDuration = cpuClock.now() - cpuStarted;
+    for (const [label, duration] of [["CPU", cpuDuration], ["wall", wallDuration]]) {
+      if (typeof duration !== "number" || !Number.isFinite(duration) || duration < 0) {
+        throw new Error(`benchmark ${label} clock is invalid`);
+      }
+    }
+    cpuSamples.push(cpuDuration);
+    wallSamples.push(wallDuration);
   }
-  const sortedSamples = [...samples].sort((left, right) => left - right);
-  const aggregationMs = sortedSamples[Math.floor(sortedSamples.length / 2)];
+  const median = (samples) => [...samples].sort((left, right) => left - right)[Math.floor(samples.length / 2)];
+  const aggregationCpuMs = median(cpuSamples);
+  const aggregationWallMs = median(wallSamples);
   const connected = await deriveFleetEvents({ currentHeartbeat: heartbeats[0], observedAtMs: nowMs, budgets });
   const encoder = new TextEncoder();
   const sizes = {
@@ -96,15 +112,21 @@ export async function runObservabilityBenchmark({
   };
   const failures = [];
   for (const [key, value] of Object.entries(sizes)) if (value > limits[key]) failures.push(`${key} ${value} > ${limits[key]}`);
-  if (guardianCount === budgets.fleet_max_guardians && aggregationMs > budgets.aggregation_10000_max_ms) {
-    failures.push(`aggregation_ms ${aggregationMs.toFixed(3)} > ${budgets.aggregation_10000_max_ms}`);
+  if (guardianCount === budgets.fleet_max_guardians && aggregationCpuMs > budgets.aggregation_10000_max_cpu_ms) {
+    failures.push(`aggregation_cpu_ms ${aggregationCpuMs.toFixed(3)} > ${budgets.aggregation_10000_max_cpu_ms}`);
   }
   return Object.freeze({
-    version: "bounder-observability-benchmark/v1",
+    version: "bounder-observability-benchmark/v2",
     scope: budgets.scope,
     guardian_count: guardianCount,
-    aggregation_ms: Number(aggregationMs.toFixed(3)),
-    aggregation_samples_ms: samples.map((value) => Number(value.toFixed(3))),
+    measurement: Object.freeze({
+      pass_fail: "process-cpu-time",
+      diagnostic: "monotonic-wall-time"
+    }),
+    aggregation_cpu_ms: Number(aggregationCpuMs.toFixed(3)),
+    aggregation_cpu_samples_ms: cpuSamples.map((value) => Number(value.toFixed(3))),
+    aggregation_wall_ms: Number(aggregationWallMs.toFixed(3)),
+    aggregation_wall_samples_ms: wallSamples.map((value) => Number(value.toFixed(3))),
     warmup_runs: warmupRuns,
     measured_runs: measuredRuns,
     sizes,

@@ -222,7 +222,7 @@
     "budgets": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["scope", "heartbeat_max_bytes", "event_max_bytes", "snapshot_max_bytes", "fleet_max_guardians", "heartbeat_validity_ms", "healthy_interval_ms", "stable_interval_ms", "attention_interval_ms", "jitter_fraction", "audit_backlog_count", "audit_backlog_age_ms", "resource_pressure_percent", "aggregation_10000_max_ms"],
+      "required": ["scope", "heartbeat_max_bytes", "event_max_bytes", "snapshot_max_bytes", "fleet_max_guardians", "heartbeat_validity_ms", "healthy_interval_ms", "stable_interval_ms", "attention_interval_ms", "jitter_fraction", "audit_backlog_count", "audit_backlog_age_ms", "resource_pressure_percent", "aggregation_10000_max_cpu_ms"],
       "properties": {
         "scope": { "const": "simulation-reference-observability-only" },
         "heartbeat_max_bytes": { "type": "integer", "minimum": 1024, "maximum": 65536 },
@@ -237,7 +237,7 @@
         "audit_backlog_count": { "type": "integer", "minimum": 1, "maximum": 1000000 },
         "audit_backlog_age_ms": { "type": "integer", "minimum": 1000, "maximum": 86400000 },
         "resource_pressure_percent": { "type": "number", "minimum": 50, "maximum": 100 },
-        "aggregation_10000_max_ms": { "type": "integer", "minimum": 100, "maximum": 10000 }
+        "aggregation_10000_max_cpu_ms": { "type": "integer", "minimum": 100, "maximum": 10000 }
       }
     }
   }

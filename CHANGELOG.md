@@ -11,7 +11,7 @@ observability reference.
 2. Inspection, changed-path planning, generated task routes, generated CI impact data, focused verification, and aggregate verification emit compact machine-readable state and receipts.
 3. The private Go producer and public website publisher now have distinct immutable identities. Clean producer export regenerates three published artifacts and checks 13 byte-identical shared contracts.
 4. Release manifest v2 records producer inputs and outputs, publisher source, build proof, recorded observations, deployment status, and live-observation status without changing historical manifests.
-5. Guardian heartbeat, Fleet snapshot, Fleet transition, and telemetry-envelope contracts now have deterministic validation, replay, rollback, expiry, fault, privacy, scheduling, and 10,000-Guardian reference-performance tests.
+5. Guardian heartbeat, Fleet snapshot, Fleet transition, and telemetry-envelope contracts now have deterministic validation, replay, rollback, expiry, fault, privacy, scheduling, and a 10,000-Guardian reference benchmark that gates process CPU cost while retaining wall time as a load diagnostic.
 6. Browser entry points are stable composition facades with narrow policy, transport, receipt, Fleet, resilience, UI, and simulator ownership seams.
 7. The 16-Guardian Fleet laboratory and 100-Guardian staging pilot remain explicitly classified as recorded observations.
 

@@ -75,7 +75,7 @@ Healthy Guardians report every 30 seconds, extending to 60 seconds after ten sta
 
 `npm run test:observability` covers exact schemas, state derivation, loss, delay, duplication, reordering, skew, restart, rollback, partial rollout, lease expiry, public projection, events, scheduling, signatures, and strict JSON.
 
-`npm run benchmark:observability` warms the maximum 10,000-Guardian reference corpus, measures three complete aggregations, checks the median against the reference budget, and checks heartbeat, snapshot, and event byte budgets. The median rule resists one scheduler outlier while sustained pressure still fails. Its receipt explicitly excludes production capacity, decision latency, and hardware performance. (`scripts/benchmark-observability.mjs:54-116`)
+`npm run benchmark:observability` warms the maximum 10,000-Guardian reference corpus, measures three complete aggregations, checks median process CPU consumption against the reference budget, records monotonic wall time as a diagnostic, and checks heartbeat, snapshot, and event byte budgets. Process CPU time isolates algorithmic cost from unrelated host scheduling pressure; wall time remains visible without becoming a false regression gate. Its receipt explicitly excludes production capacity, decision latency, and hardware performance. (`scripts/benchmark-observability.mjs:60-139`)
 
 `npm run check:changed -- --paths runtime/observability/guardian-fleet-state.js` derives the runtime proof route without spending build or browser resources. A telemetry-schema path adds publication build and browser proof because those contracts are public. (`system/bounder-system.v1.json:1031-1102`; `scripts/lib/system-model.mjs:211-238`)
 

@@ -28,7 +28,7 @@ export const DEFAULT_OBSERVABILITY_BUDGETS = Object.freeze({
   audit_backlog_count: 100,
   audit_backlog_age_ms: 60_000,
   resource_pressure_percent: 90,
-  aggregation_10000_max_ms: 2_000
+  aggregation_10000_max_cpu_ms: 2_000
 });
 
 const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
@@ -139,7 +139,7 @@ export function validateObservabilityBudgets(overrides = {}) {
   for (const key of [
     "heartbeat_max_bytes", "event_max_bytes", "snapshot_max_bytes", "fleet_max_guardians",
     "heartbeat_validity_ms", "healthy_interval_ms", "stable_interval_ms", "attention_interval_ms",
-    "audit_backlog_count", "audit_backlog_age_ms", "aggregation_10000_max_ms"
+    "audit_backlog_count", "audit_backlog_age_ms", "aggregation_10000_max_cpu_ms"
   ]) assertSafeInteger(budgets[key], `observability budget ${key}`, 1);
   if (typeof budgets.jitter_fraction !== "number" || budgets.jitter_fraction < 0 || budgets.jitter_fraction > 0.25) {
     throw new Error("observability jitter budget is invalid");

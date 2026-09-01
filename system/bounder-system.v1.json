@@ -1491,6 +1491,6 @@
     "audit_backlog_count": 100,
     "audit_backlog_age_ms": 60000,
     "resource_pressure_percent": 90,
-    "aggregation_10000_max_ms": 2000
+    "aggregation_10000_max_cpu_ms": 2000
   }
 }

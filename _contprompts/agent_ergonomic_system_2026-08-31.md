@@ -680,6 +680,7 @@ The programme is complete when:
 | 2026-08-31 | Phase 4 | The public 16-Guardian Fleet laboratory is a recorded observation and differs intentionally from the producer's deterministic 100-device Fleet fixture | Regenerate only the three declared producer outputs and preserve the laboratory and staging files as recorded observations | Any future derivation must use a new explicit artifact role and generator |
 | 2026-09-01 | Phase 7 | Moving each large behavior core into many files in one pass would create broad dependency rewiring without changing behavior | Establish stable composition facades and narrow responsibility seams, keep the proven cores internal, and stop once boundary, coverage, build, and browser gates establish the migration | Deeper internal extraction requires observed edit-cost evidence or a behavior change that benefits from it |
 | 2026-09-01 | Phase 8 | Local and CI path routing would drift if encoded separately | Generate the human task route and CI impact corpus from the same validated descriptor and make stale output fail closed | None |
+| 2026-09-01 | Closure | The exact verifier ran while host load exceeded 45 and failed a wall-clock aggregation budget even though the aggregation consumed about 770 ms of process CPU | Gate reference algorithmic cost on process CPU time and record monotonic wall time as a diagnostic, preserving visibility without converting unrelated scheduler pressure into a code failure | Production wall-time capacity still requires a controlled deployed benchmark |
 
 ## Implementation Status
 
