@@ -5,7 +5,7 @@ import test from "node:test";
 const [indexHtml, simulatorHtml, simulatorScript, simulatorStyles, styles] = await Promise.all([
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../simulator.html", import.meta.url), "utf8"),
-  readFile(new URL("../simulator.js", import.meta.url), "utf8"),
+  readFile(new URL("../simulator/controller.js", import.meta.url), "utf8"),
   readFile(new URL("../simulator.css", import.meta.url), "utf8"),
   readFile(new URL("../styles.css", import.meta.url), "utf8")
 ]);

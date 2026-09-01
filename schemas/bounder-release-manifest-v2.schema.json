@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.bounder.io/schemas/bounder-release-manifest-v2.schema.json",
+  "title": "Bounder release manifest v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "release_version",
+    "license",
+    "generated_at",
+    "publisher_source",
+    "evidence_producers",
+    "build",
+    "deployment",
+    "live_observation",
+    "observations",
+    "files"
+  ],
+  "properties": {
+    "manifest_version": { "const": "bounder-release-manifest/v2" },
+    "release_version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$", "maxLength": 64 },
+    "license": { "const": "Apache-2.0" },
+    "generated_at": { "$ref": "#/$defs/timestamp" },
+    "publisher_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "discovery_ref"],
+      "properties": {
+        "repository": { "const": "https://github.com/NellInc/Bounder" },
+        "commit": { "$ref": "#/$defs/commit" },
+        "discovery_ref": { "const": "main" }
+      }
+    },
+    "evidence_producers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "repository", "commit", "discovery_ref", "generator", "inputs", "contracts", "outputs", "verification_receipt_sha256"],
+        "properties": {
+          "role": { "const": "decision_producer" },
+          "repository": { "const": "https://github.com/NellInc/Bounder-from-org" },
+          "commit": { "$ref": "#/$defs/commit" },
+          "discovery_ref": { "const": "master" },
+          "generator": { "const": "scripts/export-website-artifacts.py@1" },
+          "inputs": { "$ref": "#/$defs/fileRecords" },
+          "contracts": { "$ref": "#/$defs/fileRecords" },
+          "outputs": { "$ref": "#/$defs/fileRecords" },
+          "verification_receipt_sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "node", "public_inventory_sha256", "verification_receipt_sha256"],
+      "properties": {
+        "command": { "const": "npm run build" },
+        "node": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$", "maxLength": 64 },
+        "public_inventory_sha256": { "$ref": "#/$defs/sha256" },
+        "verification_receipt_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "deployment": { "$ref": "#/$defs/unverified" },
+    "live_observation": { "$ref": "#/$defs/unverified" },
+    "observations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "classification", "sha256", "limitation"],
+        "properties": {
+          "path": { "$ref": "#/$defs/path" },
+          "classification": { "const": "recorded_observation" },
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "limitation": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "\\S" }
+        }
+      }
+    },
+    "files": { "$ref": "#/$defs/fileRecords" }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "format": "date-time", "pattern": "^(?!0000-)\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$", "maxLength": 32 },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "path": { "type": "string", "minLength": 1, "maxLength": 4096, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$" },
+    "fileRecords": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bytes", "sha256"],
+        "properties": {
+          "path": { "$ref": "#/$defs/path" },
+          "bytes": { "type": "integer", "minimum": 0, "maximum": 52428800 },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "unverified": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": { "const": "unverified" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "\\S" }
+      }
+    }
+  }
+}

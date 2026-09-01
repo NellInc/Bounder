@@ -58,67 +58,128 @@ The full scaffold (dimension table, markers, topology suffixes, torch/précis/ed
 
 ## Project Overview
 
-Bounder.io presents an open reference architecture for local, auditable physical interlocks. It covers embodied movement and physical-action boundaries for aircraft, ground robots, boats, warehouse vehicles, inspection platforms, and fixed machinery. The current project is simulation-only and hosted on GitHub Pages at www.bounder.io.
+This repository owns the public Bounder website, browser verification laboratory,
+recorded evidence copies, publication build, and GitHub Pages release. It does not
+contain the canonical Go decision engine. Bounder remains simulation-only.
 
-## Architecture
+The complete system model lives in `_wiki/systems/system-architecture.md`.
+Evidence identity and proof limits live in `_wiki/seams/evidence-provenance.md`.
+Task routing and verification selection live in `_wiki/flows/agent-operating-loop.md`.
+Guardian heartbeat and Fleet observability semantics live in
+`_wiki/systems/runtime-observability.md`.
 
-**One canonical site and one historical snapshot exist:**
+**Working if:** a fresh agent reads this file, follows one wiki link, and can name the
+authority owner, touched surfaces, and required proof before editing.
 
-1. **Root directory** (`/index.html`, `/contact.html`, etc.) - Canonical modern website with shared `styles.css`
-2. **`/docs/` directory** - Preserved Squarespace-era clone for historical comparison only
+## Repository Boundary
 
-New content and design work belongs in the root site. Do not duplicate changes into `/docs/`. GitHub Pages should deploy `main` from `/`.
+1. Root HTML, CSS, JavaScript, `data/`, `schemas/`, `guides/`, and `vendor/` are the
+   canonical site source.
+2. `docs/` is a preserved Squarespace-era snapshot. Do not update it or copy new work
+   into it.
+3. `_site/` is a generated, ignored, byte-checked publication artifact. Never edit it.
+4. `_wiki/` is the agent knowledge graph. Factual claims require `file:line`
+   provenance and every page change updates `_wiki/index.md` and `_wiki/log.md`.
+5. `_contprompts/` contains executable cross-session plans. Design there before a
+   multi-phase change and keep execution deviations in the plan.
 
-**Key files:**
-- `styles.css` - Shared CSS with design tokens (CSS custom properties) for root-level pages
-- `sitemap.xml` / `robots.txt` - SEO configuration
-- `CNAME` - Custom domain (bounder.io)
-- `.github/workflows/update-footer-year.yml` - Auto-updates copyright year annually (Jan 1)
+## Authority Vocabulary
+
+- **Policy authority:** a current signed device-bound policy.
+- **Decision authority:** the local Guardian evaluation of policy, request, state, and
+  evidence.
+- **Adapter authority:** the device-specific safe response to a bounded decision.
+- **Evidence:** receipts, audits, checkpoints, resilience events, and continuity proof.
+- **Presentation:** browser verification and visualization of evidence.
+- **Publication proof:** exact source, build, manifest, deployment, and live-byte state.
+
+Never let evidence or presentation become actuator authority. Keep source proof,
+producer derivation, browser proof, publication proof, live observation, physical
+safety, and human or regulatory review as separate claims.
 
 ## Development
 
-This is a pure static HTML/CSS site with no build system. Edit HTML/CSS files directly.
+The source is static HTML, CSS, and JavaScript. Node provides the contract suites,
+coverage gate, deterministic design lint, allowlisted build, browser acceptance, and
+release sealing.
 
-**Local preview:**
 ```bash
-# Any local HTTP server works
-python3 -m http.server 8000
-# or
-npx serve .
+npm test                 # fast first-party unit suite
+npm run test:coverage    # aggregate unit gate with per-file floors
+npm run build            # assemble and byte-check _site
+npm run test:browser     # build, serve isolated _site, run Chromium acceptance
+npm run quality          # aggregate local quality gate
+npm run inspect          # read-only repository and system orientation
+npm run check:changed    # derive the least expensive sufficient proof plan
+npm run verify:changed   # execute the derived proof plan and write a receipt
+npm run verify:producer  # regenerate from an explicit clean producer checkout
+npm run test:observability
+npm run benchmark:observability
+npm run docs:check
+npm run verify           # canonical phases plus machine receipt
 ```
 
-**Canonical URL:** All pages should use `https://www.bounder.io/` (with www prefix) in canonical tags and Open Graph metadata.
+Heartbeats and Fleet state are observational evidence. They never grant, broaden, or
+revoke local authority. Deployed performance remains unverified until the confirmed
+Guardian producer and Fleet backend implement and measure the reference contracts.
 
-**Release procedure** (learned the hard way cutting v1.0.1, 2026-07-18):
+**Working if:** heartbeat loss changes Fleet classification while local decisions
+continue to follow only verified policy, evidence, checkpoint, and lease rules.
 
-1. Land all content/code changes first — including CHANGELOG and VERSION, which are
-   themselves pinned artifacts.
-2. **Manifest generation is the LAST step before commit.** Regenerate
-   `release/bounder-reference-v<VERSION>.manifest.json` (recompute bytes + sha256 for
-   every pinned file) only after every other file is final; any later edit to a pinned
-   file drifts the manifest and re-reds the suite.
-3. The manifest test derives the expected manifest filename from `VERSION` — a release
-   bump needs no test edit.
-4. `canonical_interlock` must reference the canonical repo (`NellInc/Bounder`, ref
-   `main`) and a commit that exists there — never the retired `NellWatson/Bounder`
-   mirror (v1.0.0's interlock pointed at the mirror; corrected in v1.0.1).
-5. Keep prior-release manifests untouched as historical records; each release adds a
-   new manifest file.
-6. Green `npm test` + `npx playwright test`, then commit (`release: …`) and tag
-   `v<VERSION>`.
+For a simple visual preview, run `python3 -m http.server 8000` and open
+`http://127.0.0.1:8000/`. Release claims use the built `_site` route through
+Playwright, not the raw source preview.
 
-## CSS Design System
+All canonical and Open Graph URLs use `https://www.bounder.io/`. `CNAME` contains
+`www.bounder.io`.
 
-Root-level pages use CSS custom properties defined in `styles.css`:
-- Colors: `--color-primary`, `--color-white`, `--color-dark`, `--color-accent`, `--color-error`
-- Fonts: `--font-body` (proxima-nova), `--font-heading` (futura-pt)
-- Transitions: `--transition-fast`, `--transition-medium`, `--transition-slow`, `--transition-bounce`
+## Release Discipline
+
+The manifest pins the core public evidence, contracts, guidance, and simulator source.
+Every public file still belongs to the release artifact. Editing `README.md`,
+`SECURITY.md`, `CHANGELOG.md`, `VERSION`, `guides/INTEGRATION.md`, the runtime,
+evidence, schemas, or root presentation requires release-aware validation.
+
+Use two commits:
+
+1. Finalize every source byte, including `CHANGELOG.md` and `VERSION`.
+2. Run the complete local gates and create source commit A.
+3. Verify producer derivation against the clean private producer checkout.
+4. Run `npm run verify` against clean source commit A.
+5. Generate manifest v2 with commit A, the producer receipt, and verification receipt.
+6. Create manifest commit B. Never amend source commit A after generation.
+7. Check the staged tree and recent history for files larger than 50 MB.
+8. Tag, push, deploy, or alter external state only with explicit publication authority.
+9. Verify deployed bytes and live behavior separately from local proof.
+
+Keep every historical manifest byte-immutable.
+
+### Provenance boundary
+
+Historical manifest v1 records retain their original `canonical_interlock` semantics
+and remain byte-immutable. Manifest v2 names the private
+`NellInc/Bounder-from-org` decision producer and the public `NellInc/Bounder`
+publisher separately, with exact commits and generator inventories. Public independent
+regeneration still requires producer access or a future public mirror or reviewable
+source bundle.
+
+**Working if:** a new release cannot describe a website commit as decision-engine
+provenance, a producer mismatch fails before sealing, and historical manifests remain
+untouched.
+
+## Frontend Design System
+
+Root pages use the tokens in `styles.css`: `--font-sans`, `--font-display`,
+`--font-mono`, the shared color variables, spacing variables, and motion variables.
+Run `npx --yes impeccable@3.2.1 detect .` after frontend work and triage every finding.
 
 ## External Dependencies
 
-- Canonical images: local files under `images/`
-- Simulator runtime: pinned, self-hosted Three.js under `vendor/three/`
-- Contact form delivery: Formspree
+- Canonical images are local under `images/`.
+- Three.js is pinned and self-hosted under `vendor/three/`.
+- Formspree handles contact delivery.
+- The live continuity feed is optional evidence. Its failure must preserve the recorded
+  local fallback.
 
 ---
 

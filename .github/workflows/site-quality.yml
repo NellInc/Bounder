@@ -15,16 +15,40 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run test:coverage
-      - name: Deterministic design lint
-        run: npx --yes impeccable@3.2.1 detect .
-      - name: Assemble the allowlisted public artifact
-        run: npm run build
-      - name: Install Chromium
+      - name: Derive impact plan
+        id: impact
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base="$PR_BASE"
+          elif [[ "$EVENT_NAME" == "push" && "$PUSH_BASE" =~ ^[0-9a-f]{40}$ && "$PUSH_BASE" != "0000000000000000000000000000000000000000" ]]; then
+            base="$PUSH_BASE"
+          else
+            base="$(git rev-parse HEAD^)"
+          fi
+          npm run check:changed -- --base "$base" --json > "${RUNNER_TEMP}/bounder-impact.txt"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          node --input-type=module - "${RUNNER_TEMP}/bounder-impact.txt" "$GITHUB_OUTPUT" <<'NODE'
+          import { appendFileSync, readFileSync } from "node:fs";
+          const source = readFileSync(process.argv[2], "utf8");
+          const plan = JSON.parse(source.slice(source.indexOf("{")));
+          const browser = plan.commands.some((command) => ["browser", "verify"].includes(command));
+          appendFileSync(process.argv[3], `browser=${browser}\n`);
+          NODE
+      - name: Install Chromium when selected
+        if: ${{ steps.impact.outputs.browser == 'true' }}
         run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - name: Run descriptor-selected gates
+        run: npm run verify:changed -- --base "${{ steps.impact.outputs.base }}"

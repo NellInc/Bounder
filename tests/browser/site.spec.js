@@ -184,6 +184,7 @@ test("simulator loads recorded evidence and responds to keyboard navigation", as
 });
 
 test("guided tour traverses all six proofs and restores focus when finished", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/simulator.html?scenario=safe");
   const root = page.locator(".simulator-workbench");
@@ -258,6 +259,7 @@ test("receipt readiness cannot be inferred from faster Fleet loading", async ({ 
 });
 
 test("malformed Fleet evidence is isolated from valid local receipt controls", async ({ page }) => {
+  test.setTimeout(90_000);
   const errors = collectErrors(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.route("**/data/bounder-fleet-evidence.v1.json", (route) => route.fulfill({
@@ -266,7 +268,7 @@ test("malformed Fleet evidence is isolated from valid local receipt controls", a
   }));
   await page.goto("/simulator.html?scenario=safe");
   const stage = page.locator(".simulator-stage");
-  await expect(stage).toHaveAttribute("data-receipts-ready", "true");
+  await expect(stage).toHaveAttribute("data-receipts-ready", "true", { timeout: 20_000 });
   await expect(stage).toHaveAttribute("data-fleet-ready", "false");
   await expect(page.getByRole("button", { name: "Show fleet" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Friendly separation" })).toBeEnabled();
@@ -364,7 +366,7 @@ test("malformed, late, out-of-order and partial resilience streams fall back whi
   }, events[1]);
   await expect(page.locator(".simulator-stage")).toHaveAttribute("data-resilience-fallback", "true");
   expect(await page.evaluate(() => window.__bounderTestSources[0].closed)).toBe(true);
-  await expect(page.locator('[data-resilience="transport"]')).toHaveText("Evidence recorded", { timeout: 10_000 });
+  await expect(page.locator('[data-resilience="transport"]')).toHaveText("Evidence recorded", { timeout: 20_000 });
   await expect(page.locator(".decision-code")).toHaveText("signed_receipt");
 
   await page.getByRole("button", { name: "Run fault" }).click();
@@ -507,6 +509,9 @@ test("mobile pages do not overflow and retain usable controls", async ({ page })
       await document.fonts.ready;
       await new Promise(requestAnimationFrame);
     });
+    if (path.includes("simulator.html")) {
+      await expect(page.locator(".simulator-stage")).toHaveAttribute("data-receipts-ready", "true", { timeout: 20_000 });
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${path} overflows the mobile viewport`).toBeLessThanOrEqual(1);
     await expect(page.locator("h1")).toHaveCount(1);

@@ -39,6 +39,10 @@ signed envelope  --->  Bounder Guardian  --->  platform adapter  --->  simulated
 | [`creedspace-bounder-golden-v1.json`](../data/creedspace-bounder-golden-v1.json) | Cross-language signed policy vector |
 | [`creedspace-bounder-roundtrip-v1.json`](../data/creedspace-bounder-roundtrip-v1.json) | Signed Go receipt and Fleet audit for the exact golden policy sequence |
 | [`creedspace-bounder-roundtrip-v1.schema.json`](../schemas/creedspace-bounder-roundtrip-v1.schema.json) | Round-trip evidence and signed audit contract |
+| [`creedspace-bounder-guardian-heartbeat-v1.schema.json`](../schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json) | Private per-Guardian operational observation |
+| [`creedspace-bounder-fleet-snapshot-v1.schema.json`](../schemas/creedspace-bounder-fleet-snapshot-v1.schema.json) | Privacy-bounded Fleet aggregate |
+| [`creedspace-bounder-fleet-event-v1.schema.json`](../schemas/creedspace-bounder-fleet-event-v1.schema.json) | Meaningful Fleet state transition |
+| [`creedspace-bounder-telemetry-envelope-v1.schema.json`](../schemas/creedspace-bounder-telemetry-envelope-v1.schema.json) | Exact-byte private telemetry signature envelope |
 
 ## Browser verification laboratory
 
@@ -52,7 +56,25 @@ The simulator’s contract panel accepts the published vector or a local compati
 6. The returned audit receipt payload, SHA-256 input hash, and Ed25519 certificate are verified locally.
 7. Expired or not-yet-valid policy remains held even when its signature is authentic.
 
-The browser does not create authority or mint a deployment receipt. Canonical decisions and evidence come from the Go interlock in [`NellWatson/Bounder`](https://github.com/NellWatson/Bounder).
+The browser does not create authority or mint a deployment receipt. Canonical
+decisions and derived evidence come from the Go interlock in the private
+[`NellInc/Bounder-from-org`](https://github.com/NellInc/Bounder-from-org)
+producer repository. The public site republishes byte-identical contracts and
+verifies deterministic outputs from an exact clean producer commit.
+
+## Guardian and Fleet observability
+
+Heartbeats, Fleet snapshots, and transition events describe operational state.
+They never grant, broaden, or revoke permission. A missed heartbeat changes the
+Fleet classification to unreachable; the Guardian continues to derive local
+authority only from its verified policy, evidence freshness, checkpoint floor,
+and continuity lease.
+
+Detailed telemetry is Fleet-private. The public continuity projection contains
+only aggregate counts and is emitted only from a complete, fresh, healthy
+100-Guardian snapshot with zero decision failures and no audit backlog. The
+reference state model and performance budgets are software integration proof;
+deployed Guardian timing, Fleet capacity, and physical safety remain unverified.
 
 ## Platform adapters
 
@@ -82,7 +104,12 @@ An adapter should be narrow, deterministic, separately tested, and fail safe whe
 ```bash
 npm test
 npm run test:browser
-npx impeccable detect .
+npm run verify
+BOUNDER_PRODUCER_ROOT=../Bounder-from-org-agent-ergonomic npm run verify:producer
+npx --yes impeccable@3.2.1 detect .
 ```
 
-The receipt-drift workflow also compares public fixtures and schemas against the canonical interlock repository.
+The producer-derivation gate regenerates public fixtures, checks every shared
+schema byte, verifies the clean producer revision, and emits a machine-readable
+receipt. Recorded Fleet laboratory and staging-pilot files remain observations;
+they are never relabelled as deterministic producer outputs.

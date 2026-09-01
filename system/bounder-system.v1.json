@@ -1,0 +1,1500 @@
+{
+  "schema_version": "bounder-system/v1",
+  "system_id": "bounder",
+  "roles": [
+    {
+      "id": "policy_distributor",
+      "responsibility": "Resolve and sign protective device-bound policy projections.",
+      "repository": "UNVERIFIED:Creed Space Fleet",
+      "default_ref": "UNVERIFIED",
+      "local_discovery": [],
+      "authority_owned": [
+        "Policy composition and distribution"
+      ],
+      "authority_forbidden": [
+        "Platform actuation",
+        "Local decision substitution"
+      ]
+    },
+    {
+      "id": "decision_producer",
+      "responsibility": "Verify policy and evaluate physical-action requests locally.",
+      "repository": "https://github.com/NellInc/Bounder-from-org",
+      "default_ref": "master",
+      "local_discovery": [
+        "../Bounder-from-org-agent-ergonomic",
+        "../Bounder-Drone"
+      ],
+      "authority_owned": [
+        "Local Guardian decision"
+      ],
+      "authority_forbidden": [
+        "Website presentation",
+        "Platform-specific actuation"
+      ]
+    },
+    {
+      "id": "platform_adapter",
+      "responsibility": "Map a bounded local decision to an engineered platform response.",
+      "repository": "external:platform integration",
+      "default_ref": "external",
+      "local_discovery": [],
+      "authority_owned": [
+        "Platform-specific safe response"
+      ],
+      "authority_forbidden": [
+        "Policy composition",
+        "Evidence reinterpretation"
+      ]
+    },
+    {
+      "id": "evidence_publisher",
+      "responsibility": "Publish immutable example evidence and contracts.",
+      "repository": "https://github.com/NellInc/Bounder.git",
+      "default_ref": "main",
+      "local_discovery": [
+        "."
+      ],
+      "authority_owned": [
+        "Published reference evidence bytes"
+      ],
+      "authority_forbidden": [
+        "New operational permission"
+      ]
+    },
+    {
+      "id": "browser_verifier",
+      "responsibility": "Verify bounded evidence and policy artifacts in the browser.",
+      "repository": "https://github.com/NellInc/Bounder.git",
+      "default_ref": "main",
+      "local_discovery": [
+        "."
+      ],
+      "authority_owned": [
+        "Browser verification result"
+      ],
+      "authority_forbidden": [
+        "Canonical operational decision",
+        "Actuation"
+      ]
+    },
+    {
+      "id": "simulator_presenter",
+      "responsibility": "Present recorded and verified evidence interactively.",
+      "repository": "https://github.com/NellInc/Bounder.git",
+      "default_ref": "main",
+      "local_discovery": [
+        "."
+      ],
+      "authority_owned": [
+        "Presentation state"
+      ],
+      "authority_forbidden": [
+        "Decision recomputation",
+        "Actuation"
+      ]
+    },
+    {
+      "id": "site_publisher",
+      "responsibility": "Assemble and publish the allowlisted website artifact.",
+      "repository": "https://github.com/NellInc/Bounder.git",
+      "default_ref": "main",
+      "local_discovery": [
+        "."
+      ],
+      "authority_owned": [
+        "Website publication bytes"
+      ],
+      "authority_forbidden": [
+        "Decision-producer provenance"
+      ]
+    },
+    {
+      "id": "release_sealer",
+      "responsibility": "Record immutable release identity and pinned source bytes.",
+      "repository": "https://github.com/NellInc/Bounder.git",
+      "default_ref": "main",
+      "local_discovery": [
+        "."
+      ],
+      "authority_owned": [
+        "Release manifest history"
+      ],
+      "authority_forbidden": [
+        "Deployment authority",
+        "Physical-safety certification"
+      ]
+    },
+    {
+      "id": "live_evidence_service",
+      "responsibility": "Serve signed privacy-safe aggregate continuity evidence.",
+      "repository": "UNVERIFIED:continuity service owner",
+      "default_ref": "UNVERIFIED",
+      "local_discovery": [],
+      "authority_owned": [
+        "Live aggregate observation"
+      ],
+      "authority_forbidden": [
+        "Guardian decision authority"
+      ]
+    },
+    {
+      "id": "guardian_observer",
+      "responsibility": "Produce bounded private observations of one Guardian state.",
+      "repository": "https://github.com/NellInc/Bounder-from-org",
+      "default_ref": "master",
+      "local_discovery": [
+        "../Bounder-from-org-agent-ergonomic",
+        "../Bounder-Drone"
+      ],
+      "authority_owned": [
+        "Guardian operational observation"
+      ],
+      "authority_forbidden": [
+        "Permission changes"
+      ]
+    },
+    {
+      "id": "fleet_observer",
+      "responsibility": "Aggregate private Guardian observations and emit transition events.",
+      "repository": "UNVERIFIED:Creed Space Fleet",
+      "default_ref": "UNVERIFIED",
+      "local_discovery": [],
+      "authority_owned": [
+        "Fleet operational classification"
+      ],
+      "authority_forbidden": [
+        "Local Guardian decision substitution"
+      ]
+    },
+    {
+      "id": "agent_control",
+      "responsibility": "Derive task routes, proof plans, documentation checks, and verification receipts.",
+      "repository": "https://github.com/NellInc/Bounder.git",
+      "default_ref": "main",
+      "local_discovery": [
+        "."
+      ],
+      "authority_owned": [
+        "Repository task and proof planning"
+      ],
+      "authority_forbidden": [
+        "Publication without authorization",
+        "Runtime authority"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "policy_distribution",
+      "role": "policy_distributor",
+      "purpose": "External composition, signing, and distribution of protective device-bound policy.",
+      "source_paths": [],
+      "test_paths": [
+        "tests/policy-roundtrip.test.js"
+      ],
+      "inputs": [],
+      "outputs": [
+        "policy_envelope"
+      ],
+      "failure_state": "Supply no new policy authority.",
+      "mutates": "external",
+      "network": "write",
+      "secrets": "private_keys",
+      "proof_classes": [
+        "cross_repository_compatibility",
+        "human_legal_regulatory"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "guardian_decision",
+      "role": "decision_producer",
+      "purpose": "External canonical local policy evaluation and receipt production.",
+      "source_paths": [],
+      "test_paths": [
+        "tests/policy-roundtrip.test.js"
+      ],
+      "inputs": [
+        "policy_envelope"
+      ],
+      "outputs": [
+        "decision_receipt"
+      ],
+      "failure_state": "Hold the requested physical action.",
+      "mutates": "external",
+      "network": "none",
+      "secrets": "public_keys",
+      "proof_classes": [
+        "producer_derivation",
+        "physical_safety"
+      ],
+      "depends_on": [
+        "policy_distribution"
+      ]
+    },
+    {
+      "id": "browser_policy_verifier",
+      "role": "browser_verifier",
+      "purpose": "Verify signed policy vectors, requests, receipts, and audit relationships locally.",
+      "source_paths": [
+        "policy-roundtrip.js",
+        "schemas/creedspace-bounder-policy-v1.schema.json",
+        "schemas/creedspace-bounder-envelope-v1.schema.json"
+      ],
+      "test_paths": [
+        "tests/policy-roundtrip.test.js"
+      ],
+      "inputs": [
+        "policy_envelope",
+        "decision_receipt"
+      ],
+      "outputs": [],
+      "failure_state": "Reject input and preserve authority held.",
+      "mutates": "memory",
+      "network": "optional_read",
+      "secrets": "public_keys",
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior"
+      ],
+      "depends_on": [
+        "guardian_decision"
+      ]
+    },
+    {
+      "id": "continuity_verifier",
+      "role": "browser_verifier",
+      "purpose": "Verify, order, and expire signed public continuity evidence.",
+      "source_paths": [
+        "continuity-evidence.js"
+      ],
+      "test_paths": [
+        "tests/continuity-evidence.test.js"
+      ],
+      "inputs": [
+        "public_continuity"
+      ],
+      "outputs": [],
+      "failure_state": "Show recorded proof and treat live state as unavailable.",
+      "mutates": "memory",
+      "network": "optional_read",
+      "secrets": "public_keys",
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior",
+        "live_continuity"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "simulator",
+      "role": "simulator_presenter",
+      "purpose": "Present deterministic decisions, Fleet evidence, and resilience scenarios.",
+      "source_paths": [
+        "simulator.js",
+        "simulator-contracts.js",
+        "simulator-fallback.js",
+        "simulator-world.js",
+        "staging-feed.js"
+      ],
+      "test_paths": [
+        "tests/simulator-contracts.test.js",
+        "tests/simulator-world.test.js",
+        "tests/staging-feed.test.js",
+        "tests/browser/site.spec.js"
+      ],
+      "inputs": [
+        "decision_receipt",
+        "public_continuity"
+      ],
+      "outputs": [],
+      "failure_state": "Present the accessible evidence fallback.",
+      "mutates": "memory",
+      "network": "optional_read",
+      "secrets": "none",
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior"
+      ],
+      "depends_on": [
+        "browser_policy_verifier"
+      ]
+    },
+    {
+      "id": "guardian_observability_reference",
+      "role": "guardian_observer",
+      "purpose": "Define and validate private signed Guardian heartbeat semantics without affecting authority.",
+      "source_paths": [
+        "runtime/observability/guardian-fleet-state.js",
+        "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json",
+        "schemas/creedspace-bounder-telemetry-envelope-v1.schema.json"
+      ],
+      "test_paths": [
+        "tests/guardian-fleet-observability.test.js"
+      ],
+      "inputs": [
+        "decision_receipt"
+      ],
+      "outputs": [
+        "guardian_heartbeat"
+      ],
+      "failure_state": "Reject the observation; preserve local Guardian authority unchanged.",
+      "mutates": "memory",
+      "network": "none",
+      "secrets": "none",
+      "proof_classes": [
+        "source_behavior",
+        "runtime_observability",
+        "observability_performance"
+      ],
+      "depends_on": [
+        "guardian_decision"
+      ]
+    },
+    {
+      "id": "fleet_observability_reference",
+      "role": "fleet_observer",
+      "purpose": "Classify private Guardian observations, aggregate Fleet state, emit transitions, and project public continuity.",
+      "source_paths": [
+        "runtime/observability/guardian-fleet-state.js",
+        "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
+        "schemas/creedspace-bounder-fleet-event-v1.schema.json"
+      ],
+      "test_paths": [
+        "tests/guardian-fleet-observability.test.js",
+        "tests/observability-benchmark.test.js"
+      ],
+      "inputs": [
+        "guardian_heartbeat"
+      ],
+      "outputs": [
+        "fleet_snapshot",
+        "fleet_event",
+        "public_continuity"
+      ],
+      "failure_state": "Classify missing observations as unreachable and refuse an all-green public projection.",
+      "mutates": "memory",
+      "network": "none",
+      "secrets": "none",
+      "proof_classes": [
+        "source_behavior",
+        "runtime_observability",
+        "observability_performance",
+        "live_continuity"
+      ],
+      "depends_on": [
+        "guardian_observability_reference"
+      ]
+    },
+    {
+      "id": "publication_builder",
+      "role": "site_publisher",
+      "purpose": "Assemble and byte-check the explicit public artifact.",
+      "source_paths": [
+        "scripts/build-site.mjs"
+      ],
+      "test_paths": [
+        "tests/publication.test.js"
+      ],
+      "inputs": [
+        "public_continuity"
+      ],
+      "outputs": [
+        "site_artifact"
+      ],
+      "failure_state": "Preserve the previous complete artifact and expose the recovery location.",
+      "mutates": "owned_artifact",
+      "network": "none",
+      "secrets": "none",
+      "proof_classes": [
+        "publisher_integrity"
+      ],
+      "depends_on": [
+        "continuity_verifier",
+        "simulator",
+        "fleet_observability_reference"
+      ]
+    },
+    {
+      "id": "release_manifest",
+      "role": "release_sealer",
+      "purpose": "Seal immutable release history with separate producer, publisher, build, deployment, and live-observation provenance.",
+      "source_paths": [
+        "scripts/generate-release-manifest.js",
+        "release/**",
+        "scripts/generate-release-manifest-v2.mjs",
+        "schemas/bounder-release-manifest-v2.schema.json"
+      ],
+      "test_paths": [
+        "tests/release-manifest.test.js"
+      ],
+      "inputs": [
+        "site_artifact",
+        "verification_receipt",
+        "producer_derivation_receipt"
+      ],
+      "outputs": [
+        "release_manifest_artifact"
+      ],
+      "failure_state": "Leave history and target paths unchanged.",
+      "mutates": "owned_artifact",
+      "network": "none",
+      "secrets": "none",
+      "proof_classes": [
+        "publisher_integrity"
+      ],
+      "depends_on": [
+        "publication_builder"
+      ]
+    },
+    {
+      "id": "agent_control_plane",
+      "role": "agent_control",
+      "purpose": "Validate the system graph, inspect state, plan checks, validate documentation, and record verification.",
+      "source_paths": [
+        "system/**",
+        "scripts/system-inspect.mjs",
+        "scripts/check-changed.mjs",
+        "scripts/docs-check.mjs",
+        "scripts/verify.mjs",
+        "scripts/lib/system-model.mjs",
+        "scripts/generate-system-views.mjs",
+        "scripts/verify-changed.mjs",
+        ".github/generated/impact-rules.json",
+        ".github/workflows/site-quality.yml",
+        ".github/workflows/receipt-drift.yml"
+      ],
+      "test_paths": [
+        "tests/system-model.test.js",
+        "tests/agent-commands.test.js",
+        "tests/browser-module-boundaries.test.js",
+        "tests/producer-derivation.test.js"
+      ],
+      "inputs": [],
+      "outputs": [
+        "verification_receipt",
+        "producer_derivation_receipt"
+      ],
+      "failure_state": "Report an exact planning or proof failure without mutating source.",
+      "mutates": "owned_artifact",
+      "network": "none",
+      "secrets": "none",
+      "proof_classes": [
+        "source_behavior",
+        "publisher_integrity",
+        "runtime_observability"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "architecture_knowledge",
+      "role": "agent_control",
+      "purpose": "Maintain the human and agent conceptual routes backed by source citations.",
+      "source_paths": [
+        "CLAUDE.md",
+        "_wiki/**",
+        "_contprompts/agent_ergonomic_system_2026-08-31.md"
+      ],
+      "test_paths": [
+        "tests/agent-commands.test.js"
+      ],
+      "inputs": [],
+      "outputs": [],
+      "failure_state": "Reject stale or unresolved navigation and citations.",
+      "mutates": "none",
+      "network": "none",
+      "secrets": "none",
+      "proof_classes": [
+        "source_behavior"
+      ],
+      "depends_on": [
+        "agent_control_plane"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "policy_envelope",
+      "contract": "schemas/creedspace-bounder-envelope-v1.schema.json",
+      "producer_component": "policy_distribution",
+      "generator": "external:Creed Space Fleet signer",
+      "input_inventory": [],
+      "output_paths": [
+        "data/creedspace-bounder-golden-v1.json"
+      ],
+      "canonical_owner": "policy_distributor",
+      "publication_paths": [
+        "data/creedspace-bounder-golden-v1.json"
+      ],
+      "verification": [
+        "cross_repository_compatibility"
+      ]
+    },
+    {
+      "id": "decision_receipt",
+      "contract": "schemas/bounder.receipt.v1.schema.json",
+      "producer_component": "guardian_decision",
+      "generator": "external:canonical Go decision producer",
+      "input_inventory": [
+        "policy_envelope"
+      ],
+      "output_paths": [
+        "data/bounder-receipts.v1.json",
+        "data/creedspace-bounder-roundtrip-v1.json"
+      ],
+      "canonical_owner": "decision_producer",
+      "publication_paths": [
+        "data/bounder-receipts.v1.json",
+        "data/creedspace-bounder-roundtrip-v1.json"
+      ],
+      "verification": [
+        "producer_derivation",
+        "cross_repository_compatibility"
+      ]
+    },
+    {
+      "id": "guardian_heartbeat",
+      "contract": "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json",
+      "producer_component": "guardian_observability_reference",
+      "generator": "runtime/observability/guardian-fleet-state.js",
+      "input_inventory": [
+        "decision_receipt"
+      ],
+      "output_paths": [],
+      "canonical_owner": "guardian_observer",
+      "publication_paths": [
+        "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json"
+      ],
+      "verification": [
+        "runtime_observability"
+      ]
+    },
+    {
+      "id": "fleet_snapshot",
+      "contract": "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
+      "producer_component": "fleet_observability_reference",
+      "generator": "runtime/observability/guardian-fleet-state.js",
+      "input_inventory": [
+        "guardian_heartbeat"
+      ],
+      "output_paths": [],
+      "canonical_owner": "fleet_observer",
+      "publication_paths": [
+        "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json"
+      ],
+      "verification": [
+        "runtime_observability",
+        "observability_performance"
+      ]
+    },
+    {
+      "id": "fleet_event",
+      "contract": "schemas/creedspace-bounder-fleet-event-v1.schema.json",
+      "producer_component": "fleet_observability_reference",
+      "generator": "runtime/observability/guardian-fleet-state.js",
+      "input_inventory": [
+        "guardian_heartbeat"
+      ],
+      "output_paths": [],
+      "canonical_owner": "fleet_observer",
+      "publication_paths": [
+        "schemas/creedspace-bounder-fleet-event-v1.schema.json"
+      ],
+      "verification": [
+        "runtime_observability"
+      ]
+    },
+    {
+      "id": "public_continuity",
+      "contract": "internal:bounder-continuity-evidence/v1",
+      "producer_component": "fleet_observability_reference",
+      "generator": "runtime/observability/guardian-fleet-state.js",
+      "input_inventory": [
+        "fleet_snapshot"
+      ],
+      "output_paths": [],
+      "canonical_owner": "live_evidence_service",
+      "publication_paths": [],
+      "verification": [
+        "live_continuity",
+        "runtime_observability"
+      ]
+    },
+    {
+      "id": "site_artifact",
+      "contract": "internal:allowlisted byte-equivalent tree",
+      "producer_component": "publication_builder",
+      "generator": "npm run build",
+      "input_inventory": [],
+      "output_paths": [
+        "_site/**"
+      ],
+      "canonical_owner": "site_publisher",
+      "publication_paths": [
+        "_site/**"
+      ],
+      "verification": [
+        "publisher_integrity",
+        "browser_behavior"
+      ]
+    },
+    {
+      "id": "producer_derivation_receipt",
+      "contract": "internal:bounder-producer-derivation-verification/v1",
+      "producer_component": "agent_control_plane",
+      "generator": "npm run verify:producer",
+      "input_inventory": [
+        "policy_envelope",
+        "decision_receipt"
+      ],
+      "output_paths": [
+        "artifacts/producer-derivation/**"
+      ],
+      "canonical_owner": "evidence_publisher",
+      "publication_paths": [],
+      "verification": [
+        "producer_derivation",
+        "cross_repository_compatibility"
+      ]
+    },
+    {
+      "id": "release_manifest_artifact",
+      "contract": "schemas/bounder-release-manifest-v2.schema.json",
+      "producer_component": "release_manifest",
+      "generator": "npm run release:manifest:v2",
+      "input_inventory": [
+        "site_artifact"
+      ],
+      "output_paths": [
+        "release/**"
+      ],
+      "canonical_owner": "release_sealer",
+      "publication_paths": [
+        "release/**"
+      ],
+      "verification": [
+        "publisher_integrity"
+      ]
+    },
+    {
+      "id": "verification_receipt",
+      "contract": "internal:bounder-verification/v1",
+      "producer_component": "agent_control_plane",
+      "generator": "npm run verify",
+      "input_inventory": [],
+      "output_paths": [
+        "artifacts/verification/**"
+      ],
+      "canonical_owner": "agent_control",
+      "publication_paths": [],
+      "verification": [
+        "source_behavior",
+        "publisher_integrity",
+        "runtime_observability"
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "id": "system_check",
+      "argv": [
+        "npm",
+        "run",
+        "system:check"
+      ],
+      "purpose": "Validate descriptor shape, references, ownership, paths, commands, and budgets.",
+      "proof_classes": [
+        "source_behavior",
+        "runtime_observability"
+      ],
+      "mutates": "none",
+      "timeout_seconds": 30
+    },
+    {
+      "id": "inspect",
+      "argv": [
+        "npm",
+        "run",
+        "inspect"
+      ],
+      "purpose": "Report current repository, release, producer-discovery, contract, and hold state.",
+      "proof_classes": [],
+      "mutates": "none",
+      "timeout_seconds": 30
+    },
+    {
+      "id": "check_changed",
+      "argv": [
+        "npm",
+        "run",
+        "check:changed"
+      ],
+      "purpose": "Map changed paths to components, boundaries, commands, and proof classes.",
+      "proof_classes": [],
+      "mutates": "none",
+      "timeout_seconds": 30
+    },
+    {
+      "id": "docs_check",
+      "argv": [
+        "npm",
+        "run",
+        "docs:check"
+      ],
+      "purpose": "Validate wiki links, citations, index coverage, command references, and repository claims.",
+      "proof_classes": [
+        "source_behavior"
+      ],
+      "mutates": "none",
+      "timeout_seconds": 60
+    },
+    {
+      "id": "generate_system_views",
+      "argv": [
+        "npm",
+        "run",
+        "system:generate"
+      ],
+      "purpose": "Compile contributor task routes and CI impact data from the canonical descriptor.",
+      "proof_classes": [
+        "source_behavior"
+      ],
+      "mutates": "owned_artifact",
+      "timeout_seconds": 30
+    },
+    {
+      "id": "verify_changed",
+      "argv": [
+        "npm",
+        "run",
+        "verify:changed"
+      ],
+      "purpose": "Execute the least expensive sufficient gates selected by changed paths.",
+      "proof_classes": [
+        "source_behavior"
+      ],
+      "mutates": "owned_artifact",
+      "timeout_seconds": 3600
+    },
+    {
+      "id": "unit",
+      "argv": [
+        "npm",
+        "test"
+      ],
+      "purpose": "Run all first-party unit and contract tests.",
+      "proof_classes": [
+        "source_behavior",
+        "runtime_observability"
+      ],
+      "mutates": "none",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "observability_test",
+      "argv": [
+        "npm",
+        "run",
+        "test:observability"
+      ],
+      "purpose": "Run deterministic Guardian heartbeat and Fleet state regressions.",
+      "proof_classes": [
+        "runtime_observability"
+      ],
+      "mutates": "none",
+      "timeout_seconds": 120
+    },
+    {
+      "id": "observability_benchmark",
+      "argv": [
+        "npm",
+        "run",
+        "benchmark:observability"
+      ],
+      "purpose": "Check reference observability payload and aggregation budgets.",
+      "proof_classes": [
+        "observability_performance"
+      ],
+      "mutates": "none",
+      "timeout_seconds": 120
+    },
+    {
+      "id": "unit_coverage",
+      "argv": [
+        "npm",
+        "run",
+        "test:coverage"
+      ],
+      "purpose": "Run aggregate unit behavior with per-file coverage floors.",
+      "proof_classes": [
+        "source_behavior",
+        "runtime_observability"
+      ],
+      "mutates": "none",
+      "timeout_seconds": 900
+    },
+    {
+      "id": "build",
+      "argv": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "purpose": "Assemble and byte-check the public allowlist.",
+      "proof_classes": [
+        "publisher_integrity"
+      ],
+      "mutates": "publication_candidate",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "browser",
+      "argv": [
+        "npm",
+        "run",
+        "test:browser"
+      ],
+      "purpose": "Verify the isolated built artifact in Chromium.",
+      "proof_classes": [
+        "browser_behavior"
+      ],
+      "mutates": "owned_artifact",
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "design_lint",
+      "argv": [
+        "npx",
+        "--yes",
+        "impeccable@3.2.1",
+        "detect",
+        "."
+      ],
+      "purpose": "Detect frontend design and interaction regressions.",
+      "proof_classes": [
+        "browser_behavior"
+      ],
+      "mutates": "none",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "producer_derivation",
+      "argv": [
+        "npm",
+        "run",
+        "verify:producer"
+      ],
+      "purpose": "Regenerate published evidence and shared contracts from one clean immutable decision-producer revision.",
+      "proof_classes": [
+        "producer_derivation",
+        "cross_repository_compatibility"
+      ],
+      "mutates": "owned_artifact",
+      "timeout_seconds": 900
+    },
+    {
+      "id": "release_manifest_v2",
+      "argv": [
+        "npm",
+        "run",
+        "release:manifest:v2"
+      ],
+      "purpose": "Seal a release candidate with explicit producer and publisher provenance.",
+      "proof_classes": [
+        "producer_derivation",
+        "cross_repository_compatibility",
+        "publisher_integrity"
+      ],
+      "mutates": "owned_artifact",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "verify",
+      "argv": [
+        "npm",
+        "run",
+        "verify"
+      ],
+      "purpose": "Run the canonical local phases and emit a machine-readable receipt.",
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior",
+        "publisher_integrity",
+        "runtime_observability",
+        "observability_performance"
+      ],
+      "mutates": "owned_artifact",
+      "timeout_seconds": 3600
+    }
+  ],
+  "proof_classes": [
+    {
+      "id": "source_behavior",
+      "claim_supported": "The tested local source behavior passed for this candidate.",
+      "required_commands": [
+        "unit_coverage"
+      ],
+      "required_artifacts": [],
+      "expires_after": "candidate change",
+      "does_not_establish": [
+        "Browser behavior",
+        "Deployment parity",
+        "Physical safety"
+      ]
+    },
+    {
+      "id": "browser_behavior",
+      "claim_supported": "The assembled local artifact passed browser acceptance.",
+      "required_commands": [
+        "browser"
+      ],
+      "required_artifacts": [
+        "site_artifact"
+      ],
+      "expires_after": "candidate change",
+      "does_not_establish": [
+        "Live deployment parity",
+        "Physical safety"
+      ]
+    },
+    {
+      "id": "publisher_integrity",
+      "claim_supported": "The local public artifact matches its allowlisted source bytes.",
+      "required_commands": [
+        "build"
+      ],
+      "required_artifacts": [
+        "site_artifact"
+      ],
+      "expires_after": "candidate change",
+      "does_not_establish": [
+        "Independent decision-producer derivation",
+        "Deployment parity"
+      ]
+    },
+    {
+      "id": "producer_derivation",
+      "claim_supported": "Published evidence reproduced from one immutable decision-producer revision.",
+      "required_commands": [
+        "producer_derivation"
+      ],
+      "required_artifacts": [
+        "decision_receipt",
+        "producer_derivation_receipt"
+      ],
+      "expires_after": "producer or publisher change",
+      "does_not_establish": [
+        "Deployment parity",
+        "Physical safety"
+      ]
+    },
+    {
+      "id": "cross_repository_compatibility",
+      "claim_supported": "Producer and publisher contracts and corpora agree at immutable revisions.",
+      "required_commands": [
+        "producer_derivation"
+      ],
+      "required_artifacts": [
+        "policy_envelope",
+        "decision_receipt",
+        "producer_derivation_receipt"
+      ],
+      "expires_after": "either repository change",
+      "does_not_establish": [
+        "Live health",
+        "Physical safety"
+      ]
+    },
+    {
+      "id": "deployment_parity",
+      "claim_supported": "Live bytes and approved behavior match one sealed publisher artifact.",
+      "required_commands": [],
+      "required_artifacts": [
+        "site_artifact",
+        "release_manifest_artifact"
+      ],
+      "expires_after": "deployment change",
+      "does_not_establish": [
+        "Live Guardian health",
+        "Physical safety"
+      ]
+    },
+    {
+      "id": "live_continuity",
+      "claim_supported": "A signed aggregate continuity observation was valid, ordered, and fresh at one time.",
+      "required_commands": [],
+      "required_artifacts": [
+        "public_continuity"
+      ],
+      "expires_after": "evidence expiry",
+      "does_not_establish": [
+        "Future health",
+        "Per-Guardian diagnosis",
+        "Decision authority"
+      ]
+    },
+    {
+      "id": "runtime_observability",
+      "claim_supported": "The reference heartbeat and Fleet state model passed deterministic contract and fault tests.",
+      "required_commands": [
+        "observability_test"
+      ],
+      "required_artifacts": [
+        "guardian_heartbeat",
+        "fleet_snapshot",
+        "fleet_event"
+      ],
+      "expires_after": "candidate change",
+      "does_not_establish": [
+        "Deployed implementation parity",
+        "Guardian decision correctness",
+        "Physical safety"
+      ]
+    },
+    {
+      "id": "observability_performance",
+      "claim_supported": "The local reference observability implementation passed its bounded payload and aggregation budgets.",
+      "required_commands": [
+        "observability_benchmark"
+      ],
+      "required_artifacts": [
+        "guardian_heartbeat",
+        "fleet_snapshot",
+        "fleet_event"
+      ],
+      "expires_after": "candidate or environment change",
+      "does_not_establish": [
+        "Production capacity",
+        "Decision-engine latency",
+        "Hardware performance"
+      ]
+    },
+    {
+      "id": "physical_safety",
+      "claim_supported": "The integrated physical system meets its accepted safety case.",
+      "required_commands": [],
+      "required_artifacts": [],
+      "expires_after": "system, environment, or approval change",
+      "does_not_establish": [
+        "Available from this simulation repository"
+      ]
+    },
+    {
+      "id": "human_legal_regulatory",
+      "claim_supported": "Required human, legal, rights, and regulatory reviews are complete.",
+      "required_commands": [],
+      "required_artifacts": [],
+      "expires_after": "scope or applicable requirement change",
+      "does_not_establish": [
+        "Available from automated repository checks"
+      ]
+    }
+  ],
+  "impact_rules": [
+    {
+      "id": "control_model",
+      "paths": [
+        "system/**",
+        "scripts/lib/system-model.mjs",
+        "scripts/system-inspect.mjs",
+        "scripts/check-changed.mjs",
+        "scripts/docs-check.mjs",
+        "scripts/verify.mjs",
+        "tests/system-model.test.js",
+        "tests/agent-commands.test.js",
+        "package.json",
+        "scripts/generate-system-views.mjs",
+        "scripts/verify-changed.mjs",
+        ".github/generated/impact-rules.json",
+        "_wiki/generated/task-routes.md",
+        "tests/browser-module-boundaries.test.js",
+        "tests/producer-derivation.test.js",
+        ".github/workflows/site-quality.yml",
+        ".gitignore",
+        "scripts/validate-system.mjs",
+        "tests/generated-control.test.js"
+      ],
+      "components": [
+        "agent_control_plane"
+      ],
+      "commands": [
+        "system_check",
+        "unit",
+        "docs_check",
+        "verify",
+        "generate_system_views"
+      ],
+      "proof_classes": [
+        "source_behavior"
+      ],
+      "authority_boundaries": [
+        "Repository proof planning"
+      ],
+      "release_sensitive": false,
+      "documentation_refresh": [
+        "_wiki/flows/agent-operating-loop.md"
+      ],
+      "reason": "Control-model changes can alter every derived task and proof route."
+    },
+    {
+      "id": "observability_runtime",
+      "paths": [
+        "runtime/observability/**",
+        "runtime/json/**",
+        "tests/guardian-fleet-observability.test.js",
+        "tests/observability-benchmark.test.js",
+        "tests/helpers/observability-fixtures.js",
+        "scripts/benchmark-observability.mjs"
+      ],
+      "components": [
+        "guardian_observability_reference",
+        "fleet_observability_reference"
+      ],
+      "commands": [
+        "observability_test",
+        "observability_benchmark",
+        "unit_coverage",
+        "docs_check"
+      ],
+      "proof_classes": [
+        "runtime_observability",
+        "observability_performance"
+      ],
+      "authority_boundaries": [
+        "Guardian observation",
+        "Fleet operational classification",
+        "Public continuity projection"
+      ],
+      "release_sensitive": false,
+      "documentation_refresh": [
+        "_wiki/systems/runtime-observability.md"
+      ],
+      "reason": "Reference runtime changes require contract, state-machine, privacy, fault, and performance proof without spending browser or publication resources."
+    },
+    {
+      "id": "observability_contracts",
+      "paths": [
+        "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json",
+        "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
+        "schemas/creedspace-bounder-fleet-event-v1.schema.json",
+        "schemas/creedspace-bounder-telemetry-envelope-v1.schema.json"
+      ],
+      "components": [
+        "guardian_observability_reference",
+        "fleet_observability_reference",
+        "publication_builder"
+      ],
+      "commands": [
+        "observability_test",
+        "observability_benchmark",
+        "unit_coverage",
+        "build",
+        "browser",
+        "docs_check",
+        "producer_derivation"
+      ],
+      "proof_classes": [
+        "runtime_observability",
+        "observability_performance",
+        "publisher_integrity",
+        "browser_behavior",
+        "cross_repository_compatibility"
+      ],
+      "authority_boundaries": [
+        "Guardian observation",
+        "Fleet operational classification",
+        "Public contract publication"
+      ],
+      "release_sensitive": true,
+      "documentation_refresh": [
+        "guides/INTEGRATION.md",
+        "_wiki/systems/runtime-observability.md"
+      ],
+      "reason": "Public observability-contract changes require runtime compatibility, publication inventory, browser, privacy, and performance proof."
+    },
+    {
+      "id": "continuity",
+      "paths": [
+        "continuity-evidence.js",
+        "tests/continuity-evidence.test.js"
+      ],
+      "components": [
+        "continuity_verifier"
+      ],
+      "commands": [
+        "unit_coverage",
+        "browser"
+      ],
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior",
+        "live_continuity"
+      ],
+      "authority_boundaries": [
+        "Live observation"
+      ],
+      "release_sensitive": true,
+      "documentation_refresh": [
+        "_wiki/systems/site-architecture.md"
+      ],
+      "reason": "Continuity changes affect signature, ordering, freshness, and safe fallback semantics."
+    },
+    {
+      "id": "policy_and_receipts",
+      "paths": [
+        "policy-roundtrip.js",
+        "simulator-contracts.js",
+        "staging-feed.js",
+        "schemas/bounder-resilience-evidence.v1.schema.json",
+        "schemas/bounder.receipt-bundle.v1.schema.json",
+        "schemas/bounder.receipt.v1.schema.json",
+        "schemas/creedspace-bounder-checkpoint-v1.schema.json",
+        "schemas/creedspace-bounder-envelope-v1.schema.json",
+        "schemas/creedspace-bounder-policy-v1.schema.json",
+        "schemas/creedspace-bounder-profile-v1.schema.json",
+        "schemas/creedspace-bounder-roundtrip-v1.schema.json",
+        "data/**",
+        "tests/policy-roundtrip.test.js",
+        "tests/receipt-bundle.test.js",
+        "tests/simulator-contracts.test.js",
+        "tests/staging-feed.test.js",
+        "schemas/bounder-evidence-provenance-v1.schema.json",
+        "scripts/verify-producer-derivation.mjs",
+        "tests/producer-derivation.test.js",
+        "runtime/policy/**",
+        "runtime/transport/**",
+        "runtime/crypto/**",
+        "runtime/receipts/**",
+        "runtime/fleet/**",
+        "runtime/resilience/**",
+        "runtime/simulator/**",
+        "ui/policy-roundtrip-panel.js",
+        "schemas/bounder-release-manifest-v2.schema.json",
+        ".github/workflows/receipt-drift.yml"
+      ],
+      "components": [
+        "guardian_decision",
+        "browser_policy_verifier",
+        "simulator"
+      ],
+      "commands": [
+        "unit_coverage",
+        "browser",
+        "producer_derivation"
+      ],
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior",
+        "cross_repository_compatibility"
+      ],
+      "authority_boundaries": [
+        "Policy authority",
+        "Decision evidence",
+        "Browser verification"
+      ],
+      "release_sensitive": true,
+      "documentation_refresh": [
+        "_wiki/seams/evidence-provenance.md"
+      ],
+      "reason": "Policy and evidence changes can cross producer, publisher, and browser proof boundaries."
+    },
+    {
+      "id": "simulator_presentation",
+      "paths": [
+        "simulator.js",
+        "simulator-fallback.js",
+        "simulator-world.js",
+        "simulator.html",
+        "simulator.css",
+        "tests/simulator-world.test.js",
+        "tests/browser/site.spec.js",
+        "simulator/**"
+      ],
+      "components": [
+        "simulator"
+      ],
+      "commands": [
+        "unit_coverage",
+        "browser",
+        "design_lint"
+      ],
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior"
+      ],
+      "authority_boundaries": [
+        "Presentation"
+      ],
+      "release_sensitive": true,
+      "documentation_refresh": [
+        "_wiki/systems/site-architecture.md"
+      ],
+      "reason": "Presentation must remain receipt-driven and accessible in the built artifact."
+    },
+    {
+      "id": "publication",
+      "paths": [
+        "scripts/build-site.mjs",
+        "tests/publication.test.js",
+        ".github/workflows/deploy-pages.yml"
+      ],
+      "components": [
+        "publication_builder"
+      ],
+      "commands": [
+        "unit_coverage",
+        "build",
+        "browser"
+      ],
+      "proof_classes": [
+        "publisher_integrity",
+        "browser_behavior"
+      ],
+      "authority_boundaries": [
+        "Publication"
+      ],
+      "release_sensitive": true,
+      "documentation_refresh": [
+        "_wiki/systems/site-architecture.md"
+      ],
+      "reason": "Publication changes alter the exact public inventory or deployment privilege boundary."
+    },
+    {
+      "id": "release",
+      "paths": [
+        "scripts/generate-release-manifest.js",
+        "tests/release-manifest.test.js",
+        "release/**",
+        "VERSION",
+        "CHANGELOG.md",
+        "scripts/generate-release-manifest-v2.mjs",
+        "schemas/bounder-release-manifest-v2.schema.json",
+        "tests/release-manifest-v2.test.js",
+        ".github/workflows/receipt-drift.yml"
+      ],
+      "components": [
+        "release_manifest"
+      ],
+      "commands": [
+        "unit_coverage",
+        "build",
+        "browser",
+        "docs_check",
+        "producer_derivation"
+      ],
+      "proof_classes": [
+        "publisher_integrity",
+        "producer_derivation",
+        "cross_repository_compatibility"
+      ],
+      "authority_boundaries": [
+        "Release sealing"
+      ],
+      "release_sensitive": true,
+      "documentation_refresh": [
+        "_wiki/seams/evidence-provenance.md"
+      ],
+      "reason": "Release changes affect immutable history and candidate identity."
+    },
+    {
+      "id": "public_copy",
+      "paths": [
+        "*.html",
+        "styles.css",
+        "site.js",
+        "README.md",
+        "SECURITY.md",
+        "guides/**",
+        "tests/interface.test.js"
+      ],
+      "components": [
+        "simulator",
+        "publication_builder"
+      ],
+      "commands": [
+        "unit_coverage",
+        "build",
+        "browser",
+        "design_lint",
+        "docs_check"
+      ],
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior",
+        "publisher_integrity"
+      ],
+      "authority_boundaries": [
+        "Public claims",
+        "Presentation"
+      ],
+      "release_sensitive": true,
+      "documentation_refresh": [
+        "_wiki/systems/site-architecture.md"
+      ],
+      "reason": "Public source changes require built-byte, browser, design, and claim review."
+    },
+    {
+      "id": "architecture_docs",
+      "paths": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "_wiki/**",
+        "_contprompts/**"
+      ],
+      "components": [
+        "architecture_knowledge"
+      ],
+      "commands": [
+        "system_check",
+        "docs_check"
+      ],
+      "proof_classes": [
+        "source_behavior"
+      ],
+      "authority_boundaries": [
+        "Agent guidance"
+      ],
+      "release_sensitive": false,
+      "documentation_refresh": [
+        "_wiki/index.md",
+        "_wiki/log.md"
+      ],
+      "reason": "Internal architecture changes must preserve routes, citations, and declared holds."
+    }
+  ],
+  "documentation": {
+    "entrypoints": [
+      "CLAUDE.md",
+      "_wiki/index.md",
+      "_wiki/systems/system-architecture.md",
+      "_wiki/flows/agent-operating-loop.md",
+      "_wiki/systems/runtime-observability.md"
+    ],
+    "wiki_index": "_wiki/index.md",
+    "wiki_log": "_wiki/log.md",
+    "holds": [
+      "The decision producer is confirmed at private NellInc/Bounder-from-org on master; public regeneration still requires repository access or a public mirror or reviewable source bundle.",
+      "The Fleet backend owner and deployed Guardian heartbeat integration remain unverified.",
+      "Do not present reference observability budgets as deployed Guardian or Fleet performance.",
+      "Do not publish, tag, push, deploy, or mutate live external state without explicit authority."
+    ],
+    "claim_holds": []
+  },
+  "budgets": {
+    "scope": "simulation-reference-observability-only",
+    "heartbeat_max_bytes": 16384,
+    "event_max_bytes": 8192,
+    "snapshot_max_bytes": 262144,
+    "fleet_max_guardians": 10000,
+    "heartbeat_validity_ms": 90000,
+    "healthy_interval_ms": 30000,
+    "stable_interval_ms": 60000,
+    "attention_interval_ms": 5000,
+    "jitter_fraction": 0.1,
+    "audit_backlog_count": 100,
+    "audit_backlog_age_ms": 60000,
+    "resource_pressure_percent": 90,
+    "aggregation_10000_max_cpu_ms": 2000
+  }
+}

@@ -29,16 +29,10 @@ jobs:
           cache: npm
       - name: Install dependencies exactly
         run: npm ci
-      - name: Run the complete unit suite with coverage floors
-        run: npm run test:coverage
-      - name: Run deterministic design lint
-        run: npx --yes impeccable@3.2.1 detect .
-      - name: Assemble the allowlisted public artifact
-        run: npm run build
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Test the assembled artifact in Chromium
-        run: npm run test:browser
+      - name: Run the canonical complete verification gate
+        run: npm run verify
       - name: Upload the verified static site
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

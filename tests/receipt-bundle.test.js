@@ -457,7 +457,7 @@ test("policy, profile, and checkpoint schemas enforce safe bounds and cross-fiel
 
 test("simulator consumes same-origin receipts and vendored Three.js", async () => {
   const [source, html] = await Promise.all([
-    readFile(new URL("simulator.js", root), "utf8"),
+    readFile(new URL("simulator/controller.js", root), "utf8"),
     readFile(new URL("simulator.html", root), "utf8")
   ]);
   assert.match(source, /fetchSimulatorJSON\("\.\/data\/bounder-receipts\.v1\.json"/);

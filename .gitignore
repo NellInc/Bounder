@@ -31,3 +31,6 @@ playwright-report/
 # Machine-local agent state (locks are per-machine, not project content)
 .claude/*.lock
 _site/
+artifacts/verification/
+artifacts/producer-derivation/
+artifacts/changed-verification/
