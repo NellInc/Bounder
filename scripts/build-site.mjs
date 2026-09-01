@@ -15,7 +15,7 @@ export const canonicalPublicPaths = Object.freeze([
   "simulator-fallback.js", "simulator-world.js", "simulator.css",
   "simulator.html", "simulator.js", "site.js", "sitemap.xml",
   "staging-feed.js", "styles.css", "terms.html", "assets", "data",
-  "guides", "images", "release", "schemas", "vendor"
+  "guides", "images", "release", "runtime", "schemas", "simulator", "ui", "vendor"
 ]);
 
 export const defaultFileSystem = Object.freeze({ ...nodeFs });

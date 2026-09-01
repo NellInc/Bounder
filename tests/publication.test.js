@@ -28,7 +28,7 @@ const expectedPublicPaths = Object.freeze([
   "simulator-fallback.js", "simulator-world.js", "simulator.css",
   "simulator.html", "simulator.js", "site.js", "sitemap.xml",
   "staging-feed.js", "styles.css", "terms.html", "assets", "data",
-  "guides", "images", "release", "schemas", "vendor"
+  "guides", "images", "release", "runtime", "schemas", "simulator", "ui", "vendor"
 ]);
 
 async function makeFixture() {
@@ -82,6 +82,8 @@ test("the exported publication allowlist is exact and explicitly includes every 
   assert.deepEqual(canonicalPublicPaths, expectedPublicPaths);
   assert.equal(new Set(canonicalPublicPaths).size, canonicalPublicPaths.length);
   assert.ok(canonicalPublicPaths.includes("simulator-contracts.js"));
+  assert.ok(canonicalPublicPaths.includes("runtime"));
+  assert.ok(canonicalPublicPaths.includes("simulator"));
 
   for (const relativePath of canonicalPublicPaths) {
     const info = await fs.lstat(join(canonicalRoot, relativePath));
@@ -101,6 +103,8 @@ test("the canonical artifact is a complete recursive byte-for-byte copy of only 
   assertEquivalentTrees(expected, actual);
   assert.deepEqual(built, expected);
   assert.ok(actual.some(({ path, type }) => path === "simulator-contracts.js" && type === "file"));
+  assert.ok(actual.some(({ path, type }) => path === "runtime/policy/contracts.js" && type === "file"));
+  assert.ok(actual.some(({ path, type }) => path === "simulator/controller.js" && type === "file"));
   assert.ok(actual.length > canonicalPublicPaths.length, "recursive directories were not expanded into their files");
 
   for (const excluded of [".git", ".github", "docs", "node_modules", "package.json", "scripts", "tests", "tmp"]) {

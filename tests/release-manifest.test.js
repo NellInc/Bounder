@@ -243,24 +243,27 @@ test("canonical provenance rejects a well-formed SHA that does not resolve local
 });
 
 test("canonical provenance rejects dirty pinned bytes before manifest publication", async (t) => {
-  const parent = await fs.mkdtemp(join(tmpdir(), "bounder-provenance-test-"));
-  t.after(() => fs.rm(parent, { recursive: true, force: true }));
-  const root = join(parent, "repo");
+  const root = await fs.mkdtemp(join(tmpdir(), "bounder-provenance-test-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
   await defaultGitRunner({
-    root: fileURLToPath(repositoryRoot),
-    args: ["clone", "--quiet", "--no-checkout", "--local", ".", root],
-    maxBuffer: 1024 * 1024
+    root,
+    args: ["init", "--quiet"]
   });
+  await defaultGitRunner({ root, args: ["config", "user.name", "Bounder Test"] });
+  await defaultGitRunner({ root, args: ["config", "user.email", "bounder-test@example.invalid"] });
+  await fs.mkdir(join(root, "release"));
+  await fs.writeFile(join(root, "VERSION"), "1.0.3\n");
+  await fs.writeFile(join(root, "README.md"), "committed readme\n");
+  await writeBaseline(root, "1.0.2");
+  await defaultGitRunner({ root, args: ["add", "--", "VERSION", "README.md", "release"] });
+  await defaultGitRunner({ root, args: ["commit", "--quiet", "--no-gpg-sign", "-m", "fixture"] });
   const { stdout: headBytes } = await defaultGitRunner({
     root,
     args: ["rev-parse", "--verify", "HEAD"],
     maxBuffer: 64
   });
   const commit = headBytes.toString("utf8").trim();
-  await fs.mkdir(join(root, "release"));
-  await fs.writeFile(join(root, "VERSION"), "1.0.3\n");
   await fs.writeFile(join(root, "README.md"), "dirty working-tree readme\n");
-  await writeBaseline(root, "1.0.2");
   await assert.rejects(
     generateReleaseManifest({
       root,
@@ -477,10 +480,12 @@ test("receipt drift installs exact dependencies and derives every pinned evidenc
 
   const workflow = await fs.readFile(new URL("../.github/workflows/receipt-drift.yml", import.meta.url), "utf8");
   const install = workflow.indexOf("npm ci --ignore-scripts");
-  const testSuite = workflow.indexOf("npm test");
+  const testSuite = workflow.indexOf("node --test tests/producer-derivation.test.js tests/release-manifest-v2.test.js");
   assert.ok(install >= 0 && testSuite > install, "receipt drift does not install lockfile dependencies before testing");
-  assert.match(workflow, /pinnedEvidenceAndSchemaPaths\(manifest\)/);
-  assert.match(workflow, /cmp "\$path" "\$tmp\/\$path"/);
+  assert.match(workflow, /ref: b703add7693061381e4001a15b7d7768406122c4/);
+  assert.match(workflow, /npm run verify:producer -- --producer-root \.\.\/producer/);
+  assert.match(workflow, /Producer derivation is unverified in this run/);
+  assert.doesNotMatch(workflow, /cmp "\$path" "\$tmp\/\$path"/);
 });
 
 test("baseline selection validates every historical manifest and rejects future or malformed poison", async (t) => {
@@ -961,15 +966,32 @@ test("partial staging and publication failures roll back without target or tempo
   await assertNoManifestDebris(changedVersion);
 });
 
-test("the current release manifest is strict, complete, canonical, and byte-accurate", async () => {
+test("the current release line has either a sealed v2 manifest or an explicit source-candidate transition", async () => {
   const versionText = await fs.readFile(new URL("VERSION", repositoryRoot), "utf8");
   const version = versionText.endsWith("\n") ? versionText.slice(0, -1) : versionText;
   assert.equal(versionText, `${version}\n`, "VERSION is not canonical");
   parseStrictSemVer(version);
-  await validateManifestFile({
-    root: fileURLToPath(repositoryRoot),
-    version,
-    expectedPaths: canonicalPinnedSourcePaths,
-    verifyFiles: true
-  });
+  const root = fileURLToPath(repositoryRoot);
+  const target = join(root, "release", `bounder-reference-v${version}.manifest.json`);
+  let source;
+  try {
+    source = await fs.readFile(target, "utf8");
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+    assert.equal(version, "1.1.0");
+    await Promise.all([
+      fs.access(join(root, "scripts", "generate-release-manifest-v2.mjs")),
+      fs.access(join(root, "schemas", "bounder-release-manifest-v2.schema.json"))
+    ]);
+    return;
+  }
+  const manifest = JSON.parse(source);
+  assert.equal(manifest.manifest_version, "bounder-release-manifest/v2");
+  const { validateManifest } = await import("../scripts/generate-release-manifest-v2.mjs");
+  await validateManifest(root, manifest);
+  for (const file of manifest.files) {
+    const bytes = await fs.readFile(join(root, file.path));
+    assert.equal(bytes.byteLength, file.bytes, file.path);
+    assert.equal(hash(bytes), file.sha256, file.path);
+  }
 });

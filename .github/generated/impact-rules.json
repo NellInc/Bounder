@@ -1,0 +1,213 @@
+{
+  "version": "bounder-ci-impact/v1",
+  "source": "system/bounder-system.v1.json",
+  "descriptor_schema_version": "bounder-system/v1",
+  "rules": [
+    {
+      "id": "control_model",
+      "paths": [
+        "system/**",
+        "scripts/lib/system-model.mjs",
+        "scripts/system-inspect.mjs",
+        "scripts/check-changed.mjs",
+        "scripts/docs-check.mjs",
+        "scripts/verify.mjs",
+        "tests/system-model.test.js",
+        "tests/agent-commands.test.js",
+        "package.json",
+        "scripts/generate-system-views.mjs",
+        "scripts/verify-changed.mjs",
+        ".github/generated/impact-rules.json",
+        "_wiki/generated/task-routes.md",
+        "tests/browser-module-boundaries.test.js",
+        "tests/producer-derivation.test.js",
+        ".github/workflows/site-quality.yml"
+      ],
+      "commands": [
+        "system_check",
+        "unit",
+        "docs_check",
+        "verify",
+        "generate_system_views"
+      ],
+      "release_sensitive": false
+    },
+    {
+      "id": "observability_runtime",
+      "paths": [
+        "runtime/observability/**",
+        "runtime/json/**",
+        "tests/guardian-fleet-observability.test.js",
+        "tests/observability-benchmark.test.js",
+        "tests/helpers/observability-fixtures.js",
+        "scripts/benchmark-observability.mjs"
+      ],
+      "commands": [
+        "observability_test",
+        "observability_benchmark",
+        "unit_coverage",
+        "docs_check"
+      ],
+      "release_sensitive": false
+    },
+    {
+      "id": "observability_contracts",
+      "paths": [
+        "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json",
+        "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
+        "schemas/creedspace-bounder-fleet-event-v1.schema.json",
+        "schemas/creedspace-bounder-telemetry-envelope-v1.schema.json"
+      ],
+      "commands": [
+        "observability_test",
+        "observability_benchmark",
+        "unit_coverage",
+        "build",
+        "browser",
+        "docs_check",
+        "producer_derivation"
+      ],
+      "release_sensitive": true
+    },
+    {
+      "id": "continuity",
+      "paths": [
+        "continuity-evidence.js",
+        "tests/continuity-evidence.test.js"
+      ],
+      "commands": [
+        "unit_coverage",
+        "browser"
+      ],
+      "release_sensitive": true
+    },
+    {
+      "id": "policy_and_receipts",
+      "paths": [
+        "policy-roundtrip.js",
+        "simulator-contracts.js",
+        "staging-feed.js",
+        "schemas/bounder-resilience-evidence.v1.schema.json",
+        "schemas/bounder.receipt-bundle.v1.schema.json",
+        "schemas/bounder.receipt.v1.schema.json",
+        "schemas/creedspace-bounder-checkpoint-v1.schema.json",
+        "schemas/creedspace-bounder-envelope-v1.schema.json",
+        "schemas/creedspace-bounder-policy-v1.schema.json",
+        "schemas/creedspace-bounder-profile-v1.schema.json",
+        "schemas/creedspace-bounder-roundtrip-v1.schema.json",
+        "data/**",
+        "tests/policy-roundtrip.test.js",
+        "tests/receipt-bundle.test.js",
+        "tests/simulator-contracts.test.js",
+        "tests/staging-feed.test.js",
+        "schemas/bounder-evidence-provenance-v1.schema.json",
+        "scripts/verify-producer-derivation.mjs",
+        "tests/producer-derivation.test.js",
+        "runtime/policy/**",
+        "runtime/transport/**",
+        "runtime/crypto/**",
+        "runtime/receipts/**",
+        "runtime/fleet/**",
+        "runtime/resilience/**",
+        "runtime/simulator/**",
+        "ui/policy-roundtrip-panel.js",
+        "schemas/bounder-release-manifest-v2.schema.json",
+        ".github/workflows/receipt-drift.yml"
+      ],
+      "commands": [
+        "unit_coverage",
+        "browser",
+        "producer_derivation"
+      ],
+      "release_sensitive": true
+    },
+    {
+      "id": "simulator_presentation",
+      "paths": [
+        "simulator.js",
+        "simulator-fallback.js",
+        "simulator-world.js",
+        "simulator.html",
+        "simulator.css",
+        "tests/simulator-world.test.js",
+        "tests/browser/site.spec.js",
+        "simulator/**"
+      ],
+      "commands": [
+        "unit_coverage",
+        "browser",
+        "design_lint"
+      ],
+      "release_sensitive": true
+    },
+    {
+      "id": "publication",
+      "paths": [
+        "scripts/build-site.mjs",
+        "tests/publication.test.js",
+        ".github/workflows/deploy-pages.yml"
+      ],
+      "commands": [
+        "unit_coverage",
+        "build",
+        "browser"
+      ],
+      "release_sensitive": true
+    },
+    {
+      "id": "release",
+      "paths": [
+        "scripts/generate-release-manifest.js",
+        "tests/release-manifest.test.js",
+        "release/**",
+        "VERSION",
+        "CHANGELOG.md",
+        "scripts/generate-release-manifest-v2.mjs",
+        "schemas/bounder-release-manifest-v2.schema.json",
+        "tests/release-manifest-v2.test.js",
+        ".github/workflows/receipt-drift.yml"
+      ],
+      "commands": [
+        "unit_coverage",
+        "build",
+        "browser",
+        "docs_check",
+        "producer_derivation"
+      ],
+      "release_sensitive": true
+    },
+    {
+      "id": "public_copy",
+      "paths": [
+        "*.html",
+        "styles.css",
+        "site.js",
+        "README.md",
+        "SECURITY.md",
+        "guides/**"
+      ],
+      "commands": [
+        "unit_coverage",
+        "build",
+        "browser",
+        "design_lint",
+        "docs_check"
+      ],
+      "release_sensitive": true
+    },
+    {
+      "id": "architecture_docs",
+      "paths": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "_wiki/**",
+        "_contprompts/**"
+      ],
+      "commands": [
+        "system_check",
+        "docs_check"
+      ],
+      "release_sensitive": false
+    }
+  ]
+}

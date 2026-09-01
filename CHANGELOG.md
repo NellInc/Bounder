@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.0 · 2026-09-01
+
+Agent control plane, explicit producer provenance, and Guardian and Fleet
+observability reference.
+
+### Changed
+
+1. A validated system descriptor now owns components, roles, artifacts, authority boundaries, commands, proof classes, impact rules, and observability budgets.
+2. Inspection, changed-path planning, generated task routes, generated CI impact data, focused verification, and aggregate verification emit compact machine-readable state and receipts.
+3. The private Go producer and public website publisher now have distinct immutable identities. Clean producer export regenerates three published artifacts and checks 13 byte-identical shared contracts.
+4. Release manifest v2 records producer inputs and outputs, publisher source, build proof, recorded observations, deployment status, and live-observation status without changing historical manifests.
+5. Guardian heartbeat, Fleet snapshot, Fleet transition, and telemetry-envelope contracts now have deterministic validation, replay, rollback, expiry, fault, privacy, scheduling, and 10,000-Guardian reference-performance tests.
+6. Browser entry points are stable composition facades with narrow policy, transport, receipt, Fleet, resilience, UI, and simulator ownership seams.
+7. The 16-Guardian Fleet laboratory and 100-Guardian staging pilot remain explicitly classified as recorded observations.
+
+### Proof limits
+
+1. The producer repository is private, so independent public regeneration requires access or a future public mirror or reviewable source bundle.
+2. Deployed Guardian performance, Fleet backend integration, hardware safety, certification, and human, legal, rights, and regulatory review remain unverified.
+3. This local candidate does not establish deployment or live-byte parity.
+
 ## 1.0.4 · 2026-08-25
 
 Browser continuity-proof hotfix.

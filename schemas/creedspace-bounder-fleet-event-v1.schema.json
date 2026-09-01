@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.bounder.io/schemas/creedspace-bounder-fleet-event-v1.schema.json",
+  "title": "Creed Space Bounder private Fleet transition event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "visibility", "event_id", "event_type", "fleet_id", "guardian_id", "boot_id",
+    "observed_at", "from_state", "to_state", "reason", "heartbeat_sequence", "policy_sequence",
+    "checkpoint_sequence"
+  ],
+  "properties": {
+    "version": { "const": "creedspace-bounder-fleet-event/v1" },
+    "visibility": { "const": "fleet-private" },
+    "event_id": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "event_type": {
+      "enum": [
+        "guardian_connected", "guardian_degraded", "guardian_held", "guardian_recovering",
+        "guardian_recovered", "guardian_unreachable", "guardian_restarted", "policy_advanced",
+        "checkpoint_advanced"
+      ]
+    },
+    "fleet_id": { "$ref": "#/$defs/identity" },
+    "guardian_id": { "$ref": "#/$defs/identity" },
+    "boot_id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "observed_at": { "$ref": "#/$defs/utcDateTime" },
+    "from_state": { "type": ["string", "null"], "enum": [null, "healthy", "degraded", "held", "recovering", "unreachable"] },
+    "to_state": { "enum": ["healthy", "degraded", "held", "recovering", "unreachable"] },
+    "reason": {
+      "enum": [
+        "none", "audit_backlog", "resource_pressure", "evidence_lag", "partial_connectivity",
+        "policy_expired", "policy_unverified", "continuity_lease_expired", "rollback_detected",
+        "guardian_restart", "checkpoint_restore", "heartbeat_expired", "missing_heartbeat"
+      ]
+    },
+    "heartbeat_sequence": { "$ref": "#/$defs/nonnegative" },
+    "policy_sequence": { "$ref": "#/$defs/nonnegative" },
+    "checkpoint_sequence": { "$ref": "#/$defs/nonnegative" }
+  },
+  "$defs": {
+    "identity": { "type": "string", "minLength": 1, "maxLength": 255, "pattern": "\\S" },
+    "nonnegative": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "utcDateTime": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 30,
+      "format": "date-time",
+      "pattern": "^(?!0000-)\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,9})?Z$"
+    }
+  }
+}

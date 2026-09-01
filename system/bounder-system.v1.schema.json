@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.bounder.io/system/bounder-system.v1.schema.json",
+  "title": "Bounder system control model v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "system_id",
+    "roles",
+    "components",
+    "artifacts",
+    "commands",
+    "proof_classes",
+    "impact_rules",
+    "documentation",
+    "budgets"
+  ],
+  "properties": {
+    "schema_version": { "const": "bounder-system/v1" },
+    "system_id": { "const": "bounder" },
+    "roles": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/role" }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/command" }
+    },
+    "proof_classes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/proofClass" }
+    },
+    "impact_rules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/impactRule" }
+    },
+    "documentation": { "$ref": "#/$defs/documentation" },
+    "budgets": { "$ref": "#/$defs/budgets" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96,
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "\\S"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[^\\u0000-\\u001f]+$"
+    },
+    "idList": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "pathList": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/path" }
+    },
+    "textList": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/text" }
+    },
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "responsibility", "repository", "default_ref", "local_discovery", "authority_owned", "authority_forbidden"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "responsibility": { "$ref": "#/$defs/text" },
+        "repository": { "$ref": "#/$defs/text" },
+        "default_ref": { "$ref": "#/$defs/text" },
+        "local_discovery": { "$ref": "#/$defs/textList" },
+        "authority_owned": { "$ref": "#/$defs/textList" },
+        "authority_forbidden": { "$ref": "#/$defs/textList" }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "purpose", "source_paths", "test_paths", "inputs", "outputs", "failure_state", "mutates", "network", "secrets", "proof_classes", "depends_on"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "role": { "$ref": "#/$defs/id" },
+        "purpose": { "$ref": "#/$defs/text" },
+        "source_paths": { "$ref": "#/$defs/pathList" },
+        "test_paths": { "$ref": "#/$defs/pathList" },
+        "inputs": { "$ref": "#/$defs/idList" },
+        "outputs": { "$ref": "#/$defs/idList" },
+        "failure_state": { "$ref": "#/$defs/text" },
+        "mutates": { "enum": ["none", "memory", "owned_artifact", "external"] },
+        "network": { "enum": ["none", "optional_read", "required_read", "write"] },
+        "secrets": { "enum": ["none", "public_keys", "private_keys", "credentials"] },
+        "proof_classes": { "$ref": "#/$defs/idList" },
+        "depends_on": { "$ref": "#/$defs/idList" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "contract", "producer_component", "generator", "input_inventory", "output_paths", "canonical_owner", "publication_paths", "verification"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "contract": { "$ref": "#/$defs/text" },
+        "producer_component": { "$ref": "#/$defs/id" },
+        "generator": { "$ref": "#/$defs/text" },
+        "input_inventory": { "$ref": "#/$defs/idList" },
+        "output_paths": { "$ref": "#/$defs/pathList" },
+        "canonical_owner": { "$ref": "#/$defs/id" },
+        "publication_paths": { "$ref": "#/$defs/pathList" },
+        "verification": { "$ref": "#/$defs/idList" }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "argv", "purpose", "proof_classes", "mutates", "timeout_seconds"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "purpose": { "$ref": "#/$defs/text" },
+        "proof_classes": { "$ref": "#/$defs/idList" },
+        "mutates": { "enum": ["none", "owned_artifact", "publication_candidate"] },
+        "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 7200 }
+      }
+    },
+    "proofClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "claim_supported", "required_commands", "required_artifacts", "expires_after", "does_not_establish"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "claim_supported": { "$ref": "#/$defs/text" },
+        "required_commands": { "$ref": "#/$defs/idList" },
+        "required_artifacts": { "$ref": "#/$defs/idList" },
+        "expires_after": { "$ref": "#/$defs/text" },
+        "does_not_establish": { "$ref": "#/$defs/textList" }
+      }
+    },
+    "impactRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "paths", "components", "commands", "proof_classes", "authority_boundaries", "release_sensitive", "documentation_refresh", "reason"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "paths": { "$ref": "#/$defs/pathList" },
+        "components": { "$ref": "#/$defs/idList" },
+        "commands": { "$ref": "#/$defs/idList" },
+        "proof_classes": { "$ref": "#/$defs/idList" },
+        "authority_boundaries": { "$ref": "#/$defs/textList" },
+        "release_sensitive": { "type": "boolean" },
+        "documentation_refresh": { "$ref": "#/$defs/pathList" },
+        "reason": { "$ref": "#/$defs/text" }
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entrypoints", "wiki_index", "wiki_log", "holds", "claim_holds"],
+      "properties": {
+        "entrypoints": { "$ref": "#/$defs/pathList" },
+        "wiki_index": { "$ref": "#/$defs/path" },
+        "wiki_log": { "$ref": "#/$defs/path" },
+        "holds": { "$ref": "#/$defs/textList" },
+        "claim_holds": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "path", "contains", "reason", "closing_gate"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "path": { "$ref": "#/$defs/path" },
+              "contains": { "$ref": "#/$defs/text" },
+              "reason": { "$ref": "#/$defs/text" },
+              "closing_gate": { "$ref": "#/$defs/text" }
+            }
+          }
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "heartbeat_max_bytes", "event_max_bytes", "snapshot_max_bytes", "fleet_max_guardians", "heartbeat_validity_ms", "healthy_interval_ms", "stable_interval_ms", "attention_interval_ms", "jitter_fraction", "audit_backlog_count", "audit_backlog_age_ms", "resource_pressure_percent", "aggregation_10000_max_ms"],
+      "properties": {
+        "scope": { "const": "simulation-reference-observability-only" },
+        "heartbeat_max_bytes": { "type": "integer", "minimum": 1024, "maximum": 65536 },
+        "event_max_bytes": { "type": "integer", "minimum": 1024, "maximum": 65536 },
+        "snapshot_max_bytes": { "type": "integer", "minimum": 4096, "maximum": 1048576 },
+        "fleet_max_guardians": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "heartbeat_validity_ms": { "type": "integer", "minimum": 1000, "maximum": 3600000 },
+        "healthy_interval_ms": { "type": "integer", "minimum": 1000, "maximum": 3600000 },
+        "stable_interval_ms": { "type": "integer", "minimum": 1000, "maximum": 3600000 },
+        "attention_interval_ms": { "type": "integer", "minimum": 1000, "maximum": 3600000 },
+        "jitter_fraction": { "type": "number", "minimum": 0, "maximum": 0.25 },
+        "audit_backlog_count": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "audit_backlog_age_ms": { "type": "integer", "minimum": 1000, "maximum": 86400000 },
+        "resource_pressure_percent": { "type": "number", "minimum": 50, "maximum": 100 },
+        "aggregation_10000_max_ms": { "type": "integer", "minimum": 100, "maximum": 10000 }
+      }
+    }
+  }
+}

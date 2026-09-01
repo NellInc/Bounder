@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.bounder.io/schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
+  "title": "Creed Space Bounder private Fleet snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "visibility", "fleet_id", "generated_at", "expires_at", "expected_guardians",
+    "observed_guardians", "states", "platform_counts", "reason_counts", "policy_sequences",
+    "checkpoint_sequences", "decisions", "audit", "cycle_duration_ms", "complete", "healthy"
+  ],
+  "properties": {
+    "version": { "const": "creedspace-bounder-fleet-snapshot/v1" },
+    "visibility": { "const": "fleet-private-aggregate" },
+    "fleet_id": { "$ref": "#/$defs/identity" },
+    "generated_at": { "$ref": "#/$defs/utcDateTime" },
+    "expires_at": { "$ref": "#/$defs/utcDateTime" },
+    "expected_guardians": { "$ref": "#/$defs/nonnegative" },
+    "observed_guardians": { "$ref": "#/$defs/nonnegative" },
+    "states": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["healthy", "degraded", "held", "recovering", "unreachable"],
+      "properties": {
+        "healthy": { "$ref": "#/$defs/nonnegative" },
+        "degraded": { "$ref": "#/$defs/nonnegative" },
+        "held": { "$ref": "#/$defs/nonnegative" },
+        "recovering": { "$ref": "#/$defs/nonnegative" },
+        "unreachable": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "platform_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["aerial", "ground", "marine", "warehouse", "inspection", "fixed_machinery"],
+      "properties": {
+        "aerial": { "$ref": "#/$defs/nonnegative" },
+        "ground": { "$ref": "#/$defs/nonnegative" },
+        "marine": { "$ref": "#/$defs/nonnegative" },
+        "warehouse": { "$ref": "#/$defs/nonnegative" },
+        "inspection": { "$ref": "#/$defs/nonnegative" },
+        "fixed_machinery": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "reason_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "none", "audit_backlog", "resource_pressure", "evidence_lag", "partial_connectivity",
+        "policy_expired", "policy_unverified", "continuity_lease_expired", "rollback_detected",
+        "guardian_restart", "checkpoint_restore", "heartbeat_expired", "missing_heartbeat"
+      ],
+      "properties": {
+        "none": { "$ref": "#/$defs/nonnegative" },
+        "audit_backlog": { "$ref": "#/$defs/nonnegative" },
+        "resource_pressure": { "$ref": "#/$defs/nonnegative" },
+        "evidence_lag": { "$ref": "#/$defs/nonnegative" },
+        "partial_connectivity": { "$ref": "#/$defs/nonnegative" },
+        "policy_expired": { "$ref": "#/$defs/nonnegative" },
+        "policy_unverified": { "$ref": "#/$defs/nonnegative" },
+        "continuity_lease_expired": { "$ref": "#/$defs/nonnegative" },
+        "rollback_detected": { "$ref": "#/$defs/nonnegative" },
+        "guardian_restart": { "$ref": "#/$defs/nonnegative" },
+        "checkpoint_restore": { "$ref": "#/$defs/nonnegative" },
+        "heartbeat_expired": { "$ref": "#/$defs/nonnegative" },
+        "missing_heartbeat": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "policy_sequences": { "$ref": "#/$defs/range" },
+    "checkpoint_sequences": { "$ref": "#/$defs/range" },
+    "decisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evaluated", "allowed", "held", "failures", "latency_ms"],
+      "properties": {
+        "evaluated": { "$ref": "#/$defs/nonnegative" },
+        "allowed": { "$ref": "#/$defs/nonnegative" },
+        "held": { "$ref": "#/$defs/nonnegative" },
+        "failures": { "$ref": "#/$defs/nonnegative" },
+        "latency_ms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["p50_max", "p95_max", "p99_max", "max"],
+          "properties": {
+            "p50_max": { "$ref": "#/$defs/nonnegative" },
+            "p95_max": { "$ref": "#/$defs/nonnegative" },
+            "p99_max": { "$ref": "#/$defs/nonnegative" },
+            "max": { "$ref": "#/$defs/nonnegative" }
+          }
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["queued", "oldest_queued_age_ms"],
+      "properties": {
+        "queued": { "$ref": "#/$defs/nonnegative" },
+        "oldest_queued_age_ms": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "cycle_duration_ms": { "$ref": "#/$defs/nonnegative" },
+    "complete": { "type": "boolean" },
+    "healthy": { "type": "boolean" }
+  },
+  "$defs": {
+    "identity": { "type": "string", "minLength": 1, "maxLength": 255, "pattern": "\\S" },
+    "nonnegative": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "utcDateTime": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 30,
+      "format": "date-time",
+      "pattern": "^(?!0000-)\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,9})?Z$"
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": { "$ref": "#/$defs/nonnegative" },
+        "maximum": { "$ref": "#/$defs/nonnegative" }
+      }
+    }
+  }
+}
