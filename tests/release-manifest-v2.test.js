@@ -91,7 +91,11 @@ test("release manifest v2 preserves every historical manifest digest", async () 
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));
     assert.equal(sha256(bytes), expected, path);
     const historical = JSON.parse(bytes);
-    assert.equal(Object.hasOwn(historical, "manifest_version"), false, `${path} history was rewritten as v2`);
+    if (path.endsWith("v1.1.0.manifest.json")) {
+      assert.equal(historical.manifest_version, "bounder-release-manifest/v2", `${path} lost its original v2 identity`);
+    } else {
+      assert.equal(Object.hasOwn(historical, "manifest_version"), false, `${path} history was rewritten as v2`);
+    }
   }
 });
 

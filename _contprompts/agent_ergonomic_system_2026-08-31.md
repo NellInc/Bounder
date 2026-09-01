@@ -1,7 +1,7 @@
 ---
 title: Bounder agent ergonomic system
 created: 2026-08-31
-status: completed-local
+status: publication-authorized
 stepsCompleted: 8
 verification_criteria:
   - "A fresh agent can identify the owning component, authority boundary, edit surface, and proof route for a representative task in under two minutes"
@@ -683,6 +683,8 @@ The programme is complete when:
 | 2026-09-01 | Closure | The exact verifier ran while host load exceeded 45 and failed a wall-clock aggregation budget even though the aggregation consumed about 770 ms of process CPU | Gate reference algorithmic cost on process CPU time and record monotonic wall time as a diagnostic, preserving visibility without converting unrelated scheduler pressure into a code failure | Production wall-time capacity still requires a controlled deployed benchmark |
 | 2026-09-01 | Closure | Two control-plane tests assumed the implementation tree was dirty, so they passed during development and failed against the immutable clean source candidate | Inject deterministic Git status and diff output for parser coverage, and assert only the live inspection contract rather than ambient repository dirtiness | None |
 | 2026-09-01 | Closure | A transport deadline test used a one-second wall limit around a ten-millisecond JavaScript timer and failed only under severe host scheduler starvation | Keep the stalled-promise functional proof, which can complete only when the deadline wins, and use a generous harness timeout solely to catch nontermination | None |
+| 2026-09-01 | Publication | Hosted producer `govulncheck` found six reachable standard-library vulnerabilities on Go 1.25.12, and the producer statement plus public schema still claimed `go 1.20` | Raise the producer floor to Go 1.25.14, derive the toolchain from `go.mod`, preserve the superseded v1.1.0 seal, and issue v1.1.1 from fresh producer and publisher proof | Deployed Guardian and Fleet adoption remain separate from website publication |
+| 2026-09-01 | Publication | Changed-path inspection identified four programme files without an explicit route | Assign the control helpers and ignore policy to `control_model`, assign interface acceptance to `public_copy`, regenerate both compiled route views, and retain the conservative fallback for genuinely unknown paths | None |
 
 ## Implementation Status
 
@@ -693,14 +695,14 @@ The programme is complete when:
 5. Phase 6 is complete as a reference implementation: exact telemetry contracts, deterministic Fleet state, replay and rollback guards, privacy-safe projection, transition events, adaptive heartbeat scheduling, virtual-time fault tests, and a bounded reference benchmark are implemented. Deployment into a Guardian or Fleet backend remains external and unverified.
 6. Phase 7 is complete at the stable ownership boundary: public entry points are small composition facades, narrow modules name policy, transport, crypto, receipt, Fleet, resilience, UI, and simulator responsibilities, and proven behavior cores remain internal behind those APIs.
 7. Phase 8 is complete locally: generated task routes, generated CI impact data, focused verification, and inspection health metrics derive from the descriptor.
-8. Historical manifests remain byte-immutable. No tag, push, deployment, live mutation, or publication action is authorized or performed by this programme.
+8. Historical manifests remain byte-immutable. Publication authority was granted on 2026-09-01; producer PR 23 is merged, and website PR, tag, Pages deployment, and live verification are the authorized closure sequence.
 
 ## Local Closure State
 
 The implementation is complete when the two local release commits are present and the exact source candidate has a successful aggregate verification receipt. External closure remains deliberately separate:
 
-1. Producer branch publication or merge requires repository authority.
-2. Site branch publication, tag, Pages deployment, and live-byte verification require publication authority.
+1. Producer branch publication and merge are complete through producer PR 23.
+2. Site branch publication, tag, Pages deployment, and live-byte verification are authorized for the sealed release candidate.
 3. Fleet backend and deployed Guardian adoption require their confirmed owners.
 4. Hardware safety, certification, human, legal, rights, and regulatory review require their own evidence and accountable reviewers.
 

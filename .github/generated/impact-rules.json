@@ -21,7 +21,10 @@
         "_wiki/generated/task-routes.md",
         "tests/browser-module-boundaries.test.js",
         "tests/producer-derivation.test.js",
-        ".github/workflows/site-quality.yml"
+        ".github/workflows/site-quality.yml",
+        ".gitignore",
+        "scripts/validate-system.mjs",
+        "tests/generated-control.test.js"
       ],
       "commands": [
         "system_check",
@@ -184,7 +187,8 @@
         "site.js",
         "README.md",
         "SECURITY.md",
-        "guides/**"
+        "guides/**",
+        "tests/interface.test.js"
       ],
       "commands": [
         "unit_coverage",

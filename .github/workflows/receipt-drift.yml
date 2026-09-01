@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: NellInc/Bounder-from-org
-          ref: b703add7693061381e4001a15b7d7768406122c4
+          ref: 36738be8d68cb886f255f0d16054c2036d1776a1
           token: ${{ env.PRODUCER_READ_TOKEN }}
           path: producer
       - name: Regenerate producer evidence and compare exact bytes

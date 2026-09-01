@@ -482,7 +482,7 @@ test("receipt drift installs exact dependencies and derives every pinned evidenc
   const install = workflow.indexOf("npm ci --ignore-scripts");
   const testSuite = workflow.indexOf("node --test tests/producer-derivation.test.js tests/release-manifest-v2.test.js");
   assert.ok(install >= 0 && testSuite > install, "receipt drift does not install lockfile dependencies before testing");
-  assert.match(workflow, /ref: b703add7693061381e4001a15b7d7768406122c4/);
+  assert.match(workflow, /ref: 36738be8d68cb886f255f0d16054c2036d1776a1/);
   assert.match(workflow, /npm run verify:producer -- --producer-root \.\.\/producer/);
   assert.match(workflow, /Producer derivation is unverified in this run/);
   assert.doesNotMatch(workflow, /cmp "\$path" "\$tmp\/\$path"/);
@@ -978,7 +978,7 @@ test("the current release line has either a sealed v2 manifest or an explicit so
     source = await fs.readFile(target, "utf8");
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
-    assert.equal(version, "1.1.0");
+    assert.equal(version, "1.1.1");
     await Promise.all([
       fs.access(join(root, "scripts", "generate-release-manifest-v2.mjs")),
       fs.access(join(root, "schemas", "bounder-release-manifest-v2.schema.json"))

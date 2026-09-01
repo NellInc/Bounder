@@ -80,7 +80,7 @@ test("producer export verification checks exact contracts, outputs, hashes, and 
     version: "bounder-evidence-provenance/v1",
     producer_source: { repository: PRODUCER_REPOSITORY, commit, clean: true },
     generator: { id: "bounder-website-evidence-export", version: "1", entrypoint: "scripts/export-website-artifacts.py" },
-    toolchain: { go_module: "go 1.20", python: "python 3" },
+    toolchain: { go_module: "go 1.25.14", python: "python 3" },
     inputs: [{ path: "scripts/export-website-artifacts.py", bytes: 1, sha256: "0".repeat(64) }],
     contracts,
     outputs
@@ -124,7 +124,7 @@ test("producer export verification rejects malformed source, incomplete inventor
       version: "bounder-evidence-provenance/v1",
       producer_source: { repository: PRODUCER_REPOSITORY, commit, clean: true },
       generator: { id: "bounder-website-evidence-export", version: "1", entrypoint: "scripts/export-website-artifacts.py" },
-      toolchain: { go_module: "go 1.20", python: "python 3" },
+      toolchain: { go_module: "go 1.25.14", python: "python 3" },
       inputs: [{ path: "scripts/export-website-artifacts.py", bytes: 1, sha256: "0".repeat(64) }],
       contracts,
       outputs

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.1 · 2026-09-01
+
+Publication-integrity correction for the agent control plane release.
+
+### Fixed
+
+1. The private producer now pins Go 1.25.14, clearing reachable standard-library vulnerabilities found by hosted `govulncheck` on the earlier 1.25.12 toolchain.
+2. Producer provenance derives the exact patch-level Go directive from the tracked module instead of reporting a stale hardcoded version, and the shared schema rejects ambiguous or minor-only toolchain identities.
+3. Website drift verification pins the corrected immutable producer commit, while the superseded v1.1.0 local seal remains byte-immutable in release history.
+4. Changed-path planning now owns every file added by the control-plane programme, closing four routes that previously fell through to the conservative aggregate fallback.
+
+### Proof limits
+
+1. The producer repository remains private, so independent public regeneration requires access or a future public mirror or reviewable source bundle.
+2. Deployed Guardian performance, Fleet backend integration, hardware safety, certification, and human, legal, rights, and regulatory review remain unverified.
+3. Deployment and live-byte parity require separate post-merge evidence.
+
 ## 1.1.0 · 2026-09-01
 
 Agent control plane, explicit producer provenance, and Guardian and Fleet
