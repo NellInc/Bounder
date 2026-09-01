@@ -682,6 +682,7 @@ The programme is complete when:
 | 2026-09-01 | Phase 8 | Local and CI path routing would drift if encoded separately | Generate the human task route and CI impact corpus from the same validated descriptor and make stale output fail closed | None |
 | 2026-09-01 | Closure | The exact verifier ran while host load exceeded 45 and failed a wall-clock aggregation budget even though the aggregation consumed about 770 ms of process CPU | Gate reference algorithmic cost on process CPU time and record monotonic wall time as a diagnostic, preserving visibility without converting unrelated scheduler pressure into a code failure | Production wall-time capacity still requires a controlled deployed benchmark |
 | 2026-09-01 | Closure | Two control-plane tests assumed the implementation tree was dirty, so they passed during development and failed against the immutable clean source candidate | Inject deterministic Git status and diff output for parser coverage, and assert only the live inspection contract rather than ambient repository dirtiness | None |
+| 2026-09-01 | Closure | A transport deadline test used a one-second wall limit around a ten-millisecond JavaScript timer and failed only under severe host scheduler starvation | Keep the stalled-promise functional proof, which can complete only when the deadline wins, and use a generous harness timeout solely to catch nontermination | None |
 
 ## Implementation Status
 
