@@ -80,9 +80,28 @@ test("path matching is anchored and changed-path plans accumulate overlapping ru
   assert.throws(() => planForPaths(descriptor, [null]), /invalid/);
 });
 
-test("working-tree changed-path discovery is read only and includes the active system descriptor", async () => {
-  const paths = await gitChangedPaths();
-  assert.ok(paths.includes("system/bounder-system.v1.json"));
-  const againstHead = await gitChangedPaths({ base: "HEAD" });
-  assert.deepEqual(againstHead, []);
+test("working-tree changed-path discovery is read only and parses status and base-diff output", async () => {
+  const calls = [];
+  const statusRunner = async (command, args, options) => {
+    calls.push({ command, args, options });
+    return {
+      stdout: Buffer.from(" M system/bounder-system.v1.json\0?? new-file.txt\0R  renamed-new.txt\0renamed-old.txt\0")
+    };
+  };
+  const paths = await gitChangedPaths({ root: "/fixture", gitRunner: statusRunner });
+  assert.deepEqual(paths, ["new-file.txt", "renamed-new.txt", "renamed-old.txt", "system/bounder-system.v1.json"]);
+  assert.equal(calls[0].command, "/usr/bin/git");
+  assert.deepEqual(calls[0].args.slice(0, 4), ["--no-optional-locks", "-C", "/fixture", "status"]);
+  assert.equal(calls[0].args.includes("--porcelain=v1"), true);
+  assert.equal(calls[0].options.env.GIT_OPTIONAL_LOCKS, "0");
+
+  const againstHead = await gitChangedPaths({
+    root: "/fixture",
+    base: "HEAD",
+    gitRunner: async (_command, args) => {
+      assert.deepEqual(args.slice(0, 4), ["--no-optional-locks", "-C", "/fixture", "diff"]);
+      return { stdout: Buffer.from("README.md\nsystem/bounder-system.v1.json\n") };
+    }
+  });
+  assert.deepEqual(againstHead, ["README.md", "system/bounder-system.v1.json"]);
 });

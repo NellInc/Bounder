@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   BENCHMARK_NOW_MS,
+  PROCESS_CPU_CLOCK,
   makeBenchmarkHeartbeat,
   runBenchmarkCli,
   runObservabilityBenchmark
@@ -35,6 +36,7 @@ test("reference observability benchmark reports bounded payloads and one-pass ag
   assert.ok(result.sizes.event_bytes < result.limits.event_bytes);
   assert.deepEqual(result.does_not_establish, ["production capacity", "Guardian decision latency", "hardware performance"]);
   assert.equal(makeBenchmarkHeartbeat(0, BENCHMARK_NOW_MS).generated_at, "2026-08-31T12:00:00.000Z");
+  assert.equal(Number.isFinite(PROCESS_CPU_CLOCK.now()), true);
 });
 
 test("benchmark enforces count and byte or time failures and its CLI emits stable JSON", async () => {

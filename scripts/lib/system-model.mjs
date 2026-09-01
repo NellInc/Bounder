@@ -237,11 +237,11 @@ export function planForPaths(model, paths, { claim = null } = {}) {
   });
 }
 
-export async function gitChangedPaths({ root = repositoryRoot, base = null } = {}) {
+export async function gitChangedPaths({ root = repositoryRoot, base = null, gitRunner = execFileAsync } = {}) {
   const args = base
     ? ["--no-optional-locks", "-C", root, "diff", "--name-only", "--diff-filter=ACMRDTUXB", `${base}...HEAD`, "--"]
     : ["--no-optional-locks", "-C", root, "status", "--porcelain=v1", "-z", "--untracked-files=all"];
-  const { stdout } = await execFileAsync("/usr/bin/git", args, {
+  const { stdout } = await gitRunner("/usr/bin/git", args, {
     encoding: "buffer",
     maxBuffer: 16 * 1024 * 1024,
     env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0" }

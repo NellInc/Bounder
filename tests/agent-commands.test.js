@@ -31,7 +31,7 @@ test("agent inspection and changed-path commands expose compact human and stable
   const inspection = await inspectSystem();
   assert.equal(inspection.version, "bounder-inspection/v1");
   assert.equal(inspection.system_id, "bounder");
-  assert.equal(inspection.repository.dirty, true);
+  assert.equal(typeof inspection.repository.dirty, "boolean");
   assert.ok(inspection.holds.some((hold) => /producer/i.test(hold)));
   assert.equal(inspection.schemas.identity_collisions.length, 0);
   if (inspection.release.manifest.missing) {
