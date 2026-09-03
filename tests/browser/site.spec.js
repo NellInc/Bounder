@@ -473,8 +473,13 @@ test("resilience transport controls and the scrubber move the console through re
   // running, so aim well ahead of any drift between this process and the page.
   await page.clock.pauseAt(Date.now() + 60_000);
   await action("run").click();
-  await expect(transport).toHaveText("Deterministic evidence replay");
   await expect(action("pause")).toBeEnabled();
+  // The baseline event is armed at t+0. Whether the paused clock has already let that timer
+  // fire is host-dependent, so fire it explicitly and assert the baseline rather than the
+  // transient "Deterministic evidence replay" label that it replaces.
+  await page.clock.runFor(0);
+  await expect(currentCode).toHaveText("policy_active");
+  await expect(scrubber).toHaveValue("0");
   await page.clock.fastForward(700);
   await expect(currentCode).toHaveText("fleet_unreachable");
   await expect(scrubber).toHaveValue("650");
