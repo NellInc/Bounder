@@ -245,7 +245,7 @@ test("verification receipts are atomic, hash logs, stop after failure, and label
     logger: { log() {}, error: (message) => reported.push(message) }
   });
   assert.equal(result.receipt.success, false);
-  assert.deepEqual(reported, ["verify:one failed; last 3 log line(s):\nout\n[stderr]\nerr"], "a failed phase surfaces its log tail on the console");
+  assert.deepEqual(reported, ["verify:one failed; last 1 stdout line(s):\nout\nverify:one last 1 stderr line(s):\nerr"], "a failed phase surfaces its stdout and stderr tails on the console");
   assert.deepEqual(result.receipt.phases.map(({ id }) => id), ["one"]);
   assert.equal(result.receipt.unverified[0].phase, "two");
   assert.ok(result.receipt.unverified.some(({ proof_class }) => proof_class === "physical_safety"));
@@ -339,7 +339,7 @@ test("a failed phase reports a bounded log tail and tolerates a broken console",
   const errors = [];
   const logger = { error: (message) => errors.push(message) };
   reportPhaseFailure(logger, "empty", "   \n");
-  assert.deepEqual(errors, ["verify:empty failed; last 1 log line(s):\n(no output)"]);
+  assert.deepEqual(errors, ["verify:empty failed; last 1 stdout line(s):\n(no output)"]);
   errors.length = 0;
   const long = Array.from({ length: FAILURE_LOG_TAIL_LINES + 5 }, (_, index) => `line ${index}`).join("\n");
   reportPhaseFailure(logger, "long", long);
@@ -347,7 +347,9 @@ test("a failed phase reports a bounded log tail and tolerates a broken console",
   assert.equal(lines.length - 1, FAILURE_LOG_TAIL_LINES, "the tail is bounded");
   assert.equal(lines.at(-1), `line ${FAILURE_LOG_TAIL_LINES + 4}`, "the tail keeps the newest lines");
   reportPhaseFailure(logger, "custom", "a\nb\nc", { lines: 2 });
-  assert.equal(errors[1], "verify:custom failed; last 2 log line(s):\nb\nc");
+  assert.equal(errors[1], "verify:custom failed; last 2 stdout line(s):\nb\nc");
+  reportPhaseFailure(logger, "split", "stdout 1\nstdout 2\n[stderr]\nnoise 1\nnoise 2\nnoise 3", { lines: 1, stderrLines: 2 });
+  assert.equal(errors[2], "verify:split failed; last 1 stdout line(s):\nstdout 2\nverify:split last 2 stderr line(s):\nnoise 2\nnoise 3");
   assert.doesNotThrow(() => reportPhaseFailure({ error() { throw new Error("sink"); } }, "broken", "x"));
   assert.doesNotThrow(() => reportPhaseFailure(undefined, "silent", "x"));
 });
@@ -363,5 +365,11 @@ test("a failed test phase pulls every TAP failure block ahead of the summary", (
   assert.deepEqual(extractFailureExcerpts("all good\n# pass 3"), []);
   const errors = [];
   reportPhaseFailure({ error: (message) => errors.push(message) }, "unit", log, { lines: 2 });
-  assert.match(errors[0], /^verify:unit failed; last 2 log line\(s\):\n# tests 4\n# fail 2\nverify:unit failing test excerpt\(s\):\nnot ok 2/);
+  assert.match(errors[0], /^verify:unit failed; last 2 stdout line\(s\):\n# tests 4\n# fail 2\nverify:unit failing test excerpt\(s\):\nnot ok 2/);
+  const playwright = ["Running 20 tests", "  ✘  3 tests/browser/site.spec.js:78:1 › homepage reveal (1.5m)", "", "  1) tests/browser/site.spec.js:78:1 › homepage reveal", "    Error: expect(locator).toHaveCount(expected) failed", "  1 failed", "::error file=tests/browser/site.spec.js::boom"].join("\n");
+  const playwrightExcerpts = extractFailureExcerpts(playwright, { lines: 2 });
+  assert.deepEqual(playwrightExcerpts, [
+    "  1) tests/browser/site.spec.js:78:1 › homepage reveal\n    Error: expect(locator).toHaveCount(expected) failed",
+    "::error file=tests/browser/site.spec.js::boom"
+  ]);
 });

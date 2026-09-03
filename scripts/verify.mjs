@@ -24,26 +24,38 @@ export const FAILURE_LOG_TAIL_LINES = 60;
 // the end of its own log on the runner's console or the failure is undiagnosable from outside.
 export const FAILURE_EXCERPT_LINES = 24;
 export const FAILURE_EXCERPT_LIMIT = 8;
+export const FAILURE_STDERR_TAIL_LINES = 20;
+export const LOG_STDERR_MARKER = "\n[stderr]\n";
 
-// Node's test runner prints its summary and the coverage table last, so the tail alone can
-// hide which test failed. Pull every `not ok` block forward, bounded so a mass failure cannot
-// flood the console.
+// Node's test runner prints its summary and the coverage table last, and Playwright prints its
+// failure details before the web server's access log, so the tail alone can hide which test
+// failed. Pull every TAP `not ok` block and every Playwright failure heading forward, bounded so
+// a mass failure cannot flood the console.
 export function extractFailureExcerpts(log, { lines = FAILURE_EXCERPT_LINES, limit = FAILURE_EXCERPT_LIMIT } = {}) {
   const rows = log.split("\n");
   const excerpts = [];
   for (let index = 0; index < rows.length && excerpts.length < limit; index += 1) {
-    if (!/^not ok \d+/.test(rows[index])) continue;
+    if (!/^not ok \d+/.test(rows[index]) && !/^\s+\d+\) .+›/.test(rows[index]) && !/^::error /.test(rows[index])) continue;
     excerpts.push(rows.slice(index, index + lines).join("\n"));
     index += lines - 1;
   }
   return excerpts;
 }
 
-export function reportPhaseFailure(logger, phaseId, log, { lines = FAILURE_LOG_TAIL_LINES } = {}) {
-  const trimmed = log.trimEnd();
-  const tail = trimmed ? trimmed.split("\n").slice(-lines) : ["(no output)"];
-  const excerpts = extractFailureExcerpts(trimmed);
-  const sections = [`verify:${phaseId} failed; last ${tail.length} log line(s):\n${tail.join("\n")}`];
+const tailOf = (text, lines) => {
+  const trimmed = text.trimEnd();
+  return trimmed ? trimmed.split("\n").slice(-lines) : [];
+};
+
+export function reportPhaseFailure(logger, phaseId, log, { lines = FAILURE_LOG_TAIL_LINES, stderrLines = FAILURE_STDERR_TAIL_LINES } = {}) {
+  const marker = log.indexOf(LOG_STDERR_MARKER);
+  const stdout = marker >= 0 ? log.slice(0, marker) : log;
+  const stderr = marker >= 0 ? log.slice(marker + LOG_STDERR_MARKER.length) : "";
+  const stdoutTail = tailOf(stdout, lines);
+  const stderrTail = tailOf(stderr, stderrLines);
+  const excerpts = extractFailureExcerpts(stdout);
+  const sections = [`verify:${phaseId} failed; last ${stdoutTail.length || 1} stdout line(s):\n${stdoutTail.length ? stdoutTail.join("\n") : "(no output)"}`];
+  if (stderrTail.length) sections.push(`verify:${phaseId} last ${stderrTail.length} stderr line(s):\n${stderrTail.join("\n")}`);
   if (excerpts.length) sections.push(`verify:${phaseId} failing test excerpt(s):\n${excerpts.join("\n---\n")}`);
   try {
     logger?.error?.(sections.join("\n"));

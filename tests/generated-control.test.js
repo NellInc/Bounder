@@ -101,8 +101,7 @@ test("changed-path execution uses descriptor commands and never recursively invo
     phaseRunner: async () => ({ exit_code: 2, signal: null, timed_out: false, duration_ms: 2, stdout: "", stderr: "failed" })
   }), /changed-path verification failed/);
   assert.equal(reportedFailures.length, 1, "the failed command surfaces its log tail on the console");
-  // An empty stdout leaves the log's leading line blank before the stderr marker.
-  assert.match(reportedFailures[0], /^verify:changed:[a-z-]+ failed; last 3 log line\(s\):\n\n\[stderr\]\nfailed$/);
+  assert.match(reportedFailures[0], /^verify:changed:[a-z-]+ failed; last 1 stdout line\(s\):\n\(no output\)\nverify:changed:[a-z-]+ last 1 stderr line\(s\):\nfailed$/);
   const failed = JSON.parse(await readFile(join(failingRoot, "latest.json"), "utf8"));
   assert.equal(failed.success, false);
   assert.equal(failed.phases.length, 1);
