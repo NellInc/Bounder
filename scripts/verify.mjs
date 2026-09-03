@@ -22,11 +22,31 @@ export const FAILURE_LOG_TAIL_LINES = 60;
 
 // CI runners discard the receipt directory with the job, so a failed phase must also surface
 // the end of its own log on the runner's console or the failure is undiagnosable from outside.
+export const FAILURE_EXCERPT_LINES = 24;
+export const FAILURE_EXCERPT_LIMIT = 8;
+
+// Node's test runner prints its summary and the coverage table last, so the tail alone can
+// hide which test failed. Pull every `not ok` block forward, bounded so a mass failure cannot
+// flood the console.
+export function extractFailureExcerpts(log, { lines = FAILURE_EXCERPT_LINES, limit = FAILURE_EXCERPT_LIMIT } = {}) {
+  const rows = log.split("\n");
+  const excerpts = [];
+  for (let index = 0; index < rows.length && excerpts.length < limit; index += 1) {
+    if (!/^not ok \d+/.test(rows[index])) continue;
+    excerpts.push(rows.slice(index, index + lines).join("\n"));
+    index += lines - 1;
+  }
+  return excerpts;
+}
+
 export function reportPhaseFailure(logger, phaseId, log, { lines = FAILURE_LOG_TAIL_LINES } = {}) {
   const trimmed = log.trimEnd();
   const tail = trimmed ? trimmed.split("\n").slice(-lines) : ["(no output)"];
+  const excerpts = extractFailureExcerpts(trimmed);
+  const sections = [`verify:${phaseId} failed; last ${tail.length} log line(s):\n${tail.join("\n")}`];
+  if (excerpts.length) sections.push(`verify:${phaseId} failing test excerpt(s):\n${excerpts.join("\n---\n")}`);
   try {
-    logger?.error?.(`verify:${phaseId} failed; last ${tail.length} log line(s):\n${tail.join("\n")}`);
+    logger?.error?.(sections.join("\n"));
   } catch {
     // A broken diagnostic sink must not hide the failing phase status.
   }

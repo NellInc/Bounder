@@ -21,8 +21,10 @@ import {
 import { repositoryRoot } from "../scripts/lib/system-model.mjs";
 import { runSystemCheck } from "../scripts/validate-system.mjs";
 import {
+  FAILURE_EXCERPT_LIMIT,
   FAILURE_LOG_TAIL_LINES,
   executeVerificationPhase,
+  extractFailureExcerpts,
   reportPhaseFailure,
   runVerification,
   runVerifyCli
@@ -348,4 +350,18 @@ test("a failed phase reports a bounded log tail and tolerates a broken console",
   assert.equal(errors[1], "verify:custom failed; last 2 log line(s):\nb\nc");
   assert.doesNotThrow(() => reportPhaseFailure({ error() { throw new Error("sink"); } }, "broken", "x"));
   assert.doesNotThrow(() => reportPhaseFailure(undefined, "silent", "x"));
+});
+
+test("a failed test phase pulls every TAP failure block ahead of the summary", () => {
+  const block = (n) => `not ok ${n} - case ${n}\n  ---\n  error: boom ${n}\n  ...`;
+  const log = ["ok 1 - fine", block(2), "ok 3", block(4), "# tests 4", "# fail 2"].join("\n");
+  assert.equal(extractFailureExcerpts(log).length, 1, "with a wide window the second block sits inside the first excerpt");
+  const excerpts = extractFailureExcerpts(log, { lines: 4 });
+  assert.deepEqual(excerpts, [block(2), block(4)]);
+  const flood = Array.from({ length: FAILURE_EXCERPT_LIMIT + 3 }, (_, n) => block(n)).join("\n");
+  assert.equal(extractFailureExcerpts(flood, { lines: 4 }).length, FAILURE_EXCERPT_LIMIT, "excerpts are bounded");
+  assert.deepEqual(extractFailureExcerpts("all good\n# pass 3"), []);
+  const errors = [];
+  reportPhaseFailure({ error: (message) => errors.push(message) }, "unit", log, { lines: 2 });
+  assert.match(errors[0], /^verify:unit failed; last 2 log line\(s\):\n# tests 4\n# fail 2\nverify:unit failing test excerpt\(s\):\nnot ok 2/);
 });
