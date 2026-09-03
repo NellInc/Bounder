@@ -810,7 +810,11 @@ test("an interrupted build releases its lock and stage before the signal reaches
   assert.ok(stageBefore, "the interrupted build had no stage to clean");
 
   listeners.get("SIGTERM")("SIGTERM");
-  for (let attempt = 0; attempt < 200 && raised.length === 0; attempt += 1) await new Promise((r) => setImmediate(r));
+  // The handler removes the stage and lock with real filesystem calls before re-raising, so
+  // wait on a wall-clock deadline rather than a fixed number of event-loop turns: on a loaded
+  // CI runner two hundred setImmediate ticks elapse before the recursive removal returns.
+  const deadline = Date.now() + 10_000;
+  while (raised.length === 0 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 10));
   assert.deepEqual(raised, ["SIGTERM"], "the handler must re-raise so the process still dies of the signal");
   await assert.rejects(fs.lstat(`${fixture.output}.lock`), { code: "ENOENT" });
   assert.equal((await fs.readdir(fixture.base)).some((entry) => entry.startsWith(".site.stage-")), false);
