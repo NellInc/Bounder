@@ -468,8 +468,10 @@ test("resilience transport controls and the scrubber move the console through re
   await expect(action("pause")).toBeDisabled();
 
   // Freeze the clock now: install() alone keeps real time flowing, so on a loaded host the
-  // whole 2.1 s replay can fire before the first assertion polls.
-  await page.clock.pauseAt(Date.now() + 1);
+  // whole 2.1 s replay can fire before the first assertion polls. pauseAt jumps the page clock
+  // forward to the given instant; a target the page clock has already passed leaves time
+  // running, so aim well ahead of any drift between this process and the page.
+  await page.clock.pauseAt(Date.now() + 60_000);
   await action("run").click();
   await expect(transport).toHaveText("Deterministic evidence replay");
   await expect(action("pause")).toBeEnabled();
