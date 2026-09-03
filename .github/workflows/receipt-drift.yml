@@ -31,6 +31,10 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # The secrets context is not readable inside step conditions, so expose only whether the
+      # private read token exists. The token itself stays scoped to the one step that uses it.
+      PRODUCER_TOKEN_AVAILABLE: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN != '' }}
     steps:
       - name: Checkout publisher
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,7 +64,7 @@ jobs:
           node scripts/lib/release-producer.mjs
           echo "commit=$(node scripts/lib/release-producer.mjs --commit)" >> "$GITHUB_OUTPUT"
       - name: Checkout immutable producer input
-        if: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN != '' }}
+        if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: NellInc/Bounder-from-org
@@ -71,9 +75,9 @@ jobs:
           token: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN }}
           path: producer
       - name: Regenerate producer evidence and compare exact bytes
-        if: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN != '' }}
+        if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
         working-directory: publisher
         run: npm run verify:producer -- --producer-root ../producer
       - name: Record unavailable private-producer proof
-        if: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN == '' }}
+        if: ${{ env.PRODUCER_TOKEN_AVAILABLE != 'true' }}
         run: echo "Producer derivation is unverified in this run because BOUNDER_PRODUCER_READ_TOKEN is unavailable. Release sealing must supply a current local producer receipt."

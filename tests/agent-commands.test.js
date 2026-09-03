@@ -18,6 +18,7 @@ import {
   runInspectCli,
   schemaInventory
 } from "../scripts/system-inspect.mjs";
+import { repositoryRoot } from "../scripts/lib/system-model.mjs";
 import { runSystemCheck } from "../scripts/validate-system.mjs";
 import {
   executeVerificationPhase,
@@ -285,4 +286,45 @@ test("focused verify CLI and direct script entry points execute without external
     () => execFileAsync(process.execPath, ["scripts/check-changed.mjs", "--bad"], { cwd: new URL("..", import.meta.url).pathname }),
     /Command failed/
   );
+});
+
+test("inspection reads verification receipts and manifests from the checkout it is given, not from ambient artifacts", async (t) => {
+  // CI runs from a fresh clone with no artifacts/ directory, so every branch that depends on
+  // a local receipt or manifest must be reachable from a fixture rather than from this
+  // machine's history.
+  const base = await mkdtemp(join(tmpdir(), "bounder-inspect-"));
+  t.after(() => rm(base, { recursive: true, force: true }));
+  const root = join(base, "clone");
+  await execFileAsync("git", ["clone", "--quiet", "--shared", "--no-checkout", repositoryRoot, root]);
+  await execFileAsync("git", ["-C", root, "checkout", "--quiet", "HEAD", "--", "."]);
+
+  const bare = await inspectSystem({ root });
+  assert.equal(bare.health.last_aggregate_verification, null, "a clone without artifacts reports no aggregate verification");
+
+  await mkdir(join(root, "artifacts", "verification"), { recursive: true });
+  await writeFile(join(root, "artifacts", "verification", "latest.json"), JSON.stringify({
+    success: true,
+    candidate: { commit: "abc" },
+    phases: [{ id: "a", duration_ms: 40 }, { id: "b", duration_ms: "slow" }, { id: "c" }]
+  }));
+  const withReceipt = await inspectSystem({ root });
+  assert.deepEqual(withReceipt.health.last_aggregate_verification, { success: true, candidate: { commit: "abc" }, duration_ms: 40 });
+
+  await writeFile(join(root, "artifacts", "verification", "latest.json"), JSON.stringify({ success: "yes", phases: "none" }));
+  const malformed = await inspectSystem({ root });
+  assert.deepEqual(malformed.health.last_aggregate_verification, { success: false, candidate: null, duration_ms: null });
+
+  const version = (await readFile(join(root, "VERSION"), "utf8")).trim();
+  const manifestPath = join(root, "release", `bounder-reference-v${version}.manifest.json`);
+  await writeFile(manifestPath, JSON.stringify({ canonical_interlock: { commit: "legacy" }, files: "not-a-list" }));
+  const legacy = await inspectSystem({ root });
+  assert.equal(legacy.release.manifest.missing, undefined);
+  assert.deepEqual(legacy.release.manifest.pinned_paths, []);
+  assert.deepEqual(legacy.health.provenance_completeness, { complete: 1, required: 1 });
+  assert.equal(legacy.release.unpinned_public_schemas.length, legacy.schemas.count, "nothing is pinned by a manifest without a file list");
+
+  await rm(manifestPath);
+  const missing = await inspectSystem({ root });
+  assert.equal(missing.release.manifest.missing, true);
+  assert.deepEqual(missing.health.provenance_completeness, { complete: 0, required: 5 });
 });

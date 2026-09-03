@@ -489,10 +489,17 @@ test("receipt drift installs exact dependencies and derives every pinned evidenc
   assert.match(workflow, /ref: \$\{\{ steps\.producer\.outputs\.commit \}\}/);
   // The private producer credential must reach only the step that checks the producer out;
   // a job-level env block exposes it to every step that runs pull-request-head code.
-  assert.doesNotMatch(workflow, /^\s{4}env:$/m, "the producer token is scoped to the job rather than to one step");
-  // Three step-level `if:` guards preserve the fork/no-token skip, plus exactly one `token:`
-  // consumer -- the producer checkout.
-  assert.equal(workflow.split("secrets.BOUNDER_PRODUCER_READ_TOKEN").length - 1, 4);
+  // The secrets context cannot be read inside step conditions, so the job may expose only a
+  // boolean derived from the token; the token value itself must appear once, as the checkout
+  // step's `token:` input.
+  const tokenUses = workflow.match(/secrets\.BOUNDER_PRODUCER_READ_TOKEN(?! != '')/g) ?? [];
+  assert.equal(tokenUses.length, 1, "the producer token must reach exactly one step");
+  assert.match(workflow, /^\s{10}token: \$\{\{ secrets\.BOUNDER_PRODUCER_READ_TOKEN \}\}$/m, "the producer token is not scoped to the checkout step's token input");
+  assert.doesNotMatch(workflow, /^\s+[A-Z_]+: \$\{\{ secrets\.BOUNDER_PRODUCER_READ_TOKEN \}\}$/m, "the producer token is copied into an environment variable");
+  // One job-level boolean derived from the secret drives the three step guards, plus exactly
+  // one `token:` consumer -- the producer checkout.
+  assert.equal(workflow.split("secrets.BOUNDER_PRODUCER_READ_TOKEN").length - 1, 2);
+  assert.equal(workflow.split("env.PRODUCER_TOKEN_AVAILABLE").length - 1, 3, "the three step guards must test the derived boolean");
   assert.equal(workflow.split("token: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN }}").length - 1, 1);
   assert.match(workflow, /npm run verify:producer -- --producer-root \.\.\/producer/);
   assert.match(workflow, /Producer derivation is unverified in this run/);
