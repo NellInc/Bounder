@@ -30,6 +30,6 @@
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "c8": "^12.0.0",
-    "impeccable": "3.2.1"
+    "impeccable": "3.6.0"
   }
 }
