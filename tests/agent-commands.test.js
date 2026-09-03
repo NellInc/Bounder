@@ -21,7 +21,9 @@ import {
 import { repositoryRoot } from "../scripts/lib/system-model.mjs";
 import { runSystemCheck } from "../scripts/validate-system.mjs";
 import {
+  FAILURE_LOG_TAIL_LINES,
   executeVerificationPhase,
+  reportPhaseFailure,
   runVerification,
   runVerifyCli
 } from "../scripts/verify.mjs";
@@ -229,6 +231,7 @@ test("verification receipts are atomic, hash logs, stop after failure, and label
     { id: "two", command: "fake", args: [], timeout_ms: 100 }
   ];
   let time = Date.parse("2026-08-31T12:00:00Z");
+  const reported = [];
   const result = await runVerification({
     root,
     outputRoot: join(root, "receipts"),
@@ -237,9 +240,10 @@ test("verification receipts are atomic, hash logs, stop after failure, and label
     candidateReader: async () => ({ publisher_commit: "a".repeat(40), producer_commits: [], dirty: true }),
     artifactPaths: [],
     clock: () => time++,
-    logger: { log() {} }
+    logger: { log() {}, error: (message) => reported.push(message) }
   });
   assert.equal(result.receipt.success, false);
+  assert.deepEqual(reported, ["verify:one failed; last 3 log line(s):\nout\n[stderr]\nerr"], "a failed phase surfaces its log tail on the console");
   assert.deepEqual(result.receipt.phases.map(({ id }) => id), ["one"]);
   assert.equal(result.receipt.unverified[0].phase, "two");
   assert.ok(result.receipt.unverified.some(({ proof_class }) => proof_class === "physical_safety"));
@@ -327,4 +331,21 @@ test("inspection reads verification receipts and manifests from the checkout it 
   const missing = await inspectSystem({ root });
   assert.equal(missing.release.manifest.missing, true);
   assert.deepEqual(missing.health.provenance_completeness, { complete: 0, required: 5 });
+});
+
+test("a failed phase reports a bounded log tail and tolerates a broken console", () => {
+  const errors = [];
+  const logger = { error: (message) => errors.push(message) };
+  reportPhaseFailure(logger, "empty", "   \n");
+  assert.deepEqual(errors, ["verify:empty failed; last 1 log line(s):\n(no output)"]);
+  errors.length = 0;
+  const long = Array.from({ length: FAILURE_LOG_TAIL_LINES + 5 }, (_, index) => `line ${index}`).join("\n");
+  reportPhaseFailure(logger, "long", long);
+  const lines = errors[0].split("\n");
+  assert.equal(lines.length - 1, FAILURE_LOG_TAIL_LINES, "the tail is bounded");
+  assert.equal(lines.at(-1), `line ${FAILURE_LOG_TAIL_LINES + 4}`, "the tail keeps the newest lines");
+  reportPhaseFailure(logger, "custom", "a\nb\nc", { lines: 2 });
+  assert.equal(errors[1], "verify:custom failed; last 2 log line(s):\nb\nc");
+  assert.doesNotThrow(() => reportPhaseFailure({ error() { throw new Error("sink"); } }, "broken", "x"));
+  assert.doesNotThrow(() => reportPhaseFailure(undefined, "silent", "x"));
 });

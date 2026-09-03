@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { checkChanged } from "./check-changed.mjs";
 import { isMainModule, loadSystemModel, repositoryRoot } from "./lib/system-model.mjs";
-import { DEFAULT_VERIFICATION_PHASES, executeVerificationPhase } from "./verify.mjs";
+import { DEFAULT_VERIFICATION_PHASES, executeVerificationPhase, reportPhaseFailure } from "./verify.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -91,6 +91,7 @@ export async function verifyChanged(args = process.argv.slice(2), {
       log_sha256: hash(source)
     });
     success = result.exit_code === 0 && !result.timed_out;
+    if (!success) reportPhaseFailure(logger, `changed:${phase.id}`, source);
   }
   const receipt = {
     version: "bounder-changed-verification/v1",

@@ -92,13 +92,17 @@ test("changed-path execution uses descriptor commands and never recursively invo
 
   let now = Date.parse("2026-09-01T13:00:00Z");
   const failingRoot = join(receipts, "fail");
+  const reportedFailures = [];
   await assert.rejects(() => verifyChanged(["--paths", "CLAUDE.md"], {
     root: repositoryRoot,
     outputRoot: failingRoot,
     clock: () => now += 1,
-    logger: { log() {} },
+    logger: { log() {}, error: (message) => reportedFailures.push(message) },
     phaseRunner: async () => ({ exit_code: 2, signal: null, timed_out: false, duration_ms: 2, stdout: "", stderr: "failed" })
   }), /changed-path verification failed/);
+  assert.equal(reportedFailures.length, 1, "the failed command surfaces its log tail on the console");
+  // An empty stdout leaves the log's leading line blank before the stderr marker.
+  assert.match(reportedFailures[0], /^verify:changed:[a-z-]+ failed; last 3 log line\(s\):\n\n\[stderr\]\nfailed$/);
   const failed = JSON.parse(await readFile(join(failingRoot, "latest.json"), "utf8"));
   assert.equal(failed.success, false);
   assert.equal(failed.phases.length, 1);

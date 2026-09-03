@@ -122,7 +122,7 @@ The scripts and Playwright server configuration define these meanings. (`package
 
 `npm run docs:check` supports an opt-in anchored citation form: a quoted exact fragment may follow a citation's line range, as in `README.md:1 "# Bounder website"`. The fragment then becomes load-bearing — the check fails if the cited range stops containing it — which is the only defence this repository has against silent citation drift when a cited file is edited. Prefer it wherever the supporting text is short and stable. Pages under `_wiki/generated/` are exempt from the `wiki:updated` freshness marker, because they are compiled from the descriptor and byte-compared by `npm run system:generate --check` rather than dated by hand. (`scripts/docs-check.mjs:7-9 "opts a citation into a"`; `scripts/docs-check.mjs:47-50 "an anchor absent from that range"`; `scripts/docs-check.mjs:71-80 "generated/"`)
 
-Unit suites write their receipts into scratch directories rather than into the working tree, so a test run never leaves evidence in `artifacts/` that reads like a genuine verification. (`tests/agent-commands.test.js:253-259 "bounder-verify-cli-receipts-"`)
+Unit suites write their receipts into scratch directories rather than into the working tree, so a test run never leaves evidence in `artifacts/` that reads like a genuine verification. (`tests/agent-commands.test.js:256-262 "bounder-verify-cli-receipts-"`)
 
 Reproducible simulator findings from outside the team arrive through `.github/ISSUE_TEMPLATE/operator-demo.yml`, which frames them as reports about recorded reference evidence and browser presentation rather than about deployed Guardian hardware. (`.github/ISSUE_TEMPLATE/operator-demo.yml:1-9 "Operator demonstration finding"`)
 

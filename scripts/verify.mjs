@@ -18,6 +18,20 @@ export const DEFAULT_VERIFICATION_PHASES = Object.freeze([
 
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
+export const FAILURE_LOG_TAIL_LINES = 60;
+
+// CI runners discard the receipt directory with the job, so a failed phase must also surface
+// the end of its own log on the runner's console or the failure is undiagnosable from outside.
+export function reportPhaseFailure(logger, phaseId, log, { lines = FAILURE_LOG_TAIL_LINES } = {}) {
+  const trimmed = log.trimEnd();
+  const tail = trimmed ? trimmed.split("\n").slice(-lines) : ["(no output)"];
+  try {
+    logger?.error?.(`verify:${phaseId} failed; last ${tail.length} log line(s):\n${tail.join("\n")}`);
+  } catch {
+    // A broken diagnostic sink must not hide the failing phase status.
+  }
+}
+
 function validatePhase(phase) {
   if (!phase || typeof phase !== "object" || !/^[a-z][a-z0-9-]*$/.test(phase.id) || typeof phase.command !== "string" || !Array.isArray(phase.args)) {
     throw new Error("verification phase is invalid");
@@ -245,7 +259,10 @@ export async function runVerification({
       log_sha256: hash(log)
     };
     results.push(phaseResult);
-    if (phaseResult.exit_code !== 0 || phaseResult.timed_out) failed = true;
+    if (phaseResult.exit_code !== 0 || phaseResult.timed_out) {
+      failed = true;
+      reportPhaseFailure(logger, phase.id, log);
+    }
   }
 
   const finishedAtMs = clock();
