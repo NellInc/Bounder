@@ -5,19 +5,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self'; connect-src 'self'; frame-src 'none'">
+  <link rel="icon" href="/assets/bounder-mark.svg" type="image/svg+xml">
   <title>Page not found | Bounder</title>
   <meta name="description" content="The requested Bounder page could not be found.">
   <meta name="robots" content="noindex, follow">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="error-page">
   <main class="error-main">
-    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
+    <a class="wordmark" href="/" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <p class="error-code" aria-hidden="true">404</p>
     <h1>That boundary moved.</h1>
     <p>The page you requested does not exist or has a new location.</p>
-    <a class="button button-primary" href="index.html">Return home <span aria-hidden="true">→</span></a>
+    <a class="button button-primary" href="/">Return home <span aria-hidden="true">→</span></a>
   </main>
 </body>
 </html>

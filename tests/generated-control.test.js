@@ -55,7 +55,7 @@ test("generated controls create missing views, become idempotent, and fail close
   assert.deepEqual((await generateSystemViews({ root })).changed, [taskRoutesPath]);
 });
 
-test("changed-path execution uses descriptor commands and never recursively invokes aggregate verify", async () => {
+test("changed-path execution uses descriptor commands and never recursively invokes aggregate verify", async (t) => {
   const model = await loadSystemModel();
   const focused = selectChangedPhases(model, { commands: ["unit", "unit_coverage", "docs_check"] });
   assert.equal(focused.phases.some(({ id }) => id === "unit"), false);
@@ -69,8 +69,14 @@ test("changed-path execution uses descriptor commands and never recursively invo
   const focusedProducer = selectChangedPhases(model, { commands: ["producer_derivation"] }, { producerRoot: "/producer" });
   assert.deepEqual(focusedProducer.phases[0].args.slice(-3), ["--", "--producer-root", "/producer"]);
 
+  // Receipts go to a scratch directory: `root` stays the repository because the selection logic
+  // under test reads the descriptor from it, but a unit test must not write evidence into the
+  // working tree that a reader could mistake for a real changed-path verification.
+  const receipts = await mkdtemp(join(tmpdir(), "bounder-changed-receipts-"));
+  t.after(() => rm(receipts, { recursive: true, force: true }));
   const result = await verifyChanged(["--paths", "CLAUDE.md"], {
     root: repositoryRoot,
+    outputRoot: join(receipts, "pass"),
     logger: { log() {} },
     phaseRunner: async () => ({ exit_code: 0, signal: null, timed_out: false, duration_ms: 1, stdout: "ok", stderr: "" })
   });
@@ -79,18 +85,21 @@ test("changed-path execution uses descriptor commands and never recursively invo
 
   await assert.rejects(() => verifyChanged(["--paths", "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json", "--require-producer"], {
     root: repositoryRoot,
+    outputRoot: join(receipts, "require-producer"),
     producerRoot: "",
     logger: { log() {} }
   }), /forbids skipping/);
 
   let now = Date.parse("2026-09-01T13:00:00Z");
+  const failingRoot = join(receipts, "fail");
   await assert.rejects(() => verifyChanged(["--paths", "CLAUDE.md"], {
     root: repositoryRoot,
+    outputRoot: failingRoot,
     clock: () => now += 1,
     logger: { log() {} },
     phaseRunner: async () => ({ exit_code: 2, signal: null, timed_out: false, duration_ms: 2, stdout: "", stderr: "failed" })
   }), /changed-path verification failed/);
-  const failed = JSON.parse(await readFile(new URL("../artifacts/changed-verification/latest.json", import.meta.url), "utf8"));
+  const failed = JSON.parse(await readFile(join(failingRoot, "latest.json"), "utf8"));
   assert.equal(failed.success, false);
   assert.equal(failed.phases.length, 1);
   assert.ok(failed.skipped.some(({ reason }) => /earlier selected command failed/.test(reason)));

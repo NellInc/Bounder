@@ -53,6 +53,7 @@
 }
 
 .simulator-workbench {
+  --focus-ring: var(--signal);
   padding: clamp(2.5rem, 5vw, 5rem) max(1.5rem, calc((100vw - 1500px) / 2));
   color: white;
   background: var(--ink);
@@ -125,6 +126,7 @@
 }
 
 .operator-tour {
+  --focus-ring: var(--ink);
   display: grid;
   grid-template-columns: minmax(110px, 0.22fr) minmax(0, 1fr) auto;
   gap: clamp(1.25rem, 3vw, 3rem);
@@ -412,8 +414,8 @@
 }
 
 .fleet-node small {
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.65rem;
 }
 
 .fleet-contract-links {
@@ -794,6 +796,10 @@
 }
 
 .continuity-proof {
+  /* styles.css gives the home-page .continuity-proof block a two-column grid;
+     this panel shares the name but not the component, so reset the display. */
+  display: block;
+  grid-template-columns: none;
   margin-top: 1rem;
   padding: 0.8rem;
   border: 1px solid rgba(179, 235, 117, 0.24);
@@ -946,7 +952,7 @@
 .resilience-event {
   min-width: 0;
   padding: 0.65rem;
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.55);
   border-top: 2px solid var(--line-light);
 }
 
@@ -994,12 +1000,6 @@
 .fleet-node.is-affected {
   border-color: var(--safety);
   background: rgba(184, 61, 38, 0.12);
-}
-
-.simulator-grid {
-  display: block;
-  min-height: 0;
-  border: 0;
 }
 
 .simulator-stage {
@@ -1314,7 +1314,7 @@
 }
 
 .receipt-details dt {
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.55);
   font-family: var(--font-mono);
   text-transform: uppercase;
 }
@@ -1408,11 +1408,9 @@
   .simulator-intro { grid-template-columns: 1fr; }
   .simulator-intro aside { grid-column: 1; }
   .workbench-heading { grid-template-columns: 1fr; gap: 1.5rem; align-items: flex-start; }
-  .workbench-actions { width: 100%; }
-  .workbench-actions { flex-wrap: wrap; }
+  .workbench-actions { width: 100%; flex-wrap: wrap; }
   .workbench-actions .sim-control { flex: 1; }
-  .operator-tour { grid-template-columns: 1fr; }
-  .operator-tour { padding: 1.25rem; }
+  .operator-tour { grid-template-columns: 1fr; padding: 1.25rem; }
   .operator-tour-actions { grid-column: 1; grid-template-columns: 1fr 1fr; min-width: 0; }
   .operator-tour-actions button:last-child { grid-column: 1 / -1; border-top: 1px solid rgba(19, 28, 27, 0.42); border-left: 0; }
   .scenario-controls { grid-template-columns: 1fr 1fr; }
@@ -1434,6 +1432,7 @@
 }
 
 .simulator-embed body {
+  --focus-ring: var(--signal);
   background: var(--ink);
 }
 

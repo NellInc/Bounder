@@ -1,8 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-import { loadSystemModel, repositoryRoot } from "./lib/system-model.mjs";
+import { isMainModule, loadSystemModel, repositoryRoot } from "./lib/system-model.mjs";
 
 export const taskRoutesPath = "_wiki/generated/task-routes.md";
 export const ciImpactPath = ".github/generated/impact-rules.json";
@@ -18,9 +17,8 @@ export function renderTaskRoutes(model) {
     "<!-- wiki:type = flow -->",
     "<!-- wiki:scope = bounder -->",
     "<!-- wiki:created = 2026-08-31 -->",
-    "<!-- wiki:updated = 2026-08-31 -->",
     "",
-    "This page is compiled from the canonical system descriptor. Run `npm run system:generate` after changing impact rules. (`system/bounder-system.v1.json:1-1`)",
+    "This page is compiled from the canonical system descriptor and carries no `wiki:updated` marker: its freshness is the descriptor's, enforced byte-for-byte by `npm run system:check`, not a hand-written date. Run `npm run system:generate` after changing impact rules. (`system/bounder-system.v1.json:1-1`)",
     "",
     "| Route | Changed paths | Components | Commands | Proof classes | Release-sensitive |",
     "|---|---|---|---|---|---|"
@@ -85,7 +83,7 @@ export async function runGenerateSystemViewsCli(args = process.argv.slice(2), lo
 }
 
 /* c8 ignore start -- direct-entry failure plumbing is covered through the exported command API. */
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   runGenerateSystemViewsCli().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

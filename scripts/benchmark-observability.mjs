@@ -1,5 +1,7 @@
 import { performance } from "node:perf_hooks";
 
+import { isMainModule } from "./lib/system-model.mjs";
+
 import {
   DEFAULT_OBSERVABILITY_BUDGETS,
   PLATFORMS,
@@ -145,7 +147,7 @@ export async function runBenchmarkCli(args = process.argv.slice(2), logger = con
   return result;
 }
 
-if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (isMainModule(import.meta.url)) {
   runBenchmarkCli().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

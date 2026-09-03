@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -250,10 +250,24 @@ test("verification receipts are atomic, hash logs, stop after failure, and label
   await assert.rejects(() => runVerification({ root, phases: [phases[0], phases[0]], outputRoot: join(root, "dupe") }), /duplicate/);
 });
 
-test("focused verify CLI and direct script entry points execute without external mutation", async () => {
+test("focused verify CLI and direct script entry points execute without external mutation", async (t) => {
   const logs = [];
-  const result = await runVerifyCli(["--phase", "descriptor"], { log: (message) => logs.push(message) });
+  const receipts = await mkdtemp(join(tmpdir(), "bounder-verify-cli-receipts-"));
+  t.after(() => rm(receipts, { recursive: true, force: true }));
+  // The phase is stubbed and the receipt goes to scratch: this test covers the CLI's argument
+  // handling, not the descriptor gate, and must not spawn a real build or leave evidence in the
+  // working tree that reads like a genuine verification run.
+  const spawned = [];
+  const result = await runVerifyCli(["--phase", "descriptor"], { log: (message) => logs.push(message) }, {
+    outputRoot: receipts,
+    phaseRunner: async (phase) => {
+      spawned.push(phase.id);
+      return { exit_code: 0, signal: null, timed_out: false, duration_ms: 1, stdout: "ok", stderr: "" };
+    }
+  });
+  assert.deepEqual(spawned, ["descriptor"], "the focused CLI ran a phase other than the one selected");
   assert.equal(result.receipt.success, true);
+  assert.ok(result.receiptPath.startsWith(receipts), "the CLI wrote its receipt outside the requested output root");
   assert.match(logs.at(-1), /Verification receipt/);
   await assert.rejects(() => runVerifyCli(["--phase", "missing"], { log() {} }), /unknown/);
   await assert.rejects(() => runVerifyCli(["bad"], { log() {} }), /usage/);

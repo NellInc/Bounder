@@ -516,13 +516,41 @@ test("integrity failures fall back with specific warnings and timeout boundaries
   }
   await assert.doesNotReject(loadRecorded(async () => response(pilot), { timeoutMs: MAX_TIMEOUT_MS }));
 
+  // Audit 2026-09: this used to sleep 75 ms of wall clock to prove a 50 ms timer was
+  // cleared, which races the scheduler in the failing direction — any event-loop stall
+  // longer than the timeout aborts legitimately and reports a bug that is not there.
+  // The loader takes no timer seam yet (staging-feed.js reaches for the ambient
+  // setTimeout/clearTimeout), so the globals are swapped for the duration of the call
+  // and restored in a finally. node:test runs the top-level tests in this file
+  // sequentially, so the swap is not visible to any other test.
+  const realSetTimeout = globalThis.setTimeout;
+  const realClearTimeout = globalThis.clearTimeout;
+  const armed = [];
+  const cleared = [];
   let completedSignal;
-  await loadRecorded(async (url, { signal }) => {
-    completedSignal = signal;
-    return response(buildEvidence(1));
-  }, { timeoutMs: 50 });
-  await new Promise((resolve) => setTimeout(resolve, 75));
+  globalThis.setTimeout = (callback, delay) => {
+    const handle = { callback, delay };
+    armed.push(handle);
+    return handle;
+  };
+  globalThis.clearTimeout = (handle) => { cleared.push(handle); };
+  try {
+    await loadRecorded(async (url, { signal }) => {
+      completedSignal = signal;
+      return response(buildEvidence(1));
+    }, { timeoutMs: 50 });
+  } finally {
+    globalThis.setTimeout = realSetTimeout;
+    globalThis.clearTimeout = realClearTimeout;
+  }
+  assert.deepEqual(armed.map(({ delay }) => delay), [50], "the success path arms exactly one deadline");
+  assert.deepEqual(cleared, armed, "the success path clears the deadline it armed");
   assert.equal(completedSignal.aborted, false, "a cleared success timer must not abort later");
+  // The armed callback is the abort: firing it now proves the cleared handle was the
+  // deadline and not an incidental timer. Promise.race already attached a rejection
+  // handler to the deadline, so the late rejection stays handled.
+  armed[0].callback();
+  assert.equal(completedSignal.aborted, true, "the armed deadline is the abort that clearTimeout defused");
 });
 
 test("the deadline wins when fetch or body readers ignore abort", { timeout: 30_000 }, async () => {

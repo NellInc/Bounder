@@ -482,7 +482,18 @@ test("receipt drift installs exact dependencies and derives every pinned evidenc
   const install = workflow.indexOf("npm ci --ignore-scripts");
   const testSuite = workflow.indexOf("node --test tests/producer-derivation.test.js tests/release-manifest-v2.test.js");
   assert.ok(install >= 0 && testSuite > install, "receipt drift does not install lockfile dependencies before testing");
-  assert.match(workflow, /ref: 36738be8d68cb886f255f0d16054c2036d1776a1/);
+  // The verified producer tree is derived from the newest sealed manifest, not restated here.
+  // A hardcoded ref keeps reporting green against a superseded tree after the next release.
+  assert.doesNotMatch(workflow, /ref: [0-9a-f]{40}/, "the producer ref is hardcoded instead of manifest-derived");
+  assert.match(workflow, /node scripts\/lib\/release-producer\.mjs --commit/);
+  assert.match(workflow, /ref: \$\{\{ steps\.producer\.outputs\.commit \}\}/);
+  // The private producer credential must reach only the step that checks the producer out;
+  // a job-level env block exposes it to every step that runs pull-request-head code.
+  assert.doesNotMatch(workflow, /^\s{4}env:$/m, "the producer token is scoped to the job rather than to one step");
+  // Three step-level `if:` guards preserve the fork/no-token skip, plus exactly one `token:`
+  // consumer -- the producer checkout.
+  assert.equal(workflow.split("secrets.BOUNDER_PRODUCER_READ_TOKEN").length - 1, 4);
+  assert.equal(workflow.split("token: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN }}").length - 1, 1);
   assert.match(workflow, /npm run verify:producer -- --producer-root \.\.\/producer/);
   assert.match(workflow, /Producer derivation is unverified in this run/);
   assert.doesNotMatch(workflow, /cmp "\$path" "\$tmp\/\$path"/);
@@ -978,7 +989,7 @@ test("the current release line has either a sealed v2 manifest or an explicit so
     source = await fs.readFile(target, "utf8");
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
-    assert.equal(version, "1.1.1");
+    assert.equal(version, "1.1.2");
     await Promise.all([
       fs.access(join(root, "scripts", "generate-release-manifest-v2.mjs")),
       fs.access(join(root, "schemas", "bounder-release-manifest-v2.schema.json"))

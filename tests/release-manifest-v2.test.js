@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import Ajv2020 from "ajv/dist/2020.js";
@@ -91,12 +92,55 @@ test("release manifest v2 preserves every historical manifest digest", async () 
     const bytes = await readFile(new URL(`../${path}`, import.meta.url));
     assert.equal(sha256(bytes), expected, path);
     const historical = JSON.parse(bytes);
-    if (path.endsWith("v1.1.0.manifest.json")) {
+    // The v2 format arrived with the 1.1.0 line. Deriving that boundary from the version keeps
+    // the assertion honest as later releases are pinned instead of naming one file forever.
+    const [major, minor] = path.match(/v(\d+)\.(\d+)\.\d+\.manifest\.json$/u).slice(1, 3).map(Number);
+    if (major > 1 || (major === 1 && minor >= 1)) {
       assert.equal(historical.manifest_version, "bounder-release-manifest/v2", `${path} lost its original v2 identity`);
     } else {
       assert.equal(Object.hasOwn(historical, "manifest_version"), false, `${path} history was rewritten as v2`);
     }
   }
+});
+
+test("every sealed release manifest on disk is pinned as byte-immutable", async () => {
+  const root = fileURLToPath(new URL("..", import.meta.url));
+  const versionText = await readFile(join(root, "VERSION"), "utf8");
+  const currentVersion = versionText.trim();
+  const sealed = (await readdir(join(root, "release")))
+    .filter((entry) => entry.endsWith(".manifest.json"))
+    .sort();
+  assert.ok(sealed.length > 0, "the release directory holds no sealed manifests");
+  for (const name of sealed) {
+    // The manifest for the release line currently being prepared is sealed in its own commit
+    // after this suite runs, so it is pinned in the next release's source commit, not this one.
+    if (name === `bounder-reference-v${currentVersion}.manifest.json`) continue;
+    assert.ok(
+      Object.hasOwn(HISTORICAL_MANIFEST_SHA256, `release/${name}`),
+      `release/${name} is sealed but not pinned in HISTORICAL_MANIFEST_SHA256`
+    );
+  }
+});
+
+test("historical manifest verification fails when a sealed manifest is left unpinned", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "bounder-manifest-completeness-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, "release"), { recursive: true });
+  const pinned = `${JSON.stringify({ release_version: "1.0.0" })}\n`;
+  await writeFile(join(root, "release", "bounder-reference-v1.0.0.manifest.json"), pinned);
+  const digests = { "release/bounder-reference-v1.0.0.manifest.json": sha256(Buffer.from(pinned)) };
+  await assertHistoricalManifests(root, digests);
+
+  await writeFile(join(root, "release", "bounder-reference-v1.0.1.manifest.json"), `${JSON.stringify({ release_version: "1.0.1" })}\n`);
+  await assert.rejects(
+    () => assertHistoricalManifests(root, digests),
+    /sealed manifest is not pinned as immutable: release\/bounder-reference-v1\.0\.1\.manifest\.json/
+  );
+
+  // A root with no release directory at all is not a completeness failure.
+  const bare = await mkdtemp(join(tmpdir(), "bounder-manifest-bare-"));
+  t.after(() => rm(bare, { recursive: true, force: true }));
+  await assertHistoricalManifests(bare, {});
 });
 
 test("release manifest v2 requires separate producer, publisher, deployment, and observation provenance", async () => {

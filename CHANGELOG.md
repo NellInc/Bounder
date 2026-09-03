@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.1.2 · 2026-09-03
+
+Broad polish release from a verified repository audit: 64 confirmed findings across
+pages, styles, browser runtime, observability runtime, tooling, CI, tests, and
+documentation.
+
+### Fixed
+
+1. Fleet aggregation no longer throws on a fleet where every Guardian reports checkpoint sequence 0, and a Guardian at sequence 0 is no longer erased from the reported minimum. Rollback detection survives a zero-valued baseline.
+2. A Guardian that is already held or expired at first contact emits its state event alongside `guardian_connected`.
+3. Signed telemetry payloads are parsed by the same strict parser as signed policy, so signed bytes and parsed values cannot disagree; the telemetry `public_key_id` bound now matches the published schema.
+4. The 404 page uses root-relative references, so it renders styled with a working home link below the site root.
+5. The 3D stage leaves vertical page scrolling to the browser on touch devices; a WebGL runtime failure releases the renderer and canvas input; reduced-motion mode no longer spins an idle animation loop; simulator initialisation failures are reported instead of silently dropped; every degraded resilience-stream path marks the recorded fallback.
+6. The embedded simulator clamps out-of-range height reports instead of discarding them, so narrow viewports are no longer clipped.
+7. The policy round-trip panel mounts from the `ui/` seam instead of as a side effect of importing the policy core, and tolerates missing panel markup.
+8. Keyboard focus rings are visible on the dark simulator workbench; the continuity-proof panel no longer inherits a two-column grid from the shared stylesheet; Fleet node labels and muted panel text meet legibility and contrast floors; duplicate and dead rules removed; `color-scheme` declared.
+9. Simulator panels are named by static headings rather than live status values, giving the page a complete heading outline for assistive technology.
+10. Copy corrections: the hero keeps decision and adapter authority separate, the safety section names both recorded observations, spelling is consistently British, Guardian is capitalised consistently, the terms page names only third parties the site actually uses, and body links open rendered pages rather than raw Markdown.
+11. The privacy notice discloses the automatic continuity-feed request the home page makes and its privacy properties.
+12. Sitemap `lastmod` values and legal-page dates are current; Open Graph images declare dimensions and type; the operator-demonstration feedback link now has a matching issue template.
+
+### Changed
+
+1. Every published page carries a Content-Security-Policy meta tag with hash-allowed inline scripts, enforced by a unit test that recomputes the hashes.
+2. Three shared observability schemas tightened: identity patterns are anchored to match the runtime validator, and a Fleet snapshot must expect at least one Guardian. The private producer must carry the same bytes before the next seal.
+3. Design lint runs the lockfile-pinned `impeccable` instead of a tarball fetched at deploy time; CI installs with scripts disabled and a declared Node floor.
+4. The publication lock records its owner and recovers from a build killed mid-flight; orphaned staging and backup trees are swept; interruption releases the lock.
+5. Producer-derivation CI verifies the commit named by the newest sealed manifest and scopes the private read token to the one step that uses it.
+6. `docs:check` enforces repository containment on citations, verifies that quoted anchors still resolve inside their cited ranges, and warns when an impact rule fails to route a page that cites its paths; generated wiki pages no longer carry a hand-maintained freshness date.
+7. Verification phases signal their whole process group, forward interrupts, and hash byte-exact logs; receipts distinguish detected producer drift from an absent producer run and record phases that fail to spawn.
+8. Coverage scratch is per-run; historical-manifest immutability is derived from the release directory; the browser web server timeout accommodates a loaded machine.
+9. Unit tests no longer write receipts into the working tree; browser acceptance exercises the working reveal observer, the resilience console controls and scrubber, and every declared breakpoint band.
+10. Brand source material moved from `tmp/` to `design/brand-source/` with recorded descent; `tmp/` is ignored.
+
+### Proof limits
+
+1. The producer repository remains private, so independent public regeneration requires access or a future public mirror or reviewable source bundle.
+2. Deployed Guardian performance, Fleet backend integration, hardware safety, certification, and human, legal, rights, and regulatory review remain unverified.
+3. Deployment and live-byte parity require separate post-merge evidence.
+
 ## 1.1.1 · 2026-09-01
 
 Publication-integrity correction for the agent control plane release.

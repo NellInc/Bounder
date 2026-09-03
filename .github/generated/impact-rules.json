@@ -24,7 +24,11 @@
         ".github/workflows/site-quality.yml",
         ".gitignore",
         "scripts/validate-system.mjs",
-        "tests/generated-control.test.js"
+        "tests/generated-control.test.js",
+        ".npmrc",
+        ".nvmrc",
+        "package-lock.json",
+        "tests/tooling-hygiene.test.js"
       ],
       "commands": [
         "system_check",
@@ -148,7 +152,9 @@
       "paths": [
         "scripts/build-site.mjs",
         "tests/publication.test.js",
-        ".github/workflows/deploy-pages.yml"
+        ".github/workflows/deploy-pages.yml",
+        "playwright.config.js",
+        "tests/playwright-config.test.js"
       ],
       "commands": [
         "unit_coverage",
@@ -168,7 +174,8 @@
         "scripts/generate-release-manifest-v2.mjs",
         "schemas/bounder-release-manifest-v2.schema.json",
         "tests/release-manifest-v2.test.js",
-        ".github/workflows/receipt-drift.yml"
+        ".github/workflows/receipt-drift.yml",
+        "scripts/lib/release-producer.mjs"
       ],
       "commands": [
         "unit_coverage",
@@ -188,7 +195,12 @@
         "README.md",
         "SECURITY.md",
         "guides/**",
-        "tests/interface.test.js"
+        "tests/interface.test.js",
+        "sitemap.xml",
+        "tests/page-security.test.js",
+        "tests/site-quality.test.js",
+        "tests/browser-entry-side-effects.test.js",
+        "tests/embedded-simulator-height.test.js"
       ],
       "commands": [
         "unit_coverage",
@@ -209,6 +221,17 @@
       ],
       "commands": [
         "system_check",
+        "docs_check"
+      ],
+      "release_sensitive": false
+    },
+    {
+      "id": "repository_provenance",
+      "paths": [
+        "design/**",
+        ".github/ISSUE_TEMPLATE/**"
+      ],
+      "commands": [
         "docs_check"
       ],
       "release_sensitive": false

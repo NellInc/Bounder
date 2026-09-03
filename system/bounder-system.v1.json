@@ -865,9 +865,7 @@
     {
       "id": "design_lint",
       "argv": [
-        "npx",
-        "--yes",
-        "impeccable@3.2.1",
+        "node_modules/.bin/impeccable",
         "detect",
         "."
       ],
@@ -1113,7 +1111,11 @@
         ".github/workflows/site-quality.yml",
         ".gitignore",
         "scripts/validate-system.mjs",
-        "tests/generated-control.test.js"
+        "tests/generated-control.test.js",
+        ".npmrc",
+        ".nvmrc",
+        "package-lock.json",
+        "tests/tooling-hygiene.test.js"
       ],
       "components": [
         "agent_control_plane"
@@ -1133,7 +1135,9 @@
       ],
       "release_sensitive": false,
       "documentation_refresh": [
-        "_wiki/flows/agent-operating-loop.md"
+        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/systems/runtime-observability.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Control-model changes can alter every derived task and proof route."
     },
@@ -1168,7 +1172,8 @@
       ],
       "release_sensitive": false,
       "documentation_refresh": [
-        "_wiki/systems/runtime-observability.md"
+        "_wiki/systems/runtime-observability.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Reference runtime changes require contract, state-machine, privacy, fault, and performance proof without spending browser or publication resources."
     },
@@ -1208,8 +1213,8 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "guides/INTEGRATION.md",
-        "_wiki/systems/runtime-observability.md"
+        "_wiki/systems/runtime-observability.md",
+        "guides/INTEGRATION.md"
       ],
       "reason": "Public observability-contract changes require runtime compatibility, publication inventory, browser, privacy, and performance proof."
     },
@@ -1236,7 +1241,9 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/systems/site-architecture.md"
+        "_wiki/systems/runtime-observability.md",
+        "_wiki/systems/site-architecture.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Continuity changes affect signature, ordering, freshness, and safe fallback semantics."
     },
@@ -1295,7 +1302,11 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/seams/evidence-provenance.md"
+        "_wiki/domain/physical-interlock.md",
+        "_wiki/seams/evidence-provenance.md",
+        "_wiki/systems/runtime-observability.md",
+        "_wiki/systems/site-architecture.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Policy and evidence changes can cross producer, publisher, and browser proof boundaries."
     },
@@ -1328,7 +1339,8 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/systems/site-architecture.md"
+        "_wiki/systems/site-architecture.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Presentation must remain receipt-driven and accessible in the built artifact."
     },
@@ -1337,7 +1349,9 @@
       "paths": [
         "scripts/build-site.mjs",
         "tests/publication.test.js",
-        ".github/workflows/deploy-pages.yml"
+        ".github/workflows/deploy-pages.yml",
+        "playwright.config.js",
+        "tests/playwright-config.test.js"
       ],
       "components": [
         "publication_builder"
@@ -1356,7 +1370,10 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/systems/site-architecture.md"
+        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/systems/runtime-observability.md",
+        "_wiki/systems/site-architecture.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Publication changes alter the exact public inventory or deployment privilege boundary."
     },
@@ -1371,7 +1388,8 @@
         "scripts/generate-release-manifest-v2.mjs",
         "schemas/bounder-release-manifest-v2.schema.json",
         "tests/release-manifest-v2.test.js",
-        ".github/workflows/receipt-drift.yml"
+        ".github/workflows/receipt-drift.yml",
+        "scripts/lib/release-producer.mjs"
       ],
       "components": [
         "release_manifest"
@@ -1393,7 +1411,11 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/seams/evidence-provenance.md"
+        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/seams/evidence-provenance.md",
+        "_wiki/systems/runtime-observability.md",
+        "_wiki/systems/site-architecture.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Release changes affect immutable history and candidate identity."
     },
@@ -1406,7 +1428,12 @@
         "README.md",
         "SECURITY.md",
         "guides/**",
-        "tests/interface.test.js"
+        "tests/interface.test.js",
+        "sitemap.xml",
+        "tests/page-security.test.js",
+        "tests/site-quality.test.js",
+        "tests/browser-entry-side-effects.test.js",
+        "tests/embedded-simulator-height.test.js"
       ],
       "components": [
         "simulator",
@@ -1430,7 +1457,12 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/systems/site-architecture.md"
+        "_wiki/domain/physical-interlock.md",
+        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/seams/evidence-provenance.md",
+        "_wiki/systems/runtime-observability.md",
+        "_wiki/systems/site-architecture.md",
+        "_wiki/systems/system-architecture.md"
       ],
       "reason": "Public source changes require built-byte, browser, design, and claim review."
     },
@@ -1461,6 +1493,31 @@
         "_wiki/log.md"
       ],
       "reason": "Internal architecture changes must preserve routes, citations, and declared holds."
+    },
+    {
+      "id": "repository_provenance",
+      "paths": [
+        "design/**",
+        ".github/ISSUE_TEMPLATE/**"
+      ],
+      "components": [
+        "architecture_knowledge"
+      ],
+      "commands": [
+        "docs_check"
+      ],
+      "proof_classes": [
+        "source_behavior"
+      ],
+      "authority_boundaries": [
+        "Agent guidance"
+      ],
+      "release_sensitive": false,
+      "documentation_refresh": [
+        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/systems/system-architecture.md"
+      ],
+      "reason": "Brand sources and repository operations material ship in no artifact, so only their documentation citations can be wrong."
     }
   ],
   "documentation": {

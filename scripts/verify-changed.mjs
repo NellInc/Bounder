@@ -1,10 +1,9 @@
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rename, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 import { checkChanged } from "./check-changed.mjs";
-import { loadSystemModel, repositoryRoot } from "./lib/system-model.mjs";
+import { isMainModule, loadSystemModel, repositoryRoot } from "./lib/system-model.mjs";
 import { DEFAULT_VERIFICATION_PHASES, executeVerificationPhase } from "./verify.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
@@ -52,7 +51,8 @@ export async function verifyChanged(args = process.argv.slice(2), {
   phaseRunner = executeVerificationPhase,
   clock = () => Date.now(),
   logger = console,
-  producerRoot = process.env.BOUNDER_PRODUCER_ROOT || ""
+  producerRoot = process.env.BOUNDER_PRODUCER_ROOT || "",
+  outputRoot = join(root, "artifacts", "changed-verification")
 } = {}) {
   const { forwarded, requireProducer } = parseArguments(args);
   const [{ plan }, model] = await Promise.all([checkChanged(forwarded, { root }), loadSystemModel({ root })]);
@@ -61,7 +61,6 @@ export async function verifyChanged(args = process.argv.slice(2), {
     throw new Error("producer derivation was selected and --require-producer forbids skipping it");
   }
   const started = clock();
-  const outputRoot = join(root, "artifacts", "changed-verification");
   await mkdir(outputRoot, { recursive: true });
   const runRoot = await mkdtemp(join(outputRoot, `${new Date(started).toISOString().replaceAll(":", "-").replaceAll(".", "-")}-`));
   const results = [];
@@ -72,7 +71,15 @@ export async function verifyChanged(args = process.argv.slice(2), {
       continue;
     }
     logger.log(`verify:changed:${phase.id}`);
-    const result = await phaseRunner(phase, { root });
+    // A phase that cannot spawn is still evidence about what was attempted. Matching the
+    // aggregate runner keeps a failed launch inside the receipt instead of throwing past the
+    // receipt-writing block and orphaning the logs already produced in this run directory.
+    let result;
+    try {
+      result = await phaseRunner(phase, { root });
+    } catch (error) {
+      result = { exit_code: 1, signal: null, timed_out: false, duration_ms: 0, stdout: "", stderr: error.message };
+    }
     const source = `${result.stdout || ""}${result.stderr ? `\n[stderr]\n${result.stderr}` : ""}`;
     await writeFile(join(runRoot, `${phase.id}.log`), source, { flag: "wx" });
     results.push({
@@ -111,7 +118,7 @@ export function reportVerifyChangedCliFailure(error, logger = console) {
 }
 
 /* c8 ignore start -- direct-entry failure plumbing is covered through the exported command API. */
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   verifyChanged().catch(reportVerifyChangedCliFailure);
 }
 /* c8 ignore stop */

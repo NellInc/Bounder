@@ -1,4 +1,4 @@
-import { parseStrictJSON } from "./policy-roundtrip.js";
+import { parseStrictJSON } from "./runtime/json/policy-json.js";
 
 const MAX_FEED_BYTES = 2 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 3500;

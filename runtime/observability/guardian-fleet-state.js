@@ -1,4 +1,4 @@
-import { DuplicateJsonMemberError, parseUniqueJson } from "../json/strict-json.js";
+import { parseStrictJSON } from "../json/policy-json.js";
 
 export const HEARTBEAT_VERSION = "creedspace-bounder-guardian-heartbeat/v1";
 export const FLEET_SNAPSHOT_VERSION = "creedspace-bounder-fleet-snapshot/v1";
@@ -87,8 +87,8 @@ function deepFreeze(value, seen = new WeakSet()) {
   return Object.freeze(value);
 }
 
-function assertIdentity(value, label) {
-  if (typeof value !== "string" || value.length > 255 || !IDENTITY.test(value)) {
+function assertIdentity(value, label, maxLength = 255) {
+  if (typeof value !== "string" || value.length > maxLength || !IDENTITY.test(value)) {
     throw new Error(`${label} is invalid`);
   }
 }
@@ -368,8 +368,12 @@ function assertExpectedGuardian(value) {
 }
 
 function updateRange(range, value) {
-  if (range.minimum === 0 || value < range.minimum) range.minimum = value;
-  if (value > range.maximum) range.maximum = value;
+  if (range.minimum === null || value < range.minimum) range.minimum = value;
+  if (range.maximum === null || value > range.maximum) range.maximum = value;
+}
+
+function materializeRange(range) {
+  return range.minimum === null ? { minimum: 0, maximum: 0 } : { minimum: range.minimum, maximum: range.maximum };
 }
 
 export function aggregateFleetSnapshot({
@@ -411,8 +415,8 @@ export function aggregateFleetSnapshot({
 
   const states = emptyCounts(FLEET_STATES);
   const reasonCounts = emptyCounts(OPERATIONAL_REASONS);
-  const policySequences = { minimum: 0, maximum: 0 };
-  const checkpointSequences = { minimum: 0, maximum: 0 };
+  const policySequences = { minimum: null, maximum: null };
+  const checkpointSequences = { minimum: null, maximum: null };
   const decisions = { evaluated: 0, allowed: 0, held: 0, failures: 0, latency_ms: { p50_max: 0, p95_max: 0, p99_max: 0, max: 0 } };
   const audit = { queued: 0, oldest_queued_age_ms: 0 };
   let earliestExpiry = nowMs + budgets.heartbeat_validity_ms;
@@ -453,8 +457,8 @@ export function aggregateFleetSnapshot({
     states,
     platform_counts: platformCounts,
     reason_counts: reasonCounts,
-    policy_sequences: policySequences,
-    checkpoint_sequences: checkpointSequences,
+    policy_sequences: materializeRange(policySequences),
+    checkpoint_sequences: materializeRange(checkpointSequences),
     decisions,
     audit,
     cycle_duration_ms: nowMs - cycleStartedAtMs,
@@ -499,11 +503,14 @@ export function validateFleetSnapshot(value, {
     const reasonTotal = STATE_REASONS[state].reduce((total, reason) => safeAdd(total, snapshot.reason_counts[reason], `Fleet ${state} reason counts`), 0);
     if (reasonTotal !== snapshot.states[state]) throw new Error(`Fleet ${state} reason counts are inconsistent`);
   }
-  for (const [label, range] of [["policy", snapshot.policy_sequences], ["checkpoint", snapshot.checkpoint_sequences]]) {
+  for (const [label, range, floor] of [["policy", snapshot.policy_sequences, 1], ["checkpoint", snapshot.checkpoint_sequences, 0]]) {
     exactKeys(range, ["minimum", "maximum"], `Fleet ${label} sequence range`);
     assertSafeInteger(range.minimum, `Fleet ${label} minimum sequence`);
     assertSafeInteger(range.maximum, `Fleet ${label} maximum sequence`);
-    if (range.minimum > range.maximum || (snapshot.observed_guardians === 0) !== (range.maximum === 0)) {
+    const observedRange = snapshot.observed_guardians === 0
+      ? range.minimum === 0 && range.maximum === 0
+      : range.minimum >= floor;
+    if (range.minimum > range.maximum || !observedRange) {
       throw new Error(`Fleet ${label} sequence range is inconsistent`);
     }
   }
@@ -637,12 +644,10 @@ export async function deriveFleetEvents({
   const classification = classifyValidatedGuardianHeartbeat(current || previous, observedAtMs, budgets);
   const eventTypes = [];
   if (!previous) eventTypes.push("guardian_connected");
-  else {
-    if (current && previous.boot_id !== current.boot_id) eventTypes.push("guardian_restarted");
-    if (classification.state !== fromState) eventTypes.push(eventTypeForState(classification.state, fromState));
-    if (current && current.policy.sequence > previous.policy.sequence) eventTypes.push("policy_advanced");
-    if (current && current.checkpoint.sequence > previous.checkpoint.sequence) eventTypes.push("checkpoint_advanced");
-  }
+  else if (current && previous.boot_id !== current.boot_id) eventTypes.push("guardian_restarted");
+  if (classification.state !== fromState) eventTypes.push(eventTypeForState(classification.state, fromState));
+  if (previous && current && current.policy.sequence > previous.policy.sequence) eventTypes.push("policy_advanced");
+  if (previous && current && current.checkpoint.sequence > previous.checkpoint.sequence) eventTypes.push("checkpoint_advanced");
   const events = [];
   for (const eventType of [...new Set(eventTypes)]) {
     events.push(await makeFleetEvent({ eventType, fromState, classification, heartbeat, observedAtMs, cryptoImpl }));
@@ -754,10 +759,11 @@ export async function verifyTelemetryEnvelope({
   if (snapshot.envelope_version !== TELEMETRY_ENVELOPE_VERSION || snapshot.algorithm !== "Ed25519") {
     throw new Error("telemetry envelope metadata is invalid");
   }
-  assertIdentity(snapshot.public_key_id, "telemetry public key id");
+  assertIdentity(snapshot.public_key_id, "telemetry public key id", 128);
   const keyValue = publicKeys instanceof Map ? publicKeys.get(snapshot.public_key_id) : publicKeys?.[snapshot.public_key_id];
   if (!keyValue) throw new Error("telemetry public key id is unknown");
-  const payloadBytes = decodeCanonicalBase64(snapshot.payload, "telemetry payload", telemetryPayloadLimit(snapshot.payload_kind, budgets));
+  const payloadLimit = telemetryPayloadLimit(snapshot.payload_kind, budgets);
+  const payloadBytes = decodeCanonicalBase64(snapshot.payload, "telemetry payload", payloadLimit);
   const signatureBytes = decodeCanonicalBase64(snapshot.signature, "telemetry signature", 64);
   if (signatureBytes.byteLength !== 64) throw new Error("telemetry signature is invalid");
   const key = await importVerificationKey(keyValue, cryptoImpl);
@@ -766,9 +772,9 @@ export async function verifyTelemetryEnvelope({
   }
   let payload;
   try {
-    payload = parseUniqueJson(new TextDecoder("utf-8", { fatal: true }).decode(payloadBytes));
+    payload = parseStrictJSON(payloadBytes, "telemetry payload", { maxBytes: payloadLimit });
   } catch (error) {
-    if (error instanceof DuplicateJsonMemberError) throw new Error("telemetry payload contains duplicate JSON fields");
+    if (/duplicate object key/.test(error?.message || "")) throw new Error("telemetry payload contains duplicate JSON fields");
     throw new Error("telemetry payload is not strict UTF-8 JSON");
   }
   if (payload?.version !== snapshot.payload_kind) throw new Error("telemetry envelope kind does not match its signed payload");

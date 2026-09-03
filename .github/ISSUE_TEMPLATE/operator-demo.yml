@@ -1,0 +1,65 @@
+name: Operator demonstration finding
+description: Report a reproducible finding from the guided operator demonstration in the Bounder simulator.
+title: "[operator demo] "
+labels: ["simulator", "operator-demo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing the interlock. Findings from the simulator describe recorded reference evidence and browser presentation; they are not reports about deployed Guardian hardware.
+  - type: input
+    id: tour-step
+    attributes:
+      label: Tour step
+      description: The step title shown in the guided operator demonstration when you saw the finding.
+      placeholder: Inspect the recorded baseline
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - 3D stage (WebGL)
+        - Accessible evidence view (WebGL off)
+        - Decision receipt panel
+        - Fleet control panel
+        - Policy round-trip panel
+        - Resilience laboratory
+        - Continuity proof panel
+        - Embedded simulator on the home page
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact scenario, rule, and control sequence. Include the URL query string if you used `?webgl=off` or `?embed=1`.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What happened instead, including any receipt code, decision reason, or console error text.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 140 on macOS 15, 1440x900
+    validations:
+      required: true
+  - type: input
+    id: release
+    attributes:
+      label: Bounder release
+      description: The version shown in `VERSION` or the release manifest you were testing against.
+      placeholder: "1.1.2"

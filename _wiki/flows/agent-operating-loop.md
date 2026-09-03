@@ -3,12 +3,12 @@
 <!-- wiki:type = flow -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-08-31 -->
+<!-- wiki:updated = 2026-09-03 -->
 <!-- wiki:status = active -->
 
 ## Summary
 
-An agent working on Bounder needs a low-cost path from intent to the smallest safe edit and the strongest relevant proof. This flow provides progressive disclosure, task routing, explicit state transitions, and accretive closeout. The system descriptor and agent commands select and explain the repository's unit, coverage, browser, design-lint, build, manifest, and documentation gates. (`system/bounder-system.v1.json:1-20`; `package.json:6-22`; `README.md:46-80`)
+An agent working on Bounder needs a low-cost path from intent to the smallest safe edit and the strongest relevant proof. This flow provides progressive disclosure, task routing, explicit state transitions, and accretive closeout. The system descriptor and agent commands select and explain the repository's unit, coverage, browser, design-lint, build, manifest, and documentation gates. (`system/bounder-system.v1.json:1-20`; `package.json:6-22 "release:manifest:v2"`; `README.md:63-86`)
 
 ## Thirty-Second Orientation
 
@@ -37,7 +37,7 @@ Stop broad exploration once the task surface, authority boundary, and proof rout
 | Change heartbeat, Fleet state, or observability budgets | [[bounder:systems/runtime-observability]] | `runtime/observability/`, `runtime/json/`, observability tests | `npm run test:observability`, `npm run benchmark:observability`, coverage and docs | Deployed producer or Fleet integration is requested |
 | Change a public telemetry schema | [[bounder:systems/runtime-observability]] | Four observability schemas and compatible reference validators | Observability tests and benchmark, coverage, build, browser, docs | Release pinning or producer contract adoption is requested |
 
-The touched surfaces and current tests support these routes. (`README.md:9-36`; `tests/interface.test.js:13-101`; `tests/site-quality.test.js:55-84`; `tests/publication.test.js:80-113`)
+The touched surfaces and current tests support these routes. (`README.md:9-45`; `tests/interface.test.js:13-101`; `tests/site-quality.test.js:55-84`; `tests/publication.test.js:80-113`)
 
 ## Control Loop
 
@@ -80,7 +80,7 @@ Run the narrowest discriminating test first. Run the aggregate gate required by 
 
 ### 6. Seal
 
-For release-sensitive work, freeze source bytes before manifest generation. A release uses a source commit followed by a manifest commit because the generator requires an existing source commit whose bytes match the pinned working tree. (`README.md:62-78`; `scripts/generate-release-manifest.js:770-782`)
+For release-sensitive work, freeze source bytes before manifest generation. A release uses a source commit followed by a manifest commit because the generator requires an existing source commit whose bytes match the pinned working tree. (`README.md:88-109 "Never amend source commit A"`; `scripts/generate-release-manifest-v2.mjs:101-130`)
 
 ### 7. Publish
 
@@ -107,16 +107,26 @@ Do not add a session diary. Git already records ordinary changes.
 | `npm run test:browser` | Builds isolated `_site`, serves it, runs Chromium acceptance | Browser behavior of the assembled artifact |
 | `npm run build` | Recursively assembles and byte-checks the public allowlist | Local publication artifact integrity |
 | `npm run quality` | Coverage, browser acceptance, and deterministic design lint | Current aggregate local quality surface |
-| `npm run release:manifest` | Creates a new immutable manifest after explicit provenance input | Pinned source bytes at an existing commit |
+| `npm run release:manifest:v2` | Seals a release candidate from an existing publisher commit plus producer and verification receipts (`--publisher-commit`, `--producer-receipt`, `--verification-receipt`) | Publisher integrity and producer derivation at a pinned commit |
 | `npm run system:check` | Validates the system descriptor, references, paths, command surface, and budgets | Executable control-model integrity |
 | `npm run inspect` | Reports repository, release, producer-discovery, contract, budget, and hold state | Read-only orientation snapshot |
 | `npm run check:changed` | Maps changed paths to components, boundaries, tests, and proof classes | Minimum sufficient verification plan |
-| `npm run docs:check` | Resolves wiki links and citations, index coverage, and explicit claim holds | Internal knowledge integrity |
+| `npm run docs:check` | Resolves wiki links and citations, index coverage, freshness markers, and explicit claim holds; a citation written as `path:N-M "exact fragment"` additionally fails unless that fragment is inside the cited range | Internal knowledge integrity |
 | `npm run test:observability` | Runs deterministic heartbeat and Fleet state contracts and faults | Reference runtime-observability behavior |
 | `npm run benchmark:observability` | Checks 10,000-Guardian aggregation and payload budgets | Local reference observability cost only |
 | `npm run verify` | Runs canonical ordered phases and writes an ignored machine receipt | Candidate-specific local proof classes |
 
-The scripts and Playwright server configuration define these meanings. (`package.json:6-12`; `playwright.config.js:17-22`)
+The scripts and Playwright server configuration define these meanings. (`package.json:6-22 "release:manifest:v2"`; `playwright.config.js:17-22`)
+
+`npm run release:manifest` still exists and still runs `scripts/generate-release-manifest.js`, the v1 generator whose `canonical_interlock` field describes website source provenance rather than decision-engine provenance. It is retained only because historical v1 manifests must stay byte-immutable and remain under test. Do not use it to seal a new release. (`package.json:12 "release:manifest"`; `tests/release-manifest.test.js:8-20 "generateReleaseManifest"`)
+
+`npm run docs:check` supports an opt-in anchored citation form: a quoted exact fragment may follow a citation's line range, as in `README.md:1 "# Bounder website"`. The fragment then becomes load-bearing — the check fails if the cited range stops containing it — which is the only defence this repository has against silent citation drift when a cited file is edited. Prefer it wherever the supporting text is short and stable. Pages under `_wiki/generated/` are exempt from the `wiki:updated` freshness marker, because they are compiled from the descriptor and byte-compared by `npm run system:generate --check` rather than dated by hand. (`scripts/docs-check.mjs:7-9 "opts a citation into a"`; `scripts/docs-check.mjs:47-50 "an anchor absent from that range"`; `scripts/docs-check.mjs:71-80 "generated/"`)
+
+Unit suites write their receipts into scratch directories rather than into the working tree, so a test run never leaves evidence in `artifacts/` that reads like a genuine verification. (`tests/agent-commands.test.js:253-259 "bounder-verify-cli-receipts-"`)
+
+Reproducible simulator findings from outside the team arrive through `.github/ISSUE_TEMPLATE/operator-demo.yml`, which frames them as reports about recorded reference evidence and browser presentation rather than about deployed Guardian hardware. (`.github/ISSUE_TEMPLATE/operator-demo.yml:1-9 "Operator demonstration finding"`)
+
+That template and `design/**` are covered by the `repository_provenance` impact rule, whose only command is `docs_check`: neither ships in any artifact, so the sole thing that can be wrong about them is a documentation citation. Changing either needs no build, browser, or release proof. (`system/bounder-system.v1.json:1497-1521 "repository_provenance"`)
 
 ## Target Command Surface
 
@@ -132,7 +142,7 @@ The implementation plan should converge on these agent-facing commands:
 | `npm run evidence:refresh` | Reproduce evidence from an explicit producer revision into a staging directory | Producer identity, inputs, outputs, and diff summary |
 | `npm run docs:check` | Check wiki links, citations, freshness, and generated sections | Exact stale or broken references |
 
-All inspection commands are read only. Mutation commands stage into owned temporary paths, validate before promotion, and return the recovery location on ambiguous failure, following the existing build and manifest safety pattern. (`scripts/build-site.mjs:365-520`; `scripts/generate-release-manifest.js:806-928`)
+All inspection commands are read only. Mutation commands stage into owned temporary paths, validate before promotion, and return the recovery location on ambiguous failure, following the existing build and manifest safety pattern. (`scripts/build-site.mjs:365-520`; `scripts/generate-release-manifest.js:806-928`; `scripts/build-site.mjs:540-600 "sweepOrphanedScratch"`)
 
 ## Cost Controls
 
@@ -161,8 +171,8 @@ This operating loop is working when a fresh agent can select the correct files a
 
 ## Provenance
 
-- Sources consulted: `CLAUDE.md`, `README.md`, `package.json`, `playwright.config.js`, `scripts/build-site.mjs`, `scripts/generate-release-manifest.js`, `tests/interface.test.js`, `tests/site-quality.test.js`, `tests/publication.test.js`
-- Last verified against sources: 2026-08-31
+- Sources consulted: `CLAUDE.md`, `README.md`, `package.json`, `playwright.config.js`, `scripts/build-site.mjs`, `scripts/docs-check.mjs`, `scripts/generate-release-manifest.js`, `scripts/generate-release-manifest-v2.mjs`, `tests/agent-commands.test.js`, `tests/interface.test.js`, `tests/site-quality.test.js`, `tests/publication.test.js`, `.github/ISSUE_TEMPLATE/operator-demo.yml`
+- Last verified against sources: 2026-09-03
 
 ## See Also
 

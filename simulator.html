@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-K8ryXxrcJTDmcGwz4JP/darnCe0QoYNv4BbYZL7Ygks=' 'sha256-3E2WnlvntLPKxHdc6votB0HCX1YoKKxMZtY2/Fn+vIU='; connect-src 'self'; frame-src 'none'">
   <title>Bounder Simulator | Test a Local Physical Interlock</title>
   <meta name="description" content="Test how Bounder permits or holds physical state changes by checking signed authority, current policy, and local safety conditions beside the actuator.">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -20,6 +21,9 @@
   <meta property="og:title" content="Bounder Simulator | The Last Word Before Motion">
   <meta property="og:description" content="A widescreen 3D demonstration of local, auditable policy enforcement at the point of physical action.">
   <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1800">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bounder Simulator | The Last Word Before Motion">
@@ -151,8 +155,9 @@
 
       <section class="fleet-control-panel" aria-labelledby="fleet-control-title">
         <div>
+          <h3 id="fleet-control-title" class="visually-hidden">Fleet control panel</h3>
           <span class="fleet-kicker">Creed Space Fleet</span>
-          <strong id="fleet-control-title">One protective rule, recorded as locally enforced by every Guardian.</strong>
+          <strong>One protective rule, recorded as locally enforced by every Guardian.</strong>
           <small class="fleet-source" data-fleet-source>Loading software pilot evidence</small>
         </div>
         <dl class="fleet-metrics">
@@ -169,8 +174,9 @@
       <section class="policy-roundtrip" data-policy-roundtrip aria-labelledby="policy-roundtrip-title">
         <div class="policy-roundtrip-heading">
           <div>
+            <h3 id="policy-roundtrip-title" class="visually-hidden">Policy round trip</h3>
             <span class="fleet-kicker">Creed Space contract round trip</span>
-            <strong id="policy-roundtrip-title">Verify signed Fleet authority before it reaches motion.</strong>
+            <strong>Verify signed Fleet authority before it reaches motion.</strong>
             <p>Load the published cross-language vector or inspect your own compatible JSON. Bounder verifies the exact Ed25519-signed payload bytes, validates the device policy, and links the policy profile to a recorded Go interlock receipt. Nothing uploaded leaves this browser.</p>
           </div>
           <div class="policy-roundtrip-actions">
@@ -201,14 +207,15 @@
           <div><dt>Payload digest</dt><dd data-policy-field="digest">Not loaded</dd></div>
           <div><dt>Recorded receipt</dt><dd data-policy-field="receipt">Not loaded</dd></div>
         </dl>
-        <p class="policy-roundtrip-note">The browser verifies the published contract and displays recorded evidence. It does not issue authority or generate a deployment receipt. <a href="data/creedspace-bounder-golden-v1.json">Signed vector</a> · <a href="data/creedspace-bounder-roundtrip-v1.json">Signed receipt</a> · <a href="schemas/creedspace-bounder-roundtrip-v1.schema.json">Receipt schema</a> · <a href="guides/INTEGRATION.md">Integration guide</a></p>
+        <p class="policy-roundtrip-note">The browser verifies the published contract and displays recorded evidence. It does not issue authority or generate a deployment receipt. <a href="data/creedspace-bounder-golden-v1.json">Signed vector</a> · <a href="data/creedspace-bounder-roundtrip-v1.json">Signed receipt</a> · <a href="schemas/creedspace-bounder-roundtrip-v1.schema.json">Receipt schema</a> · <a href="https://github.com/NellInc/Bounder/blob/main/guides/INTEGRATION.md" target="_blank" rel="noopener noreferrer">Integration guide <span aria-hidden="true">↗</span></a></p>
       </section>
 
       <section class="resilience-lab" aria-labelledby="resilience-title" hidden>
         <div class="resilience-heading">
           <div>
+            <h3 id="resilience-title" class="visually-hidden">Fleet resilience laboratory</h3>
             <span class="fleet-kicker">Fleet resilience laboratory</span>
-            <strong id="resilience-title">Introduce a failure. Watch every boundary fail safe.</strong>
+            <strong>Introduce a failure. Watch every boundary fail safe.</strong>
             <p>The local laboratory streams contract-checked Fleet events. The public demonstrator replays the same deterministic evidence when no laboratory endpoint is present. Audit signatures remain recorded rather than authenticated because this fixture includes no audit public key.</p>
           </div>
           <a class="resilience-download" href="data/bounder-fleet-evidence.v1.json" download>Download evidence</a>
@@ -226,9 +233,10 @@
               <div><dt>Proof</dt><dd data-resilience="proof">None</dd></div>
             </dl>
             <section class="continuity-proof" data-continuity-proof hidden aria-labelledby="continuity-proof-title">
+              <h4 id="continuity-proof-title" class="visually-hidden">Rollback-proof checkpoint</h4>
               <div class="continuity-proof-heading">
                 <span>Rollback-proof checkpoint</span>
-                <strong id="continuity-proof-title" data-resilience="checkpoint-status">Recorded</strong>
+                <strong data-resilience="checkpoint-status">Recorded</strong>
               </div>
               <div class="continuity-rail" aria-hidden="true">
                 <i class="continuity-local"></i><span></span><i class="continuity-fleet"></i>
@@ -277,9 +285,10 @@
 
         <aside class="decision-panel" aria-labelledby="decision-title">
           <div class="decision-header">
+            <h3 id="decision-title" class="visually-hidden">Decision receipt</h3>
             <div class="section-label">Decision receipt</div>
             <span class="receipt-source">Loading Go interlock receipt</span>
-            <strong class="decision-outcome" id="decision-title">Unavailable</strong>
+            <strong class="decision-outcome">Unavailable</strong>
             <code class="decision-code">evidence_pending</code>
             <p class="decision-reason">Waiting for signed evidence before enabling the simulator.</p>
           </div>
@@ -363,7 +372,7 @@
     </nav>
     <p class="copyright">© Bounder. Licensed under Apache-2.0.</p>
   </footer>
-  <script type="module" src="policy-roundtrip.js"></script>
+  <script type="module" src="ui/policy-roundtrip-panel.js"></script>
   <script type="module" src="simulator-bootstrap.js"></script>
 </body>
 </html>

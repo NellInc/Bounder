@@ -38,7 +38,7 @@
     "checkpoint_sequence": { "$ref": "#/$defs/nonnegative" }
   },
   "$defs": {
-    "identity": { "type": "string", "minLength": 1, "maxLength": 255, "pattern": "\\S" },
+    "identity": { "type": "string", "minLength": 1, "maxLength": 255, "pattern": "^\\S(?:[^\\n\\r\\u2028\\u2029]{0,253}\\S)?$" },
     "nonnegative": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
     "utcDateTime": {
       "type": "string",

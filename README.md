@@ -6,15 +6,21 @@ Bounder is an open reference architecture for trustworthy physical interlocks. T
 
 ## Canonical site
 
-The root directory is the canonical website:
+The root directory is the canonical website. This table is an annotated guide to
+that public surface; `canonicalPublicPaths` in `scripts/build-site.mjs` is what
+the build actually publishes.
 
 | File | Purpose |
 |---|---|
 | `index.html` | Project positioning, architecture, applications, maturity, and contribution path |
+| `site.js` | Shared root-page behaviour across every published page |
+| `continuity-evidence.js` | Signed live-continuity evidence loader, lease controller, and recorded local fallback |
 | `simulator.html` | Interactive 3D demonstration of local interlock decisions and protection rules |
 | `simulator.js` and `simulator.css` | Stable composition root and responsive simulator presentation |
+| `simulator-bootstrap.js` and `simulator-fallback.js` | Composition entry point and accessible non-WebGL evidence fallback |
 | `simulator/` | Three.js controller and bounded presentation ownership seam |
 | `simulator-contracts.js` | Stable facade for the receipt, Fleet, resilience, and transport contracts |
+| `policy-roundtrip.js` | Stable facade for strict JSON, policy signature, and round-trip verification |
 | `runtime/` and `ui/` | Narrow policy, transport, receipt, Fleet, resilience, observability, and interface seams |
 | `staging-feed.js` | Optional read-only Creed Space staging evidence loader with strict validation and deterministic fallback |
 | `data/bounder-staging-pilot.v1.json` | Recorded 100-Guardian pilot across six physical platform classes |
@@ -24,18 +30,27 @@ The root directory is the canonical website:
 | `data/creedspace-bounder-roundtrip-v1.json` | Signed receipt exported by the real Go guardian from that exact Fleet vector |
 | `schemas/` | Published receipt and receipt-bundle JSON schemas |
 | `release/` | Immutable SHA-256 integrity manifests for each reference release |
+| `assets/` | Published brand mark and wordmark |
+| `images/` | Published photography and logo bitmaps with credits |
 | `vendor/three/` | Pinned, self-hosted Three.js 0.180.0 runtime and licence |
-| `tests/` | Route-clearance, receipt-contract, and runtime-dependency invariants |
+| `tests/` | Unit and contract suites for routes, receipts, runtime and UI seams, observability, publication, and release provenance |
 | `contact.html` | Formspree-backed contact route |
 | `privacy.html` | Current website privacy notice |
 | `terms.html` | Website and research-software terms |
 | `404.html` | GitHub Pages error page |
+| `favicon.ico` | Published site icon |
 | `styles.css` | Shared responsive design system |
 | `sitemap.xml` and `robots.txt` | Search discovery |
 | `CNAME` | `www.bounder.io` custom domain |
 | `LICENSE` and `NOTICE` | Apache-2.0 project licence and attribution notice |
 
-The `docs/` directory is the preserved Squarespace-era clone. It is a legacy snapshot, not the source for new content. GitHub Pages should deploy `main` from `/`.
+The `docs/` directory is the preserved Squarespace-era clone. It is a legacy
+snapshot, not the source for new content. GitHub Pages must be configured with
+**GitHub Actions** as its source: `.github/workflows/deploy-pages.yml` runs
+`npm run verify` and publishes only the allowlisted `_site` artifact described
+under [Deployment](#deployment). Do not switch the Pages source to a branch and
+folder — that bypasses the allowlist and would publish `docs/`, `tests/`, and
+repository automation.
 
 ## Preview
 
@@ -67,7 +82,7 @@ npm run build
 npm run verify
 
 # Deterministic design lint. Triage results rather than bulk-fixing.
-npx --yes impeccable@3.2.1 detect .
+node_modules/.bin/impeccable detect .
 ```
 
 `npm run build` assembles the exact GitHub Pages payload in `_site/`. A release
@@ -78,7 +93,7 @@ source commit A. Then generate the manifest with commit A as its provenance:
 ```bash
 git commit -m "release: prepare Bounder vX.Y.Z sources"
 SOURCE_COMMIT="$(git rev-parse HEAD)"
-BOUNDER_PRODUCER_ROOT=../Bounder-from-org-agent-ergonomic npm run verify:producer
+BOUNDER_PRODUCER_ROOT=<path to a clean NellInc/Bounder-from-org checkout> npm run verify:producer
 npm run verify
 npm run release:manifest:v2 -- \
   --publisher-commit "$SOURCE_COMMIT" \
@@ -108,8 +123,12 @@ or substitute for the Go interlock. Verify clean regeneration from a current
 producer checkout:
 
 ```bash
-BOUNDER_PRODUCER_ROOT=../Bounder-from-org-agent-ergonomic npm run verify:producer
+BOUNDER_PRODUCER_ROOT=<path to a clean NellInc/Bounder-from-org checkout> npm run verify:producer
 ```
+
+The path is not discovered: `scripts/verify-producer-derivation.mjs` fails fast
+unless `BOUNDER_PRODUCER_ROOT` is set or `--producer-root` is passed, as
+`.github/workflows/receipt-drift.yml` does with `../producer`.
 
 See [`guides/INTEGRATION.md`](guides/INTEGRATION.md) for the complete Creed Space Fleet to Bounder contract and platform-adapter model.
 

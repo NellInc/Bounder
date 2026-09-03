@@ -68,12 +68,55 @@ test("recorded evidence is labelled without claiming unavailable browser authent
   assert.doesNotMatch(simulatorScript, /"Ed25519 verified by engine"/);
 });
 
-test("simulator exposes a local signed-policy verifier and WebGL-independent evidence view", () => {
+test("simulator exposes a local signed-policy verifier and WebGL-independent evidence view", async () => {
   assert.match(simulatorHtml, /data-policy-roundtrip/);
   assert.match(simulatorHtml, /data-policy-action="sample"/);
   assert.match(simulatorHtml, /data-policy-file/);
-  assert.match(simulatorHtml, /policy-roundtrip\.js/);
   assert.match(simulatorHtml, /simulator-bootstrap\.js/);
+  // The panel is mounted by the ui/ seam, not by the policy core, so loading the core in a
+  // worker or test never touches the DOM. simulator.html must load that seam directly.
+  const policyEntry = simulatorHtml.match(/<script type="module" src="([^"]*policy-roundtrip[^"]*\.js)">/)?.[1];
+  assert.equal(policyEntry, "ui/policy-roundtrip-panel.js");
+  const policyEntrySource = await readFile(new URL(`../${policyEntry}`, import.meta.url), "utf8");
+  assert.match(policyEntrySource, /bootstrapPolicyRoundTrip\(document\)/);
+  assert.doesNotMatch(await readFile(new URL("../runtime/policy/core.js", import.meta.url), "utf8"), /bootstrapPolicyRoundTrip\(document\)/);
+});
+
+test("the simulator canvas leaves vertical page scrolling to the browser on touch devices", () => {
+  assert.match(simulatorScript, /canvas\.style\.touchAction = "pan-y";/);
+  assert.match(simulatorScript, /controls\.touches = \{ ONE: THREE\.TOUCH\.ROTATE, TWO: THREE\.TOUCH\.DOLLY_ROTATE \};/);
+});
+
+test("a WebGL runtime failure releases the renderer and the canvas input surface", () => {
+  assert.match(simulatorScript, /controls\.dispose\(\);/);
+  assert.match(simulatorScript, /renderer\.dispose\(\);/);
+  assert.match(simulatorScript, /releaseCanvasInput\(\);/);
+});
+
+test("reduced motion waits on a timer instead of spinning a full-rate animation frame", () => {
+  assert.match(simulatorScript, /reduceMotionTimer = window\.setTimeout/);
+  assert.match(simulatorScript, /animationFrame === undefined && reduceMotionTimer === undefined/);
+  assert.match(simulatorScript, /if \(reduceMotionTimer !== undefined\) window\.clearTimeout\(reduceMotionTimer\);/);
+});
+
+test("every abandoned live resilience stream keeps the recorded local fallback and marks it", () => {
+  assert.match(simulatorScript, /const useRecordedEvidence = \(reason\) => \{/);
+  assert.match(simulatorScript, /stage\.dataset\.resilienceFallback = "true";\n\s+playResilienceLocally\(\);/);
+  assert.doesNotMatch(simulatorScript, /catch \(error\) \{\n\s+playResilienceLocally\(\);/);
+});
+
+test("bootstrap fails closed and always restores the render loop", () => {
+  assert.match(simulatorScript, /const showBootstrapFailure = \(\) => \{/);
+  assert.match(simulatorScript, /\} finally \{\n\s+resize\(\);\n\s+scheduleAnimation\(\);\n\s+\}/);
+  assert.match(simulatorScript, /bootstrap\(\)\.catch\(/);
+});
+
+test("Guardian names the component consistently in simulator copy", () => {
+  assert.doesNotMatch(simulatorScript, /"[^"]*\b(?:a|the|every|enrolled|older|single|Bounder) guardian\b[^"]*"/);
+  assert.match(simulatorScript, /for every enrolled Guardian\./);
+  assert.match(simulatorScript, /but older Guardian state\./);
+  assert.match(simulatorScript, /"Creed Space Fleet \+ Bounder Guardian"/);
+  assert.match(simulatorScript, /"Single Guardian"/);
 });
 
 test("rollback proof scenarios expose local and Fleet floors plus bounded authority", () => {

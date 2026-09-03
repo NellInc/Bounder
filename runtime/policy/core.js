@@ -1006,8 +1006,10 @@ export const bootstrapPolicyRoundTrip = (
   const sampleButton = panel.querySelector("[data-policy-action='sample']");
   const fileInput = panel.querySelector("[data-policy-file]");
   const status = panel.querySelector("[data-policy-status]");
+  if (!sampleButton || !fileInput || !status) return undefined;
   const statusLabel = status.querySelector("span");
   const statusMessage = status.querySelector("strong");
+  if (!statusLabel || !statusMessage) return undefined;
   const fields = Object.fromEntries([...panel.querySelectorAll("[data-policy-field]")].map((element) => [element.dataset.policyField, element]));
   const steps = Object.fromEntries([...panel.querySelectorAll("[data-policy-step]")].map((element) => [element.dataset.policyStep, element]));
   const requests = createLatestRequestGate();
@@ -1019,8 +1021,10 @@ export const bootstrapPolicyRoundTrip = (
   };
   const setStep = (name, state, message) => {
     const step = steps[name];
+    if (!step) return;
     step.dataset.state = state;
-    step.querySelector("small").textContent = message;
+    const detail = step.querySelector("small");
+    if (detail) detail.textContent = message;
   };
   const reset = () => {
     setStatus("idle", "Ready", "Choose the published vector or a local compatible file.");
@@ -1129,5 +1133,3 @@ export const bootstrapPolicyRoundTrip = (
   reset();
   return Object.freeze({ cancel: requests.cancel, inspectBytes, loadPublishedExample });
 };
-
-if (typeof document !== "undefined") bootstrapPolicyRoundTrip(document);

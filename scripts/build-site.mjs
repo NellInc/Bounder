@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import * as nodeFs from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -537,6 +537,63 @@ function reportWarning(logger, warning) {
   }
 }
 
+export const LOCK_OWNER_FILE = "owner.json";
+export const PUBLICATION_SIGNALS = Object.freeze(["SIGINT", "SIGTERM"]);
+
+// The lock records its owner so that a build killed outright -- by a CI step timeout, by a
+// Playwright webServer budget, by a machine losing power -- cannot poison every later build
+// with a directory nobody will ever remove.
+async function readLockOwnerPid(lock, fsApi) {
+  try {
+    const owner = JSON.parse(await fsApi.readFile(join(lock, LOCK_OWNER_FILE), "utf8"));
+    return Number.isSafeInteger(owner?.pid) && owner.pid > 0 ? owner.pid : null;
+  } catch {
+    return null;
+  }
+}
+
+function isProcessAlive(pid, processApi) {
+  try {
+    processApi.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // EPERM is a live process owned by another user. Only ESRCH proves the owner is gone.
+    return error?.code !== "ESRCH";
+  }
+}
+
+// Called while the lock is held, so any stage or backup sibling is necessarily an orphan from
+// an interrupted build rather than a peer's work in progress. `.failed-*` quarantine trees are
+// deliberate evidence of a rollback and are never swept.
+export async function sweepOrphanedScratch({ output, fsApi, warnings }) {
+  const parent = dirname(output);
+  const name = basename(output);
+  let entries;
+  try {
+    entries = await fsApi.readdir(parent);
+  } catch (error) {
+    warnings.push(new Error(`Could not scan for orphaned publication scratch beside ${output}`, { cause: error }));
+    return [];
+  }
+  const orphans = entries
+    .filter((entry) => entry.startsWith(`.${name}.stage-`) || entry.startsWith(`.${name}.backup-`))
+    .sort(comparePaths);
+  const removed = [];
+  for (const entry of orphans) {
+    const path = join(parent, entry);
+    try {
+      await fsApi.rm(path, { recursive: true, force: true });
+      removed.push(entry);
+    } catch (error) {
+      warnings.push(new Error(`Could not remove orphaned publication scratch: ${path}`, { cause: error }));
+    }
+  }
+  if (removed.length > 0) {
+    warnings.push(new Error(`Removed publication scratch left by an interrupted build: ${removed.join(", ")}`));
+  }
+  return removed;
+}
+
 export async function buildSite({
   root = canonicalRoot,
   output = resolve(root, "_site"),
@@ -545,7 +602,8 @@ export async function buildSite({
   maxFileBytes = MAX_PUBLIC_FILE_BYTES,
   maxEntries = MAX_PUBLIC_ENTRIES,
   maxTotalBytes = MAX_PUBLIC_TOTAL_BYTES,
-  logger = console
+  logger = console,
+  processApi = process
 } = {}) {
   const requestedRoot = resolve(root);
   const absoluteOutput = resolve(output);
@@ -610,19 +668,92 @@ export async function buildSite({
   let result;
   let failure;
   const warnings = [];
+  function removeSignalHandlers() {
+    if (!signalHandlers) return;
+    for (const [signal, handler] of signalHandlers) processApi.off(signal, handler);
+    signalHandlers = null;
+  }
+
+  const heldByAnother = () => {
+    const locked = new Error(`Another publication build holds the lock: ${lock}`);
+    locked.code = "BUILD_LOCKED";
+    return locked;
+  };
+  // Ownership begins at mkdir, not at the owner write: a writeFile that fails on a full or
+  // read-only filesystem must still leave a lock this build knows it holds and will release,
+  // rather than an ownerless directory the "no owner means held" rule blocks on forever.
+  const acquireLock = async () => {
+    await fsApi.mkdir(lock);
+    lockHeld = true;
+    await fsApi.writeFile(join(lock, LOCK_OWNER_FILE), `${JSON.stringify({ pid: processApi.pid })}\n`, { encoding: "utf8", flag: "wx" });
+  };
+  // Reclaiming a dead owner's lock by rm-then-mkdir is not atomic: two builders that both read
+  // the same dead pid would both proceed, and the second one's orphan sweep would delete the
+  // first one's live stage. A rename is the atomic claim -- exactly one builder wins it, and
+  // the loser sees ENOENT and reports the lock as held.
+  const claimStaleLock = async () => {
+    const claimed = `${lock}.stale-${randomUUID()}`;
+    try {
+      await fsApi.rename(lock, claimed);
+    } catch (error) {
+      if (error?.code === "ENOENT" || error?.code === "EEXIST" || error?.code === "ENOTEMPTY") throw heldByAnother();
+      throw error;
+    }
+    try {
+      await fsApi.rm(claimed, { recursive: true, force: true });
+    } catch (error) {
+      warnings.push(new Error(`Could not remove the reclaimed stale publication lock: ${claimed}`, { cause: error }));
+    }
+  };
+  let signalHandlers = null;
+  let promoting = false;
+  let pendingSignal = null;
 
   try {
     try {
-      await fsApi.mkdir(lock);
-      lockHeld = true;
+      await acquireLock();
     } catch (error) {
-      if (error?.code === "EEXIST") {
-        const locked = new Error(`Another publication build holds the lock: ${lock}`);
-        locked.code = "BUILD_LOCKED";
-        throw locked;
+      if (error?.code !== "EEXIST") throw error;
+      const ownerPid = await readLockOwnerPid(lock, fsApi);
+      // A lock with no recorded owner is treated as held: a peer may be between its mkdir and
+      // its owner write, and stealing the lock there would let two builds promote at once.
+      if (ownerPid === null || isProcessAlive(ownerPid, processApi)) throw heldByAnother();
+      await claimStaleLock();
+      warnings.push(new Error(`Removed a stale publication lock owned by exited process ${ownerPid}: ${lock}`));
+      try {
+        await acquireLock();
+      } catch (retryError) {
+        if (retryError?.code === "EEXIST") throw heldByAnother();
+        throw retryError;
       }
-      throw error;
     }
+
+    // Release the lock and the stage on interruption. Without this an interrupted build leaves
+    // both behind, and the next build inherits a lock it has to prove stale before it can run.
+    const onSignal = (signal) => {
+      // Promotion is the one window where cleaning up is worse than not: removing the stage
+      // mid-promotion, or dying between the backup and the rename, can leave the published
+      // artifact half-replaced. Record the signal and let the outer cleanup re-raise it once
+      // promotion has settled one way or the other.
+      if (promoting) {
+        pendingSignal = pendingSignal || signal;
+        return;
+      }
+      void (async () => {
+        try {
+          if (stage) await fsApi.rm(stage, { recursive: true, force: true });
+          if (lockHeld) await fsApi.rm(lock, { recursive: true, force: true });
+        } catch {
+          // Best effort: an interrupted build must not fail louder than the interruption.
+        }
+        removeSignalHandlers();
+        processApi.kill(processApi.pid, signal);
+      })();
+    };
+    signalHandlers = PUBLICATION_SIGNALS.map((signal) => [signal, () => onSignal(signal)]);
+    for (const [signal, handler] of signalHandlers) processApi.on(signal, handler);
+
+    await sweepOrphanedScratch({ output: absoluteOutput, fsApi, warnings });
 
     stage = await fsApi.mkdtemp(join(dirname(absoluteOutput), `.${basename(absoluteOutput)}.stage-`));
     await copySnapshot({ root: absoluteRoot, stage, snapshot, fsApi, maxFileBytes });
@@ -647,16 +778,21 @@ export async function buildSite({
     } catch (error) {
       throw new Error("Public source tree changed while the artifact was being staged", { cause: error });
     }
-    await promoteStage({
-      output: absoluteOutput,
-      stage,
-      expected: snapshot,
-      fsApi,
-      maxFileBytes,
-      maxEntries,
-      maxTotalBytes,
-      warnings
-    });
+    promoting = true;
+    try {
+      await promoteStage({
+        output: absoluteOutput,
+        stage,
+        expected: snapshot,
+        fsApi,
+        maxFileBytes,
+        maxEntries,
+        maxTotalBytes,
+        warnings
+      });
+    } finally {
+      promoting = false;
+    }
     stage = null;
     result = snapshot;
   } catch (error) {
@@ -672,16 +808,20 @@ export async function buildSite({
     }
     if (lockHeld) {
       try {
-        await fsApi.rmdir(lock);
+        await fsApi.rm(lock, { recursive: true, force: true });
       } catch (error) {
         cleanupErrors.push(new Error(`Could not release publication lock: ${lock}`, { cause: error }));
       }
     }
+    removeSignalHandlers();
 
     if (failure && cleanupErrors.length) failure = new AggregateError([failure, ...cleanupErrors], "Publication build and cleanup failed");
     else if (!failure) warnings.push(...cleanupErrors);
   }
 
+  // A signal deferred through promotion is re-raised only now, with the stage and lock already
+  // cleaned up by the block above and the handlers already removed.
+  if (pendingSignal) processApi.kill(processApi.pid, pendingSignal);
   if (failure) throw failure;
   for (const warning of warnings) reportWarning(logger, warning);
   try {

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -18,7 +18,8 @@ export const HISTORICAL_MANIFEST_SHA256 = Object.freeze({
   "release/bounder-reference-v1.0.2.manifest.json": "9aeabbc5da421e53535281cc67a59706ad0ccad3a67b7006dc1380977a68c785",
   "release/bounder-reference-v1.0.3.manifest.json": "656d39ffdf319e59098a0f42e52a72f62bb50855eba3e7bff5aeb228926ba7b4",
   "release/bounder-reference-v1.0.4.manifest.json": "302f5023a1769658e29ec8298e7405e2ac8762fe5bf3d805cf8ffd5fcf38d8b9",
-  "release/bounder-reference-v1.1.0.manifest.json": "71dee2bdf9ab446d677d203fca8b93842a8c63b07109e86bc2fee1c07eca0556"
+  "release/bounder-reference-v1.1.0.manifest.json": "71dee2bdf9ab446d677d203fca8b93842a8c63b07109e86bc2fee1c07eca0556",
+  "release/bounder-reference-v1.1.1.manifest.json": "6a7524407d25ff0d4d5783f07a01c76e0ee686e1107c3f10dfac6539f17ea73b"
 });
 
 const execFileAsync = promisify(execFile);
@@ -38,6 +39,20 @@ export async function assertHistoricalManifests(root, expectedDigests = HISTORIC
   for (const [path, expected] of Object.entries(expectedDigests)) {
     const bytes = await readFile(join(root, path));
     if (hash(bytes) !== expected) throw new Error(`historical manifest changed: ${path}`);
+  }
+  // Completeness is derived from the release directory rather than remembered by hand. A
+  // manifest sealed by an earlier release but never added to the map above would otherwise stay
+  // silently mutable, which is exactly the maintenance step that gets skipped.
+  let sealed;
+  try {
+    sealed = await readdir(join(root, "release"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+  for (const name of sealed.filter((entry) => entry.endsWith(".manifest.json")).sort(compare)) {
+    const path = `release/${name}`;
+    if (!Object.hasOwn(expectedDigests, path)) throw new Error(`sealed manifest is not pinned as immutable: ${path}`);
   }
 }
 

@@ -35,6 +35,19 @@ fixtures, bounded cross-origin continuity fetching, fail-closed UI states,
 self-hosted runtime dependencies, immutable release manifests, and an allowlisted
 deployment artifact.
 
+Every published page also carries a `Content-Security-Policy` `<meta>` element
+with a `default-src 'self'` fallback, `object-src 'none'`, `style-src 'self'`,
+and a `script-src` that allows each inline script by its own SHA-256 hash rather
+than by `'unsafe-inline'`. `tests/page-security.test.js` asserts those
+directives, recomputes every inline-script hash, rejects stale hashes and
+reintroduced inline handlers or style attributes, and requires the configured
+continuity-feed origin to match the origin `connect-src` permits.
+
+A meta policy is the only enforcement route available here, because GitHub Pages
+cannot emit response headers. Directives that a meta policy cannot carry —
+notably `frame-ancestors` and `report-to` — are therefore not delivered, so this
+repository does not claim clickjacking protection or CSP violation reporting.
+
 ## Explicit non-guarantees
 
 This repository has no current evidence of certification, production deployment, flight testing, current Raspberry Pi or Pixhawk compatibility, radio-link resilience, or compliance with a specific aviation regime. Passing software tests does not establish any of those properties.

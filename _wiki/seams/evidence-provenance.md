@@ -3,12 +3,12 @@
 <!-- wiki:type = seam -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-08-31 -->
+<!-- wiki:updated = 2026-09-03 -->
 <!-- wiki:status = active -->
 
 ## Summary
 
-The evidence seam connects governance, the Go decision producer, the browser verifier, the static publication pipeline, and live continuity reporting. Its purpose is to preserve artifact identity and proof meaning across every handoff. Historical manifest v1 records retain their original publisher-oriented `canonical_interlock` semantics. Manifest v2 and the producer-derivation receipt identify the private decision producer and public publisher separately. (`README.md:94-136`; `scripts/verify-producer-derivation.mjs:101-137`; `scripts/generate-release-manifest-v2.mjs:103-170`)
+The evidence seam connects governance, the Go decision producer, the browser verifier, the static publication pipeline, and live continuity reporting. Its purpose is to preserve artifact identity and proof meaning across every handoff. Historical manifest v1 records retain their original publisher-oriented `canonical_interlock` semantics. Manifest v2 and the producer-derivation receipt identify the private decision producer and public publisher separately. (`README.md:135-149 "Release manifest v2"`; `scripts/verify-producer-derivation.mjs:101-137`; `scripts/generate-release-manifest-v2.mjs:103-170`)
 
 ## Artifact Lineage
 
@@ -34,7 +34,7 @@ allowlisted publication artifact
 deployed bytes + time-bounded live observations
 ```
 
-The website’s published fixtures include deterministic receipts, Fleet evidence, a signed policy vector, a signed round-trip record, and schemas. (`README.md:16-25`) The browser verifies strict structures, bounded transports, selected signatures, relationships, and freshness according to the surface being inspected. (`guides/INTEGRATION.md:43-53`; `SECURITY.md:42-49`)
+The website’s published fixtures include deterministic receipts, Fleet evidence, a signed policy vector, a signed round-trip record, and schemas. (`README.md:26-32 "creedspace-bounder-roundtrip-v1.json"`) The browser verifies strict structures, bounded transports, selected signatures, relationships, and freshness according to the surface being inspected. (`guides/INTEGRATION.md:47-57 "Inspection is entirely local"`; `SECURITY.md:55-62 "cannot authenticate those signatures"`)
 
 ## Proof Lattice
 
@@ -52,7 +52,7 @@ Each row is a separate claim class. Evidence may move upward only through the na
 | Physical safety | Device hazard analysis, safe-state design, hardware-in-the-loop tests, operational controls | Independent review and applicable certification | Established by any website gate |
 | Human, legal, rights, or regulatory assurance | Named competent authority and review record | Current independent approval | Established by software tests |
 
-The repository already separates software evidence from physical certification in its security boundary. (`SECURITY.md:38-56`) The target lattice extends that separation to producer, publisher, deployment, and live-operation claims.
+The repository already separates software evidence from physical certification in its security boundary. (`SECURITY.md:51-62 "Passing software tests does not establish any of those properties."`; `SECURITY.md:64-69 "Do not connect this reference site or its simulator to live hardware."`) The target lattice extends that separation to producer, publisher, deployment, and live-operation claims.
 
 ## Identity Tuple
 
@@ -98,16 +98,18 @@ Manifest v2 replaces the overloaded field for new releases with explicit records
   },
   "evidence_producers": [
     {
-      "role": "bounder-decision-engine",
+      "role": "decision_producer",
       "repository": "...",
       "commit": "...",
-      "generator": "scripts/generate-web-receipts.sh",
+      "generator": "scripts/export-website-artifacts.py@1",
       "outputs": ["..."]
     }
   ],
   "files": ["..."]
 }
 ```
+
+The `role` string is load-bearing rather than illustrative: `scripts/lib/release-producer.mjs` resolves the producer by exactly `decision_producer`, so a manifest that names the role anything else is rejected by the drift workflow. (`scripts/lib/release-producer.mjs:10 "PRODUCER_ROLE"`)
 
 The schema uses exact keys, bounded arrays and strings, safe paths, canonical timestamps, full commit identifiers, and lowercase SHA-256 digests. It separately records deployment and live observation as unverified in a local candidate. (`schemas/bounder-release-manifest-v2.schema.json:1-117`; `scripts/generate-release-manifest-v2.mjs:101-170`)
 
@@ -124,7 +126,7 @@ The derivation gate performs this sequence:
 5. Run producer tests and website contract tests.
 6. Emit a compact machine-readable result containing checked identities, hashes, commands, and exit status.
 
-The workflow pins the producer commit and performs full regeneration when its private read credential is available. Runs without that credential label producer proof unavailable rather than comparing the website with itself. (`.github/workflows/receipt-drift.yml:52-66`)
+The workflow no longer pins the producer commit. It resolves it from the newest sealed manifest in `release/` through `scripts/lib/release-producer.mjs`, which requires a manifest v2 record and a full forty-character `decision_producer` commit, so a manifest bump moves the verified ref instead of leaving the gate attesting to a superseded tree. That resolution step reads only public repository files and therefore runs for fork pull requests too. The private read token is scoped to the single producer-checkout step rather than declared job-wide, so it never enters the environment of a step that executes pull-request-head code. Full regeneration runs only when the credential is present; runs without it label producer proof unavailable rather than comparing the website with itself. (`.github/workflows/receipt-drift.yml:55-61 "release-producer.mjs"`; `.github/workflows/receipt-drift.yml:62-72 "Scoped to the one step that consumes it."`; `.github/workflows/receipt-drift.yml:73-79 "Producer derivation is unverified in this run"`; `scripts/lib/release-producer.mjs:33-52 "resolveProducerCommit"`)
 
 ## Evidence Accretion
 
@@ -145,8 +147,8 @@ This seam is working when a receipt displayed in the browser can be traced mecha
 
 ## Provenance
 
-- Sources consulted: `README.md`, `guides/INTEGRATION.md`, `SECURITY.md`, `schemas/bounder.receipt.v1.schema.json`, `simulator-contracts.js`, `scripts/generate-release-manifest.js`, `.github/workflows/receipt-drift.yml`
-- Last verified against sources: 2026-08-31
+- Sources consulted: `README.md`, `guides/INTEGRATION.md`, `SECURITY.md`, `schemas/bounder.receipt.v1.schema.json`, `simulator-contracts.js`, `scripts/generate-release-manifest.js`, `scripts/generate-release-manifest-v2.mjs`, `scripts/verify-producer-derivation.mjs`, `scripts/lib/release-producer.mjs`, `.github/workflows/receipt-drift.yml`
+- Last verified against sources: 2026-09-03
 
 ## See Also
 

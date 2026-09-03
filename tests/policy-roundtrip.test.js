@@ -741,3 +741,63 @@ test("a stale async inspection cannot overwrite newer authority or UI state", as
   assert.equal(ui.sampleButton.disabled, false);
   controller.cancel();
 });
+
+const partialPolicyPanel = ({ omit = [], statusChildren = ["span", "strong"], omitSteps = [], stepDetail = true } = {}) => {
+  const makeText = () => ({ textContent: "" });
+  const status = {
+    dataset: {},
+    querySelector: (selector) => (statusChildren.includes(selector) ? makeText() : undefined)
+  };
+  const sampleButton = { disabled: false, addEventListener() {} };
+  const fileInput = { files: [], value: "", addEventListener() {} };
+  const available = {
+    "[data-policy-action='sample']": sampleButton,
+    "[data-policy-file]": fileInput,
+    "[data-policy-status]": status
+  };
+  const steps = ["envelope", "signature", "policy", "receipt"]
+    .filter((key) => !omitSteps.includes(key))
+    .map((key) => ({
+      dataset: { policyStep: key },
+      querySelector: () => (stepDetail ? makeText() : undefined)
+    }));
+  const panel = {
+    querySelector: (selector) => (omit.includes(selector) ? undefined : available[selector]),
+    querySelectorAll: (selector) => {
+      if (selector === "[data-policy-field]") return [];
+      if (selector === "[data-policy-step]") return steps;
+      return [];
+    }
+  };
+  return { querySelector: (selector) => (selector === "[data-policy-roundtrip]" ? panel : undefined) };
+};
+
+test("the policy panel bootstrap degrades instead of throwing when the panel is absent", () => {
+  const root = { querySelector: () => undefined };
+  assert.equal(bootstrapPolicyRoundTrip(root), undefined);
+});
+
+for (const selector of ["[data-policy-action='sample']", "[data-policy-file]", "[data-policy-status]"]) {
+  test(`the policy panel bootstrap degrades when ${selector} is missing`, () => {
+    assert.equal(bootstrapPolicyRoundTrip(partialPolicyPanel({ omit: [selector] })), undefined);
+  });
+}
+
+for (const child of ["span", "strong"]) {
+  test(`the policy panel bootstrap degrades when the status ${child} is missing`, () => {
+    const statusChildren = ["span", "strong"].filter((name) => name !== child);
+    assert.equal(bootstrapPolicyRoundTrip(partialPolicyPanel({ statusChildren })), undefined);
+  });
+}
+
+test("a partially rendered step list leaves the panel usable rather than aborting module evaluation", () => {
+  const controller = bootstrapPolicyRoundTrip(partialPolicyPanel({ omitSteps: ["receipt"] }));
+  assert.equal(typeof controller?.loadPublishedExample, "function");
+  controller.cancel();
+});
+
+test("a step without its detail element still records the step state", () => {
+  const controller = bootstrapPolicyRoundTrip(partialPolicyPanel({ stepDetail: false }));
+  assert.equal(typeof controller?.loadPublishedExample, "function");
+  controller.cancel();
+});

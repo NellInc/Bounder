@@ -6,6 +6,7 @@ import { basename, dirname, join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import {
+  LOCK_OWNER_FILE,
   MAX_PUBLIC_FILE_BYTES,
   assertEquivalentTrees,
   buildSite,
@@ -15,6 +16,7 @@ import {
   inspectPublicTree,
   inspectTree,
   runBuildSiteCli,
+  sweepOrphanedScratch,
   validateSafeRelativePath
 } from "../scripts/build-site.mjs";
 
@@ -643,4 +645,326 @@ test("the injectable publication CLI runner records a failing process status", a
 
   assert.equal(result, 1);
   assert.equal(processApi.exitCode, 1);
+});
+
+test("a lock whose owner process has exited is stale and does not poison every later build", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  const lock = `${fixture.output}.lock`;
+  const exitedPid = 999_001;
+  await fs.mkdir(lock);
+  await fs.writeFile(join(lock, LOCK_OWNER_FILE), `${JSON.stringify({ pid: exitedPid })}\n`);
+
+  const warnings = [];
+  const processApi = {
+    pid: process.pid,
+    on() {},
+    off() {},
+    kill(pid) {
+      // The build killed by a webServer timeout never ran its cleanup; its pid is gone.
+      if (pid === exitedPid) {
+        const error = new Error("no such process");
+        error.code = "ESRCH";
+        throw error;
+      }
+      return true;
+    }
+  };
+  await buildSite({
+    ...fixture,
+    publicPaths: ["public"],
+    processApi,
+    logger: { log() {}, warn: (warning) => warnings.push(warning) }
+  });
+
+  assert.equal(await fs.readFile(join(fixture.output, "public", "file.txt"), "utf8"), "new artifact\n");
+  await assert.rejects(fs.lstat(lock), { code: "ENOENT" });
+  assert.ok(
+    warnings.some((warning) => String(warning?.message ?? warning).includes(`stale publication lock owned by exited process ${exitedPid}`)),
+    "removing a stale lock must be reported, not silent"
+  );
+});
+
+test("a lock held by a live owner, or carrying no owner record at all, still excludes a builder", async (t) => {
+  const live = await makeFixture();
+  t.after(() => fs.rm(live.base, { recursive: true, force: true }));
+  await fs.mkdir(`${live.output}.lock`);
+  await fs.writeFile(join(`${live.output}.lock`, LOCK_OWNER_FILE), `${JSON.stringify({ pid: process.pid })}\n`);
+  await assert.rejects(
+    buildSite({ ...live, publicPaths: ["public"], logger: quietLogger }),
+    (error) => error?.code === "BUILD_LOCKED"
+  );
+  assert.equal(await fs.readFile(join(live.output, "sentinel.txt"), "utf8"), "prior artifact\n");
+
+  // A peer between its mkdir and its owner write must never have its lock stolen.
+  const unowned = await makeFixture();
+  t.after(() => fs.rm(unowned.base, { recursive: true, force: true }));
+  await fs.mkdir(`${unowned.output}.lock`);
+  await assert.rejects(
+    buildSite({ ...unowned, publicPaths: ["public"], logger: quietLogger }),
+    (error) => error?.code === "BUILD_LOCKED"
+  );
+  assert.equal(await fs.readFile(join(unowned.output, "sentinel.txt"), "utf8"), "prior artifact\n");
+  await fs.lstat(`${unowned.output}.lock`);
+
+  // An owner record that is not a usable pid is treated the same conservative way.
+  const malformed = await makeFixture();
+  t.after(() => fs.rm(malformed.base, { recursive: true, force: true }));
+  await fs.mkdir(`${malformed.output}.lock`);
+  await fs.writeFile(join(`${malformed.output}.lock`, LOCK_OWNER_FILE), "{not json\n");
+  await assert.rejects(
+    buildSite({ ...malformed, publicPaths: ["public"], logger: quietLogger }),
+    (error) => error?.code === "BUILD_LOCKED"
+  );
+});
+
+test("acquiring the lock sweeps orphaned stage and backup scratch while preserving quarantined evidence", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  const name = basename(fixture.output);
+  const orphanStage = join(fixture.base, `.${name}.stage-abc123`);
+  const orphanBackup = join(fixture.base, `.${name}.backup-def456`);
+  const quarantine = join(fixture.base, `.${name}.failed-ghi789`);
+  const unrelated = join(fixture.base, ".other.stage-zzz");
+  for (const directory of [orphanStage, orphanBackup, quarantine, unrelated]) await fs.mkdir(directory);
+  await fs.writeFile(join(quarantine, "artifact.txt"), "rolled back evidence\n");
+  await fs.writeFile(join(orphanStage, "leftover.txt"), "interrupted\n");
+
+  const warnings = [];
+  await buildSite({
+    ...fixture,
+    publicPaths: ["public"],
+    logger: { log() {}, warn: (warning) => warnings.push(warning) }
+  });
+
+  await assert.rejects(fs.lstat(orphanStage), { code: "ENOENT" });
+  await assert.rejects(fs.lstat(orphanBackup), { code: "ENOENT" });
+  assert.equal(await fs.readFile(join(quarantine, "artifact.txt"), "utf8"), "rolled back evidence\n");
+  await fs.lstat(unrelated);
+  const swept = warnings.map((warning) => String(warning?.message ?? warning)).join("\n");
+  assert.match(swept, /Removed publication scratch left by an interrupted build/);
+  assert.match(swept, /\.site\.stage-abc123/);
+  assert.match(swept, /\.site\.backup-def456/);
+});
+
+test("orphan sweep reports rather than throws when the scratch cannot be scanned or removed", async () => {
+  const warnings = [];
+  const unscannable = {
+    ...defaultFileSystem,
+    async readdir() {
+      throw new Error("readdir refused");
+    }
+  };
+  assert.deepEqual(await sweepOrphanedScratch({ output: "/nowhere/site", fsApi: unscannable, warnings }), []);
+  assert.match(warnings[0].message, /Could not scan for orphaned publication scratch/);
+
+  const unremovable = {
+    ...defaultFileSystem,
+    async readdir() {
+      return [".site.stage-one", ".site.failed-two", "site"];
+    },
+    async rm() {
+      throw new Error("rm refused");
+    }
+  };
+  const removalWarnings = [];
+  assert.deepEqual(await sweepOrphanedScratch({ output: "/nowhere/site", fsApi: unremovable, warnings: removalWarnings }), []);
+  assert.equal(removalWarnings.length, 1);
+  assert.match(removalWarnings[0].message, /Could not remove orphaned publication scratch: .*\.site\.stage-one/);
+});
+
+test("an interrupted build releases its lock and stage before the signal reaches its default disposition", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  const listeners = new Map();
+  const raised = [];
+  const copyStarted = deferred();
+  const releaseCopy = deferred();
+  let paused = false;
+  const pausingFs = {
+    ...defaultFileSystem,
+    async copyFile(...args) {
+      if (!paused) {
+        paused = true;
+        copyStarted.resolve();
+        await releaseCopy.promise;
+      }
+      return defaultFileSystem.copyFile(...args);
+    }
+  };
+  const processApi = {
+    pid: process.pid,
+    on(signal, handler) { listeners.set(signal, handler); },
+    off(signal, handler) { if (listeners.get(signal) === handler) listeners.delete(signal); },
+    kill(pid, signal) {
+      if (signal === 0) return true;
+      raised.push(signal);
+      return true;
+    }
+  };
+
+  const build = buildSite({ ...fixture, publicPaths: ["public"], fsApi: pausingFs, processApi, logger: quietLogger });
+  await copyStarted.promise;
+  assert.deepEqual([...listeners.keys()].sort(), ["SIGINT", "SIGTERM"]);
+  const stageBefore = (await fs.readdir(fixture.base)).find((entry) => entry.startsWith(".site.stage-"));
+  assert.ok(stageBefore, "the interrupted build had no stage to clean");
+
+  listeners.get("SIGTERM")("SIGTERM");
+  for (let attempt = 0; attempt < 200 && raised.length === 0; attempt += 1) await new Promise((r) => setImmediate(r));
+  assert.deepEqual(raised, ["SIGTERM"], "the handler must re-raise so the process still dies of the signal");
+  await assert.rejects(fs.lstat(`${fixture.output}.lock`), { code: "ENOENT" });
+  assert.equal((await fs.readdir(fixture.base)).some((entry) => entry.startsWith(".site.stage-")), false);
+  assert.equal(listeners.size, 0, "signal handlers must be removed once they have run");
+
+  releaseCopy.resolve();
+  await build.catch(() => {});
+});
+
+test("a completed build leaves no signal handlers behind", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  const listeners = new Map();
+  const processApi = {
+    pid: process.pid,
+    on(signal, handler) { listeners.set(signal, handler); },
+    off(signal, handler) { if (listeners.get(signal) === handler) listeners.delete(signal); },
+    kill() { return true; }
+  };
+  await buildSite({ ...fixture, publicPaths: ["public"], processApi, logger: quietLogger });
+  assert.equal(listeners.size, 0);
+});
+
+test("a lock whose owner record cannot be written is still owned and still released", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  const lock = `${fixture.output}.lock`;
+  const refusingFs = {
+    ...defaultFileSystem,
+    async writeFile(path, ...rest) {
+      // The filesystem fills up, or turns read-only, between mkdir and the owner write.
+      if (basename(String(path)) === LOCK_OWNER_FILE) {
+        throw Object.assign(new Error("no space left on device"), { code: "ENOSPC" });
+      }
+      return defaultFileSystem.writeFile(path, ...rest);
+    }
+  };
+
+  await assert.rejects(
+    buildSite({ ...fixture, publicPaths: ["public"], fsApi: refusingFs, logger: quietLogger }),
+    (error) => error?.code === "ENOSPC" || /no space left on device/.test(String(error?.message))
+  );
+  // Without ownership from mkdir onward this leaves an ownerless directory, which the
+  // conservative "no owner means held" rule would then treat as held by a live peer forever.
+  await assert.rejects(fs.lstat(lock), { code: "ENOENT" });
+  await assertPriorArtifactPreserved(fixture);
+
+  // The very next build must be able to run.
+  await buildSite({ ...fixture, publicPaths: ["public"], logger: quietLogger });
+  assert.equal(await fs.readFile(join(fixture.output, "public", "file.txt"), "utf8"), "new artifact\n");
+});
+
+test("only one of two builders reclaims the same dead owner's lock", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  const lock = `${fixture.output}.lock`;
+  const exitedPid = 999_002;
+  await fs.mkdir(lock);
+  await fs.writeFile(join(lock, LOCK_OWNER_FILE), `${JSON.stringify({ pid: exitedPid })}\n`);
+
+  const processApi = {
+    pid: process.pid,
+    on() {},
+    off() {},
+    kill(pid) {
+      if (pid === exitedPid) throw Object.assign(new Error("no such process"), { code: "ESRCH" });
+      return true;
+    }
+  };
+  // Both builders read the same dead pid before either claims it. A non-atomic rm-then-mkdir
+  // reclaim lets both through, and the loser's orphan sweep then deletes the winner's stage.
+  const reachedClaim = deferred();
+  const releaseClaim = deferred();
+  let paused = false;
+  const racingFs = {
+    ...defaultFileSystem,
+    async rename(source, target) {
+      if (!paused && String(target).includes(".lock.stale-")) {
+        paused = true;
+        reachedClaim.resolve();
+        await releaseClaim.promise;
+      }
+      return defaultFileSystem.rename(source, target);
+    }
+  };
+
+  const first = buildSite({ ...fixture, publicPaths: ["public"], fsApi: racingFs, processApi, logger: quietLogger });
+  await reachedClaim.promise;
+  const second = buildSite({ ...fixture, publicPaths: ["public"], processApi, logger: quietLogger });
+  const secondOutcome = await second.then(() => null, (error) => error);
+  releaseClaim.resolve();
+  const firstOutcome = await first.then(() => null, (error) => error);
+
+  // Exactly one builder wins the claim, whichever rename lands first; the loser is told the
+  // lock is held rather than proceeding to sweep away the winner's live stage.
+  const outcomes = [firstOutcome, secondOutcome];
+  const losers = outcomes.filter((outcome) => outcome !== null);
+  assert.equal(losers.length, 1, `expected exactly one builder to lose the claim, got ${outcomes.map((o) => o?.code ?? "success").join(", ")}`);
+  assert.equal(losers[0].code, "BUILD_LOCKED");
+
+  assert.equal(await fs.readFile(join(fixture.output, "public", "file.txt"), "utf8"), "new artifact\n");
+  const residue = await fs.readdir(fixture.base);
+  assert.equal(residue.some((entry) => entry.includes(".lock.stale-")), false, "a reclaimed stale lock was left behind");
+  assert.equal(residue.some((entry) => entry === basename(lock)), false, "publication lock leaked");
+});
+
+test("a signal during promotion is deferred so the artifact is never left half-promoted", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  const listeners = new Map();
+  const raised = [];
+  const processApi = {
+    pid: process.pid,
+    on(signal, handler) { listeners.set(signal, handler); },
+    off(signal, handler) { if (listeners.get(signal) === handler) listeners.delete(signal); },
+    kill(pid, signal) {
+      if (signal === 0) return true;
+      raised.push(signal);
+      return true;
+    }
+  };
+
+  const lockPath = `${fixture.output}.lock`;
+  let signalledDuringPromotion = false;
+  let stageAtSignal = null;
+  const promotionFs = {
+    ...defaultFileSystem,
+    async rename(source, target) {
+      if (!signalledDuringPromotion && target === fixture.output && basename(source).startsWith(".site.stage-")) {
+        signalledDuringPromotion = true;
+        stageAtSignal = source;
+        // Ctrl-C lands in the one window where removing the stage would destroy the promotion.
+        listeners.get("SIGINT")("SIGINT");
+        // Give an unguarded handler every chance to run its cleanup to completion, so this
+        // asserts the guard rather than winning a race against it.
+        for (let attempt = 0; attempt < 100; attempt += 1) await new Promise((r) => setImmediate(r));
+        await new Promise((r) => setTimeout(r, 50));
+        assert.equal(await fs.lstat(source).then(() => true, () => false), true, "the stage was removed mid-promotion");
+        assert.equal(await fs.lstat(lockPath).then(() => true, () => false), true, "the lock was released mid-promotion");
+        assert.deepEqual(raised, [], "the signal was re-raised before promotion finished");
+      }
+      return defaultFileSystem.rename(source, target);
+    }
+  };
+
+  await buildSite({ ...fixture, publicPaths: ["public"], fsApi: promotionFs, processApi, logger: quietLogger });
+
+  assert.equal(signalledDuringPromotion, true, "the fixture never exercised the promotion window");
+  // Promotion completed: the artifact is whole, not half-replaced.
+  assert.equal(await fs.readFile(join(fixture.output, "public", "file.txt"), "utf8"), "new artifact\n");
+  assert.equal(await fs.readFile(join(fixture.output, "public", "nested", "child.txt"), "utf8"), "child\n");
+  // Only then is the deferred signal re-raised, after the lock and stage are cleaned up.
+  assert.deepEqual(raised, ["SIGINT"], "the deferred signal was never re-raised");
+  await assert.rejects(fs.lstat(lockPath), { code: "ENOENT" });
+  await assert.rejects(fs.lstat(stageAtSignal), { code: "ENOENT" });
+  assert.equal(listeners.size, 0);
 });

@@ -93,8 +93,10 @@ authority owner, touched surfaces, and required proof before editing.
 
 ## Repository Boundary
 
-1. Root HTML, CSS, JavaScript, `data/`, `schemas/`, `guides/`, and `vendor/` are the
-   canonical site source.
+1. Root HTML, CSS and JavaScript plus `assets/`, `data/`, `guides/`, `images/`,
+   `release/`, `runtime/`, `schemas/`, `simulator/`, `ui/`, and `vendor/` are the
+   canonical site source. `canonicalPublicPaths` in `scripts/build-site.mjs` is the
+   authority, and any divergence from it is a bug in this list.
 2. `docs/` is a preserved Squarespace-era snapshot. Do not update it or copy new work
    into it.
 3. `_site/` is a generated, ignored, byte-checked publication artifact. Never edit it.
@@ -191,7 +193,8 @@ untouched.
 
 Root pages use the tokens in `styles.css`: `--font-sans`, `--font-display`,
 `--font-mono`, the shared color variables, spacing variables, and motion variables.
-Run `npx --yes impeccable@3.2.1 detect .` after frontend work and triage every finding.
+Run `node_modules/.bin/impeccable detect .` after frontend work and triage every finding.
+Impeccable is a lockfile-pinned devDependency, so the command needs no network fetch.
 
 ## External Dependencies
 

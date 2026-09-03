@@ -53,6 +53,8 @@ const continuityProof = root.querySelector("[data-continuity-proof]");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const initialParameters = new URLSearchParams(window.location.search);
 
+const RESILIENCE_RECEIPT_ENGINE = "Creed Space Fleet + Bounder Guardian";
+
 const css = getComputedStyle(document.documentElement);
 const cssColour = (name) => css.getPropertyValue(name).trim();
 const colours = {
@@ -98,6 +100,13 @@ controls.dampingFactor = 0.06;
 controls.minDistance = 11;
 controls.maxDistance = 34;
 controls.maxPolarAngle = Math.PI * 0.48;
+// OrbitControls sets touch-action:none in its constructor, which traps page scrolling on touch
+// devices because the canvas spans the full width of the embedded stage. Give vertical panning
+// back to the browser: a one-finger vertical swipe scrolls the page (OrbitControls ends the
+// gesture through its own pointercancel handler), horizontal drag still orbits, and two fingers
+// still dolly and tilt.
+canvas.style.touchAction = "pan-y";
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
 const navigationCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE"]);
 const pressedNavigationKeys = new Set();
@@ -117,24 +126,36 @@ const focusWithoutScroll = (element) => {
   }
 };
 
-canvas.addEventListener("pointerdown", () => focusWithoutScroll(canvas));
-canvas.addEventListener("keydown", (event) => {
+const handleCanvasPointerDown = () => focusWithoutScroll(canvas);
+const handleCanvasKeyDown = (event) => {
   if (!navigationCodes.has(event.code)) return;
   event.preventDefault();
   pressedNavigationKeys.add(event.code);
   stage.dataset.lastNavigationKey = event.code;
   syncNavigationState();
-});
-canvas.addEventListener("keyup", (event) => {
+};
+const handleCanvasKeyUp = (event) => {
   if (!navigationCodes.has(event.code)) return;
   event.preventDefault();
   pressedNavigationKeys.delete(event.code);
   syncNavigationState();
-});
-canvas.addEventListener("blur", () => {
+};
+const handleCanvasBlur = () => {
   pressedNavigationKeys.clear();
   syncNavigationState();
-});
+};
+
+canvas.addEventListener("pointerdown", handleCanvasPointerDown);
+canvas.addEventListener("keydown", handleCanvasKeyDown);
+canvas.addEventListener("keyup", handleCanvasKeyUp);
+canvas.addEventListener("blur", handleCanvasBlur);
+
+const releaseCanvasInput = () => {
+  canvas.removeEventListener("pointerdown", handleCanvasPointerDown);
+  canvas.removeEventListener("keydown", handleCanvasKeyDown);
+  canvas.removeEventListener("keyup", handleCanvasKeyUp);
+  canvas.removeEventListener("blur", handleCanvasBlur);
+};
 
 const updateCameraNavigation = (delta) => {
   if (pressedNavigationKeys.size === 0) return;
@@ -781,7 +802,7 @@ const operatorTourSteps = Object.freeze([
     scenario: "safe",
     fleet: true,
     title: "Project one rule across the fleet",
-    summary: "Creed Space signs a separate subject-bound envelope for every enrolled guardian. Each Bounder instance verifies and enforces locally.",
+    summary: "Creed Space signs a separate subject-bound envelope for every enrolled Guardian. Each Bounder instance verifies and enforces locally.",
     proof: "The Fleet panel reports one hundred distinct software Guardians across six platform classes and preserves each local decision receipt."
   },
   {
@@ -813,7 +834,7 @@ const operatorTourSteps = Object.freeze([
     resilience: "coherent-snapshot-rollback",
     fleet: true,
     title: "Reject a coherent older snapshot",
-    summary: "Fleet's signed receipt floor exposes a locally valid but older guardian state. Authority remains frozen through reconciliation.",
+    summary: "Fleet's signed receipt floor exposes a locally valid but older Guardian state. Authority remains frozen through reconciliation.",
     proof: "Use Step in the resilience timeline. The local floor trails Fleet, the hold persists, and recovery requires a newer policy plus fresh checkpoint."
   }
 ]);
@@ -969,7 +990,7 @@ const applyResilienceEvent = (event) => {
   renderContinuityProof(index);
   markAffectedGuardians(event.device_id || selectedResilience.affected_device);
   receiptSource.textContent = "Fleet resilience evidence";
-  receiptFields.engine.textContent = "Creed Space Fleet + Bounder guardian";
+  receiptFields.engine.textContent = RESILIENCE_RECEIPT_ENGINE;
   receiptFields.signature.textContent = FLEET_AUDIT_AUTHENTICATION.label;
   receiptFields.policy.textContent = fleetEvidence.policy_profile;
   receiptFields.issuer.textContent = "creed.space/fleet";
@@ -1025,7 +1046,7 @@ const resetResilience = () => {
     reasonElement.textContent = selectedResilience.fault;
     adapterOutput.textContent = "No state change yet";
     receiptSource.textContent = "Fleet resilience evidence";
-    receiptFields.engine.textContent = "Creed Space Fleet + Bounder guardian";
+    receiptFields.engine.textContent = RESILIENCE_RECEIPT_ENGINE;
     receiptFields.signature.textContent = FLEET_AUDIT_AUTHENTICATION.label;
     receiptFields.policy.textContent = fleetEvidence.policy_profile;
     receiptFields.issuer.textContent = "creed.space/fleet";
@@ -1057,6 +1078,15 @@ const playResilienceLocally = () => {
   resilienceFields.transport.textContent = pending === 0 ? "Evidence recorded" : "Deterministic evidence replay";
 };
 
+// Every path that attempted a live stream and abandoned it marks the fallback, so an operator can
+// tell "no live stream was configured" apart from "the configured stream could not be opened".
+// Deliberately unguarded: the synchronous callers run before a stream generation exists.
+const useRecordedEvidence = (reason) => {
+  console.warn("Bounder resilience stream unavailable; continuing with recorded evidence", reason);
+  stage.dataset.resilienceFallback = "true";
+  playResilienceLocally();
+};
+
 const runResilience = () => {
   if (!selectedResilience) return;
   resetResilience();
@@ -1066,10 +1096,16 @@ const runResilience = () => {
   try {
     endpoint = resolveResilienceStreamURL(configuredEndpoint, window.location.href, scenario.id);
   } catch (error) {
-    console.warn("Bounder resilience stream configuration is invalid; using recorded evidence", error);
+    useRecordedEvidence(error);
+    return;
   }
-  if (!endpoint || !("EventSource" in window)) {
+  if (!endpoint) {
+    // No live stream was configured: recorded evidence is the primary source, not a fallback.
     playResilienceLocally();
+    return;
+  }
+  if (!("EventSource" in window)) {
+    useRecordedEvidence(new Error("EventSource is unavailable in this browser"));
     return;
   }
 
@@ -1090,7 +1126,7 @@ const runResilience = () => {
   try {
     source = new EventSource(endpoint);
   } catch (error) {
-    playResilienceLocally();
+    useRecordedEvidence(error);
     return;
   }
   resilienceSource = source;
@@ -1218,6 +1254,7 @@ let lastTime = 0;
 let deniedTime = 0;
 let currentReceipt;
 let animationFrame;
+let reduceMotionTimer;
 let rendererOperational = true;
 
 const setPlaying = (enabled) => {
@@ -1306,7 +1343,7 @@ const selectScenario = (name) => {
 const setFleetMode = (enabled) => {
   if (!fleetEvidence) return;
   fleetMode = enabled;
-  fleetButton.textContent = fleetMode ? "Single guardian" : "Show fleet";
+  fleetButton.textContent = fleetMode ? "Single Guardian" : "Show fleet";
   fleetButton.setAttribute("aria-pressed", String(fleetMode));
   root.querySelector(".fleet-control-panel").classList.toggle("is-active", fleetMode);
   if (!fleetMode) for (const guardian of fleetDrones) guardian.visible = false;
@@ -1442,7 +1479,13 @@ const animate = (time) => {
     return;
   }
   if (reduceMotion && time - lastTime < 2000) {
-    scheduleAnimation();
+    // Wait on a timer rather than re-queueing a full-rate frame: a visitor who asked for reduced
+    // motion should not have the page woken sixty times a second to render twice a second.
+    reduceMotionTimer = window.setTimeout(() => {
+      reduceMotionTimer = undefined;
+      scheduleAnimation();
+    }, Math.max(0, 2000 - (time - lastTime)));
+    stage.dataset.animationState = "scheduled";
     return;
   }
   const delta = Math.min((time - lastTime) / 1000 || 0, 0.05);
@@ -1461,7 +1504,7 @@ const animate = (time) => {
 };
 
 const scheduleAnimation = () => {
-  if (animationFrame === undefined && rendererOperational && !document.hidden) {
+  if (animationFrame === undefined && reduceMotionTimer === undefined && rendererOperational && !document.hidden) {
     animationFrame = requestAnimationFrame(animate);
     stage.dataset.animationState = "scheduled";
   }
@@ -1470,6 +1513,8 @@ const scheduleAnimation = () => {
 const stopAnimation = (state = "stopped") => {
   if (animationFrame !== undefined) cancelAnimationFrame(animationFrame);
   animationFrame = undefined;
+  if (reduceMotionTimer !== undefined) window.clearTimeout(reduceMotionTimer);
+  reduceMotionTimer = undefined;
   stage.dataset.animationState = state;
 };
 
@@ -1483,6 +1528,13 @@ const handleWebGLRuntimeFailure = () => {
   );
   rendererOperational = false;
   stopAnimation("unavailable");
+  // Release the input surface. controls.dispose() removes the canvas pointer/wheel/contextmenu
+  // listeners and the capturing document keydown, and restores touch-action to auto, so the dead
+  // canvas stops swallowing touch scrolling and keyboard input while the page says it is paused.
+  controls.enabled = false;
+  controls.dispose();
+  releaseCanvasInput();
+  renderer.dispose();
   setPlaying(false);
   pressedNavigationKeys.clear();
   syncNavigationState();
@@ -1624,6 +1676,15 @@ const showFleetLoadFailure = () => {
   fleetSource.dataset.source = "unavailable";
 };
 
+const showBootstrapFailure = () => {
+  showReceiptLoadFailure();
+  showFleetLoadFailure();
+  receiptSource.textContent = "Simulator initialisation unavailable";
+  statusCode.textContent = "bootstrap_unavailable";
+  decisionCode.textContent = "bootstrap_unavailable";
+  reasonElement.textContent = "The simulation could not initialise and remains paused.";
+};
+
 const bootstrap = async () => {
   stage.dataset.receiptsReady = "false";
   stage.dataset.fleetReady = "false";
@@ -1633,55 +1694,63 @@ const bootstrap = async () => {
   setScenarioControlsEnabled(false);
   setResilienceControlsEnabled(false);
 
-  const settle = (promise) => promise.then((value) => ({ ok: true, value }), (error) => ({ ok: false, error }));
-  const receiptTask = settle(loadReceiptBundle());
-  const fleetTask = settle(loadFleetEvidence());
-  const requestedResilience = initialParameters.get("resilience");
-  const requestedScenario = initialParameters.get("scenario");
+  try {
+    const settle = (promise) => promise.then((value) => ({ ok: true, value }), (error) => ({ ok: false, error }));
+    const receiptTask = settle(loadReceiptBundle());
+    const fleetTask = settle(loadFleetEvidence());
+    const requestedResilience = initialParameters.get("resilience");
+    const requestedScenario = initialParameters.get("scenario");
 
-  const receiptResult = await receiptTask;
-  const receiptReady = receiptResult.ok;
-  if (receiptReady && rendererOperational) {
-    setScenarioControlsEnabled(true);
-    playButton.disabled = false;
-    selectScenario(expectedScenarioIDs.includes(requestedScenario) ? requestedScenario : "safe");
-  } else if (!receiptReady) {
-    console.warn("Bounder receipt bundle failed closed", receiptResult.error);
-    showRoute(curves.safe);
-    drone.position.copy(curves.safe.getPointAt(0));
-    showReceiptLoadFailure();
-  }
-
-  const fleetResult = await fleetTask;
-  const fleetReady = fleetResult.ok;
-  if (!fleetReady) {
-    console.warn("Bounder Fleet evidence is unavailable", fleetResult.error);
-    showFleetLoadFailure();
-  }
-
-  if (receiptReady && fleetReady && rendererOperational) {
-    fleetButton.disabled = false;
-    tourButton.disabled = false;
-    setResilienceControlsEnabled(true);
-    if (initialParameters.get("tour") === "1") {
-      openOperatorTour(initialParameters.get("step"));
-    } else if (fleetEvidence.resilience.scenarios.some(({ id }) => id === requestedResilience)) {
-      selectResilienceScenario(requestedResilience);
-      setFleetMode(initialParameters.get("fleet") === "1");
-    } else if (expectedScenarioIDs.includes(requestedScenario)) {
-      clearResilienceTransport();
-      resilienceMode = false;
-      selectedResilience = undefined;
+    const receiptResult = await receiptTask;
+    const receiptReady = receiptResult.ok;
+    if (receiptReady && rendererOperational) {
+      setScenarioControlsEnabled(true);
       playButton.disabled = false;
-      selectScenario(requestedScenario);
-      setFleetMode(initialParameters.get("fleet") === "1");
-    } else {
-      selectResilienceScenario(fleetEvidence.resilience.scenarios[0].id);
-      setFleetMode(initialParameters.get("fleet") === "1");
+      selectScenario(expectedScenarioIDs.includes(requestedScenario) ? requestedScenario : "safe");
+    } else if (!receiptReady) {
+      console.warn("Bounder receipt bundle failed closed", receiptResult.error);
+      showRoute(curves.safe);
+      drone.position.copy(curves.safe.getPointAt(0));
+      showReceiptLoadFailure();
     }
+
+    const fleetResult = await fleetTask;
+    const fleetReady = fleetResult.ok;
+    if (!fleetReady) {
+      console.warn("Bounder Fleet evidence is unavailable", fleetResult.error);
+      showFleetLoadFailure();
+    }
+
+    if (receiptReady && fleetReady && rendererOperational) {
+      fleetButton.disabled = false;
+      tourButton.disabled = false;
+      setResilienceControlsEnabled(true);
+      if (initialParameters.get("tour") === "1") {
+        openOperatorTour(initialParameters.get("step"));
+      } else if (fleetEvidence.resilience.scenarios.some(({ id }) => id === requestedResilience)) {
+        selectResilienceScenario(requestedResilience);
+        setFleetMode(initialParameters.get("fleet") === "1");
+      } else if (expectedScenarioIDs.includes(requestedScenario)) {
+        clearResilienceTransport();
+        resilienceMode = false;
+        selectedResilience = undefined;
+        playButton.disabled = false;
+        selectScenario(requestedScenario);
+        setFleetMode(initialParameters.get("fleet") === "1");
+      } else {
+        selectResilienceScenario(fleetEvidence.resilience.scenarios[0].id);
+        setFleetMode(initialParameters.get("fleet") === "1");
+      }
+    }
+  } catch (error) {
+    console.error("Bounder simulator bootstrap failed closed", error);
+    showBootstrapFailure();
+  } finally {
+    resize();
+    scheduleAnimation();
   }
-  resize();
-  scheduleAnimation();
 };
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error("Bounder simulator bootstrap could not fail closed", error);
+});

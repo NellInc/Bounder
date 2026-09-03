@@ -1,6 +1,4 @@
-import { resolve } from "node:path";
-
-import { gitChangedPaths, loadSystemModel, planForPaths, repositoryRoot } from "./lib/system-model.mjs";
+import { gitChangedPaths, isMainModule, loadSystemModel, planForPaths, repositoryRoot } from "./lib/system-model.mjs";
 
 function parseArguments(args) {
   const options = { json: false, base: null, claim: null, paths: [] };
@@ -47,7 +45,7 @@ export async function runCheckChangedCli(args = process.argv.slice(2), logger = 
   return plan;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
+if (isMainModule(import.meta.url)) {
   runCheckChangedCli().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

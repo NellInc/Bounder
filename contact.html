@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-hxNNZUtiY2ty1BP1SvRTeJQ+cD0dcLxwy5TGTKO81fk='; connect-src 'self'; frame-src 'none'">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <title>Contact | Bounder</title>
   <meta name="description" content="Talk to Bounder about physical interlocks, safety research, integrations, and open-source collaboration.">
@@ -18,6 +19,9 @@
   <meta property="og:title" content="Contact | Bounder">
   <meta property="og:description" content="Talk to Bounder about physical interlocks, safety research, integrations, and open-source collaboration.">
   <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1800">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Contact | Bounder">
@@ -71,7 +75,7 @@
       <p>We welcome physical-interlock use cases, safety critiques, research collaboration, and contributions to the open reference implementation.</p>
     </section>
 
-    <section class="contact-layout" aria-labelledby="contact-form-title">
+    <section class="contact-layout">
       <div class="contact-context">
         <h2>Useful starting points</h2>
         <ul>
@@ -80,7 +84,7 @@
           <li>The safest state when authority or connectivity disappears</li>
           <li>Whether your work is research, simulation, or deployed hardware</li>
         </ul>
-        <p>For security reports, use the private reporting guidance in the site’s <a href="SECURITY.md">security policy</a>.</p>
+        <p>For security reports, use <a href="https://github.com/NellInc/Bounder/security/advisories/new" target="_blank" rel="noopener noreferrer">private vulnerability reporting <span aria-hidden="true">↗</span></a>, described in the project’s <a href="https://github.com/NellInc/Bounder/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">security policy <span aria-hidden="true">↗</span></a>.</p>
       </div>
 
       <div class="contact-form-wrap">

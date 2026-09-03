@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-P4bXYSAMYMBLNXLUWjrfTxlWMkNbsbx+kFcrLpT/sDc='; connect-src 'self' https://bounder-fleet-continuity-staging.onrender.com; frame-src 'self'">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <title>Bounder | Trust at the Point of Action</title>
   <meta name="description" content="Bounder is an open reference architecture for local, auditable physical interlocks between verified digital policy and device-safe action.">
@@ -22,6 +23,9 @@
   <meta property="og:title" content="Bounder | Trust at the Point of Action">
   <meta property="og:description" content="Open, local safety gates between verified policy and physical action.">
   <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1800">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bounder | Trust at the Point of Action">
@@ -308,7 +312,7 @@
           <a class="text-link" href="#architecture">See how it works <span aria-hidden="true">↓</span></a>
         </div>
       </div>
-      <p class="hero-note">Local by design. Auditable by construction. Safe-state behavior remains device-specific.</p>
+      <p class="hero-note">Local by design. Auditable by construction. Safe-state behaviour remains device-specific.</p>
     </section>
 
     <section class="intro section" aria-labelledby="intro-title" data-reveal>
@@ -472,7 +476,7 @@
           <h2 id="simulator-preview-title">Watch the boundary hold.</h2>
           <p>Explore civilian protection, friendly-force separation, protected people and places, surrender, incapacitation, positive identification, proportionality, human authorization, communications, policy integrity, and one Creed Space policy enforced across an entire simulated fleet.</p>
         </div>
-        <a class="text-link" href="simulator.html?tour=1">Take the guided fleet tour <span aria-hidden="true">↗</span></a>
+        <a class="text-link" href="simulator.html?tour=1">Take the guided fleet tour <span aria-hidden="true">→</span></a>
       </div>
       <iframe class="home-simulator-frame" data-bounder-simulator src="simulator.html?embed=1" title="Interactive Bounder 3D safety simulator" loading="lazy"></iframe>
     </section>
@@ -485,7 +489,7 @@
       </div>
       <ul>
         <li><strong>Verified:</strong> software-only signature, expiry, replay, assurance, command, and sensor checks.</li>
-        <li><strong>Evidenced:</strong> sixteen-device Fleet distribution, local guardian decisions, revocation, disconnect, and structured audit receipts.</li>
+        <li><strong>Evidenced (recorded observations):</strong> a 16-Guardian Fleet resilience laboratory, a 100-Guardian staging pilot across six platform classes, local Guardian decisions, revocation, disconnect, and structured audit receipts.</li>
         <li><strong>Boundary:</strong> high-consequence scenarios are evidence-only and can never authorize an actuator. There is no targeting, engagement selection, live actuator transport, or hardware validation.</li>
       </ul>
     </section>

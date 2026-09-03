@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rename, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { repositoryRoot } from "./lib/system-model.mjs";
+import { isMainModule, repositoryRoot } from "./lib/system-model.mjs";
 
 export const DEFAULT_VERIFICATION_PHASES = Object.freeze([
   Object.freeze({ id: "descriptor", command: "npm", args: ["run", "system:check"], timeout_ms: 60_000 }),
@@ -12,7 +12,7 @@ export const DEFAULT_VERIFICATION_PHASES = Object.freeze([
   Object.freeze({ id: "unit-coverage", command: "npm", args: ["run", "test:coverage"], timeout_ms: 900_000 }),
   Object.freeze({ id: "publication-build", command: "npm", args: ["run", "build"], timeout_ms: 300_000 }),
   Object.freeze({ id: "browser", command: "npm", args: ["run", "test:browser"], timeout_ms: 1_200_000 }),
-  Object.freeze({ id: "design-lint", command: "npx", args: ["--yes", "impeccable@3.2.1", "detect", "."], timeout_ms: 300_000 }),
+  Object.freeze({ id: "design-lint", command: "node_modules/.bin/impeccable", args: ["detect", "."], timeout_ms: 300_000 }),
   Object.freeze({ id: "documentation", command: "npm", args: ["run", "docs:check"], timeout_ms: 60_000 })
 ]);
 
@@ -27,50 +27,131 @@ function validatePhase(phase) {
   }
 }
 
+export const PHASE_KILL_ESCALATION_MS = 5_000;
+export const FORWARDED_PHASE_SIGNALS = Object.freeze(["SIGINT", "SIGTERM"]);
+
+const asBuffer = (chunk) => (Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8"));
+
 export async function executeVerificationPhase(phase, {
   root = repositoryRoot,
   spawnImpl = spawn,
   clock = () => Date.now(),
-  timers = globalThis
+  timers = globalThis,
+  killImpl = (pid, signal) => process.kill(pid, signal),
+  escalationMs = PHASE_KILL_ESCALATION_MS,
+  processApi = process
 } = {}) {
   validatePhase(phase);
   const started = clock();
   return new Promise((resolvePromise, rejectPromise) => {
-    let stdout = "";
-    let stderr = "";
+    // Chunks are concatenated and decoded once. Decoding each Buffer independently turns any
+    // multi-byte sequence that straddles a chunk boundary into U+FFFD, which would make the
+    // log digests this receipt pins depend on stream chunking rather than on the phase output.
+    const stdoutChunks = [];
+    const stderrChunks = [];
     let timedOut = false;
     let settled = false;
+    let escalation = null;
     const child = spawnImpl(phase.command, phase.args, {
       cwd: root,
       env: { ...process.env, CI: process.env.CI || "1" },
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true
     });
+    // Every phase is a wrapper process (npm, node, a bin shim) around the work, so signalling
+    // only the direct child leaves grandchildren alive holding the stdio pipes open and "close"
+    // never fires. The child leads its own group, so signal the group and escalate to SIGKILL.
+    const signalPhase = (signal) => {
+      try {
+        if (Number.isInteger(child.pid)) killImpl(-child.pid, signal);
+        else child.kill?.(signal);
+      } catch {
+        try {
+          child.kill?.(signal);
+        } catch {
+          // The phase already exited; nothing is left to signal.
+        }
+      }
+    };
     const timeout = timers.setTimeout(() => {
       timedOut = true;
-      child.kill("SIGTERM");
+      signalPhase("SIGTERM");
+      escalation = timers.setTimeout(() => signalPhase("SIGKILL"), escalationMs);
     }, phase.timeout_ms);
-    child.stdout?.on("data", (chunk) => { stdout += chunk.toString(); });
-    child.stderr?.on("data", (chunk) => { stderr += chunk.toString(); });
+    // The phase runs in its own process group, so an interactive Ctrl-C reaches this runner but
+    // not the work: without forwarding, a killed `npm run verify` leaves the browser phase's
+    // HTTP server bound to its port and the next run fails to start one.
+    let forwarders = null;
+    function stopForwarding() {
+      if (!forwarders) return;
+      for (const [signal, handler] of forwarders) processApi.off(signal, handler);
+      forwarders = null;
+    }
+    forwarders = FORWARDED_PHASE_SIGNALS.map((signal) => [signal, () => {
+      stopForwarding();
+      signalPhase(signal);
+      processApi.kill(processApi.pid, signal);
+    }]);
+    for (const [signal, handler] of forwarders) processApi.on(signal, handler);
+    const clearTimers = () => {
+      timers.clearTimeout(timeout);
+      if (escalation !== null) timers.clearTimeout(escalation);
+      stopForwarding();
+    };
+    child.stdout?.on("data", (chunk) => { stdoutChunks.push(asBuffer(chunk)); });
+    child.stderr?.on("data", (chunk) => { stderrChunks.push(asBuffer(chunk)); });
     child.once("error", (error) => {
       if (settled) return;
       settled = true;
-      timers.clearTimeout(timeout);
+      clearTimers();
       rejectPromise(new Error(`verification phase ${phase.id} could not start: ${error.message}`));
     });
     child.once("close", (code, signal) => {
       if (settled) return;
       settled = true;
-      timers.clearTimeout(timeout);
+      clearTimers();
       resolvePromise({
         exit_code: Number.isInteger(code) ? code : 1,
         signal: signal || null,
         timed_out: timedOut,
         duration_ms: Math.max(0, clock() - started),
-        stdout,
-        stderr
+        stdout: Buffer.concat(stdoutChunks).toString("utf8"),
+        stderr: Buffer.concat(stderrChunks).toString("utf8")
       });
     });
   });
+}
+
+export const NO_PRODUCER_RECEIPT_REASON = "no producer-derivation receipt is present";
+
+// Detected drift, an unreadable receipt, and an absent run are three different provenance
+// facts. Returning the distinguishing reason keeps the verification receipt from describing a
+// caught drift with the same words it uses for a producer run that never happened.
+export async function readProducerReceiptStatus(root) {
+  let producerReceipt;
+  try {
+    producerReceipt = JSON.parse(await readFile(join(root, "artifacts", "producer-derivation", "latest.json"), "utf8"));
+  } catch (error) {
+    const absent = error?.code === "ENOENT";
+    return {
+      present: false,
+      producer_commits: [],
+      reason: absent ? NO_PRODUCER_RECEIPT_REASON : `producer-derivation receipt could not be read: ${error.message}`
+    };
+  }
+  try {
+    const statement = producerReceipt.producer_statement;
+    if (producerReceipt.success !== true || producerReceipt.version !== "bounder-producer-derivation-verification/v1" || !statement || statement.version !== "bounder-evidence-provenance/v1") {
+      throw new Error("producer receipt is not successful and complete");
+    }
+    for (const record of [...statement.contracts, ...statement.outputs.filter(({ path }) => path.startsWith("data/"))]) {
+      const bytes = await readFile(join(root, record.path));
+      if (bytes.byteLength !== record.bytes || hash(bytes) !== record.sha256) throw new Error(`producer receipt drift: ${record.path}`);
+    }
+    return { present: true, producer_commits: [statement.producer_source.commit], reason: null };
+  } catch (error) {
+    return { present: true, producer_commits: [], reason: error.message };
+  }
 }
 
 async function readCandidate(root) {
@@ -84,20 +165,13 @@ async function readCandidate(root) {
     runGit(["rev-parse", "HEAD"]),
     runGit(["status", "--porcelain=v1", "--untracked-files=all"])
   ]);
-  const producerCommits = [];
-  try {
-    const producerReceipt = JSON.parse(await readFile(join(root, "artifacts", "producer-derivation", "latest.json"), "utf8"));
-    const statement = producerReceipt.producer_statement;
-    if (producerReceipt.success !== true || producerReceipt.version !== "bounder-producer-derivation-verification/v1" || !statement || statement.version !== "bounder-evidence-provenance/v1") {
-      throw new Error("producer receipt is not successful and complete");
-    }
-    for (const record of [...statement.contracts, ...statement.outputs.filter(({ path }) => path.startsWith("data/"))]) {
-      const bytes = await readFile(join(root, record.path));
-      if (bytes.byteLength !== record.bytes || hash(bytes) !== record.sha256) throw new Error(`producer receipt drift: ${record.path}`);
-    }
-    producerCommits.push(statement.producer_source.commit);
-  } catch {}
-  return { publisher_commit: commit, producer_commits: producerCommits, dirty: status.length > 0 };
+  const producerStatus = await readProducerReceiptStatus(root);
+  return {
+    publisher_commit: commit,
+    producer_commits: producerStatus.producer_commits,
+    producer_receipt_status: { present: producerStatus.present, reason: producerStatus.reason },
+    dirty: status.length > 0
+  };
 }
 
 async function hashArtifacts(root, paths) {
@@ -189,7 +263,10 @@ export async function runVerification({
     ],
     unverified: [
       ...unverified,
-      ...(candidate.producer_commits.length ? [] : [{ proof_class: "producer_derivation", reason: "no current producer-derivation receipt matches the website bytes" }]),
+      ...(candidate.producer_commits.length ? [] : [{
+        proof_class: "producer_derivation",
+        reason: candidate.producer_receipt_status?.reason || NO_PRODUCER_RECEIPT_REASON
+      }]),
       { proof_class: "deployment_parity", reason: "no live verification was authorized" },
       { proof_class: "physical_safety", reason: "simulation and repository proof cannot establish physical safety" },
       { proof_class: "human_legal_regulatory", reason: "requires appropriate human review" }
@@ -209,19 +286,21 @@ export async function runVerification({
   return Object.freeze({ receipt: Object.freeze(receipt), receiptPath });
 }
 
-export async function runVerifyCli(args = process.argv.slice(2), logger = console) {
+// `overrides` exists so tests can exercise the CLI's argument handling without spawning real
+// phases or writing receipts into the working tree; production callers pass nothing.
+export async function runVerifyCli(args = process.argv.slice(2), logger = console, overrides = {}) {
   let phases = DEFAULT_VERIFICATION_PHASES;
   if (args.length) {
     if (args.length !== 2 || args[0] !== "--phase") throw new Error("usage: npm run verify -- [--phase <id>]");
     phases = DEFAULT_VERIFICATION_PHASES.filter(({ id }) => id === args[1]);
     if (!phases.length) throw new Error(`unknown verification phase: ${args[1]}`);
   }
-  const result = await runVerification({ phases, logger });
+  const result = await runVerification({ phases, logger, ...overrides });
   if (!result.receipt.success) throw new Error("verification failed; inspect the receipt and phase log");
   return result;
 }
 
-if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (isMainModule(import.meta.url)) {
   runVerifyCli().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

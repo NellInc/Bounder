@@ -129,30 +129,63 @@ export async function verifyProducerExport({ siteRoot, exportRoot, expectedCommi
   return Object.freeze({ provenance, provenance_sha256: sha256(source) });
 }
 
-export async function execute(command, args, { cwd, timeoutMs = 600_000 } = {}) {
+export const EXECUTE_KILL_ESCALATION_MS = 5_000;
+
+const asBuffer = (chunk) => (Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8"));
+
+export async function execute(command, args, { cwd, timeoutMs = 600_000, escalationMs = EXECUTE_KILL_ESCALATION_MS, killImpl = (pid, signal) => process.kill(pid, signal) } = {}) {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(command, args, {
       cwd,
       env: { ...process.env, CI: process.env.CI || "1", GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0", LC_ALL: "C", TZ: "UTC" },
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true
     });
-    let stdout = "";
-    let stderr = "";
+    // Chunks are concatenated and decoded once: per-chunk decoding corrupts multi-byte
+    // sequences split across a chunk boundary, and these strings are hashed into the sealed
+    // derivation receipt as generator_stdout_sha256 / generator_stderr_sha256.
+    const stdoutChunks = [];
+    const stderrChunks = [];
     let settled = false;
     let timedOut = false;
-    const timeout = setTimeout(() => { timedOut = true; child.kill("SIGTERM"); }, timeoutMs);
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    let escalation = null;
+    // The generator is a wrapper process; signalling only the direct child leaves grandchildren
+    // holding the stdio pipes open so "close" never fires and the timeout has no upper bound.
+    const signalGroup = (signal) => {
+      try {
+        if (Number.isInteger(child.pid)) killImpl(-child.pid, signal);
+        else child.kill(signal);
+      } catch {
+        try {
+          child.kill(signal);
+        } catch {
+          // The generator already exited; nothing is left to signal.
+        }
+      }
+    };
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      signalGroup("SIGTERM");
+      escalation = setTimeout(() => signalGroup("SIGKILL"), escalationMs);
+    }, timeoutMs);
+    const clearTimers = () => {
+      clearTimeout(timeout);
+      if (escalation !== null) clearTimeout(escalation);
+    };
+    child.stdout.on("data", (chunk) => { stdoutChunks.push(asBuffer(chunk)); });
+    child.stderr.on("data", (chunk) => { stderrChunks.push(asBuffer(chunk)); });
     child.once("error", (error) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timeout);
+      clearTimers();
       rejectPromise(error);
     });
     child.once("close", (code, signal) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timeout);
+      clearTimers();
+      const stdout = Buffer.concat(stdoutChunks).toString("utf8");
+      const stderr = Buffer.concat(stderrChunks).toString("utf8");
       if (code !== 0) rejectPromise(new Error(`${command} failed (${timedOut ? "timeout" : code ?? signal}): ${stderr.trim() || stdout.trim()}`));
       else resolvePromise({ stdout, stderr });
     });

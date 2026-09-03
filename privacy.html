@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self'; connect-src 'self'; frame-src 'none'">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <title>Privacy | Bounder</title>
   <meta name="description" content="How the Bounder website handles contact details, technical request data, and third-party services.">
@@ -17,6 +18,9 @@
   <meta property="og:title" content="Privacy | Bounder">
   <meta property="og:description" content="How the Bounder website handles contact details, technical request data, and third-party services.">
   <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1800">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Privacy | Bounder">
@@ -36,7 +40,7 @@
         "description": "How the Bounder website handles contact details, technical request data, and third-party services.",
         "isPartOf": {"@id": "https://www.bounder.io/#website"},
         "breadcrumb": {"@id": "https://www.bounder.io/privacy.html#breadcrumb"},
-        "dateModified": "2026-07-12",
+        "dateModified": "2026-09-03",
         "inLanguage": "en-GB"
       },
       {
@@ -67,7 +71,7 @@
   <main id="main" class="interior-main policy-layout">
     <aside class="policy-aside">
       <p class="section-label">Legal</p>
-      <p>Last updated<br><strong>12 July 2026</strong></p>
+      <p>Last updated<br><strong>3 September 2026</strong></p>
     </aside>
     <article class="policy-body">
       <h1>Privacy notice</h1>
@@ -81,6 +85,8 @@
 
       <h2>Technical request data</h2>
       <p>The hosting provider and external asset providers may receive ordinary request data such as IP address, browser type, requested URL, and timestamp when serving this site. Bounder does not currently run its own analytics or advertising trackers on these pages.</p>
+
+      <p>When the home page is loaded from bounder.io or www.bounder.io, your browser automatically requests a signed continuity evidence payload from the Creed Space Fleet staging endpoint hosted on Render. That request happens without any interaction from you, and it transmits ordinary request data such as IP address, browser type, and timestamp to that host. No cookie or credential is sent with it and no referrer is disclosed. If the request fails, the page falls back to the recorded local evidence published with this site.</p>
 
       <h2>Cookies and local storage</h2>
       <p>The current root website does not intentionally set cookies or use browser local storage. Third-party services reached through external links apply their own policies.</p>

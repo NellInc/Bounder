@@ -105,9 +105,12 @@ An adapter should be narrow, deterministic, separately tested, and fail safe whe
 npm test
 npm run test:browser
 npm run verify
-BOUNDER_PRODUCER_ROOT=../Bounder-from-org-agent-ergonomic npm run verify:producer
-npx --yes impeccable@3.2.1 detect .
+BOUNDER_PRODUCER_ROOT=<path to a clean NellInc/Bounder-from-org checkout> npm run verify:producer
+node_modules/.bin/impeccable detect .
 ```
+
+The producer checkout path is not discovered: the gate fails fast unless
+`BOUNDER_PRODUCER_ROOT` is set or `--producer-root` is passed.
 
 The producer-derivation gate regenerates public fixtures, checks every shared
 schema byte, verifies the clean producer revision, and emits a machine-readable

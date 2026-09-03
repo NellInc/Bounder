@@ -28,7 +28,7 @@ import {
   verifyTelemetryEnvelope
 } from "../runtime/observability/guardian-fleet-state.js";
 import { DuplicateJsonMemberError, parseUniqueJson, rejectDuplicateJsonMembers } from "../runtime/json/strict-json.js";
-import { makeFleet, makeHeartbeat, setOperationalState, TEST_NOW_MS } from "./helpers/observability-fixtures.js";
+import { makeExpectedGuardians, makeFleet, makeHeartbeat, setOperationalState, TEST_NOW_MS } from "./helpers/observability-fixtures.js";
 
 const clone = structuredClone;
 
@@ -367,4 +367,171 @@ test("virtual-time fault corpus covers loss, delay, duplication, reordering, ske
   assert.equal(validateGuardianHeartbeat(restart, { nowMs: TEST_NOW_MS + 1_000 }).state, "recovering");
   const lease = setOperationalState(makeHeartbeat(), "held", "continuity_lease_expired");
   assert.equal(validateGuardianHeartbeat(lease, { nowMs: TEST_NOW_MS }).state, "held");
+});
+
+test("checkpoint sequence 0 is a legal observation, not an 'unset' sentinel", () => {
+  const aggregate = (checkpointSequences) => aggregateFleetSnapshot({
+    fleetId: "relief-fleet",
+    expectedGuardians: makeExpectedGuardians(checkpointSequences.length),
+    heartbeats: checkpointSequences.map((checkpointSequence, index) => makeHeartbeat({ index, checkpointSequence })),
+    nowMs: TEST_NOW_MS
+  });
+
+  assert.deepEqual(aggregate([0, 0]).checkpoint_sequences, { minimum: 0, maximum: 0 });
+  assert.deepEqual(aggregate([0, 5]).checkpoint_sequences, { minimum: 0, maximum: 5 });
+  assert.deepEqual(aggregate([5, 0]).checkpoint_sequences, { minimum: 0, maximum: 5 });
+  assert.deepEqual(aggregate([3, 5]).checkpoint_sequences, { minimum: 3, maximum: 5 });
+  assert.deepEqual(aggregate([0, 0]).policy_sequences, { minimum: 42, maximum: 42 });
+
+  const unobserved = aggregateFleetSnapshot({ fleetId: "relief-fleet", expectedGuardians: makeExpectedGuardians(2), heartbeats: [], nowMs: TEST_NOW_MS });
+  assert.equal(unobserved.observed_guardians, 0);
+  assert.equal(unobserved.states.unreachable, 2);
+  assert.deepEqual(unobserved.checkpoint_sequences, { minimum: 0, maximum: 0 });
+  assert.deepEqual(unobserved.policy_sequences, { minimum: 0, maximum: 0 });
+
+  const withRange = (range, key = "checkpoint_sequences") => {
+    const snapshot = clone(aggregate([0, 5]));
+    snapshot[key] = range;
+    return snapshot;
+  };
+  assert.throws(() => validateFleetSnapshot(withRange({ minimum: 6, maximum: 5 }), { nowMs: TEST_NOW_MS }), /checkpoint sequence range/);
+  assert.throws(() => validateFleetSnapshot(withRange({ minimum: 0, maximum: 0 }, "policy_sequences"), { nowMs: TEST_NOW_MS }), /policy sequence range/);
+  const emptySnapshot = clone(unobserved);
+  emptySnapshot.checkpoint_sequences = { minimum: 0, maximum: 3 };
+  assert.throws(() => validateFleetSnapshot(emptySnapshot, { nowMs: TEST_NOW_MS }), /checkpoint sequence range/);
+});
+
+test("checkpoint rollback detection survives a zero-valued baseline", async () => {
+  const guard = createGuardianHeartbeatGuard();
+  guard.accept(makeHeartbeat({ checkpointSequence: 0 }), TEST_NOW_MS);
+  assert.equal(guard.state("bounder-000").checkpoint_sequence, 0);
+  guard.accept(makeHeartbeat({ nowMs: TEST_NOW_MS + 1_000, sequence: 2, checkpointSequence: 5 }), TEST_NOW_MS + 1_000);
+  assert.throws(
+    () => guard.accept(makeHeartbeat({ nowMs: TEST_NOW_MS + 2_000, sequence: 3, checkpointSequence: 0 }), TEST_NOW_MS + 2_000),
+    /checkpoint sequence rolled back/
+  );
+
+  const advanced = makeHeartbeat({ checkpointSequence: 5 });
+  const rolledBack = makeHeartbeat({ nowMs: TEST_NOW_MS + 1_000, sequence: 2, checkpointSequence: 0 });
+  await assert.rejects(
+    () => deriveFleetEvents({ previousHeartbeat: advanced, currentHeartbeat: rolledBack, observedAtMs: TEST_NOW_MS + 1_000, cryptoImpl: webcrypto }),
+    /replayed, reordered, or rolled back/
+  );
+  const advancedFromZero = await deriveFleetEvents({
+    previousHeartbeat: makeHeartbeat({ checkpointSequence: 0 }),
+    currentHeartbeat: makeHeartbeat({ nowMs: TEST_NOW_MS + 1_000, sequence: 2, checkpointSequence: 1 }),
+    observedAtMs: TEST_NOW_MS + 1_000,
+    cryptoImpl: webcrypto
+  });
+  assert.deepEqual(advancedFromZero.map(({ event_type }) => event_type), ["checkpoint_advanced"]);
+});
+
+test("a Guardian that is already held at first contact emits its state, not only a connection", async () => {
+  const held = setOperationalState(makeHeartbeat(), "held", "rollback_detected");
+  const firstContact = await deriveFleetEvents({ currentHeartbeat: held, observedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  assert.deepEqual(firstContact.map(({ event_type }) => event_type), ["guardian_connected", "guardian_held"]);
+  assert.equal(firstContact[1].from_state, null);
+  assert.equal(firstContact[1].to_state, "held");
+  assert.equal(firstContact[1].reason, "rollback_detected");
+
+  const unverified = setOperationalState(makeHeartbeat(), "held", "policy_unverified");
+  const unverifiedEvents = await deriveFleetEvents({ currentHeartbeat: unverified, observedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  assert.deepEqual(unverifiedEvents.map(({ event_type }) => event_type), ["guardian_connected", "guardian_held"]);
+
+  const healthy = await deriveFleetEvents({ currentHeartbeat: makeHeartbeat(), observedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  assert.deepEqual(healthy.map(({ event_type }) => event_type), ["guardian_connected"]);
+
+  const resumed = await deriveFleetEvents({ currentHeartbeat: held, previousObservedState: "unreachable", observedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  assert.deepEqual(resumed.map(({ event_type }) => event_type), ["guardian_connected", "guardian_held"]);
+  assert.equal(resumed[1].from_state, "unreachable");
+});
+
+test("published identity pattern accepts exactly what the runtime validator accepts", async () => {
+  const schema = JSON.parse(await readFile(new URL("../schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json", import.meta.url), "utf8"));
+  const identityPattern = new RegExp(schema.$defs.identity.pattern, "u");
+  const { minLength, maxLength } = schema.$defs.identity;
+  const schemaAccepts = (value) => value.length >= minLength && value.length <= maxLength && identityPattern.test(value);
+  const runtimeAccepts = (value) => {
+    const heartbeat = makeHeartbeat();
+    heartbeat.guardian_id = value;
+    try {
+      validateGuardianHeartbeat(heartbeat, { nowMs: TEST_NOW_MS });
+      return true;
+    } catch (error) {
+      return !/Guardian id is invalid/.test(error.message);
+    }
+  };
+  for (const value of [
+    "bounder-000", " bounder-000", "bounder-000 ", "a", " ", "a\nb", "a\rb", "a\u2028b", "a\u2029b",
+    "a\tb", "a b", "a\u00a0b", "a".repeat(255), "a".repeat(256)
+  ]) {
+    assert.equal(schemaAccepts(value), runtimeAccepts(value), JSON.stringify(value));
+  }
+
+  const snapshotSchema = JSON.parse(await readFile(new URL("../schemas/creedspace-bounder-fleet-snapshot-v1.schema.json", import.meta.url), "utf8"));
+  const eventSchema = JSON.parse(await readFile(new URL("../schemas/creedspace-bounder-fleet-event-v1.schema.json", import.meta.url), "utf8"));
+  assert.equal(snapshotSchema.$defs.identity.pattern, schema.$defs.identity.pattern);
+  assert.equal(eventSchema.$defs.identity.pattern, schema.$defs.identity.pattern);
+  assert.deepEqual(snapshotSchema.properties.expected_guardians, { $ref: "#/$defs/positive" });
+  assert.equal(snapshotSchema.$defs.positive.minimum, 1);
+  assert.throws(() => validateFleetSnapshot({ ...aggregateFleetSnapshot({ fleetId: "relief-fleet", ...makeFleet(2), nowMs: TEST_NOW_MS }), expected_guardians: 0 }, { nowMs: TEST_NOW_MS }), /expected Guardian count/);
+});
+
+test("signed telemetry parses payload bytes with the signed-policy parser", async () => {
+  const keyPair = await webcrypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+  const publicKey = new Uint8Array(await webcrypto.subtle.exportKey("raw", keyPair.publicKey));
+  const publicKeys = { "guardian-test-key": publicKey };
+  const signPayload = async (payloadSource, publicKeyId = "guardian-test-key") => {
+    const payloadBytes = new TextEncoder().encode(payloadSource);
+    const signature = await webcrypto.subtle.sign({ name: "Ed25519" }, keyPair.privateKey, payloadBytes);
+    return {
+      envelope_version: TELEMETRY_ENVELOPE_VERSION,
+      algorithm: "Ed25519",
+      payload_kind: HEARTBEAT_VERSION,
+      payload: Buffer.from(payloadBytes).toString("base64"),
+      signature: Buffer.from(signature).toString("base64"),
+      public_key_id: publicKeyId
+    };
+  };
+  const canonical = JSON.stringify(makeHeartbeat());
+  const canonicalEnvelope = await signPayload(canonical);
+  assert.equal((await verifyTelemetryEnvelope({ envelope: canonicalEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).payload.sequence, 1);
+
+  // Both payloads are accepted by the weaker duplicate-only parser: the first rounds to a safe
+  // integer the signed bytes never stated, the second carries a lone surrogate that `\S` matches.
+  const lossySequence = canonical.replace('"sequence":1,', '"sequence":9007199254740990.6,');
+  assert.deepEqual(parseUniqueJson(lossySequence).sequence, 9007199254740991);
+  const lossyEnvelope = await signPayload(lossySequence);
+  await assert.rejects(
+    () => verifyTelemetryEnvelope({ envelope: lossyEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    /telemetry payload is not strict UTF-8 JSON/
+  );
+
+  const loneSurrogate = canonical.replace('"guardian_id":"bounder-000"', '"guardian_id":"bounder-\\ud800"');
+  assert.equal(parseUniqueJson(loneSurrogate).guardian_id, "bounder-\ud800");
+  const loneSurrogateEnvelope = await signPayload(loneSurrogate);
+  await assert.rejects(
+    () => verifyTelemetryEnvelope({ envelope: loneSurrogateEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    /telemetry payload is not strict UTF-8 JSON/
+  );
+
+  const duplicate = canonical.replace('{"version"', '{"version":"duplicate","version"');
+  const duplicateEnvelope = await signPayload(duplicate);
+  await assert.rejects(
+    () => verifyTelemetryEnvelope({ envelope: duplicateEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    /telemetry payload contains duplicate JSON fields/
+  );
+
+  const longKeyId = "k".repeat(129);
+  const longKeyEnvelope = await signPayload(canonical, longKeyId);
+  await assert.rejects(
+    () => verifyTelemetryEnvelope({ envelope: longKeyEnvelope, publicKeys: { [longKeyId]: publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    /telemetry public key id is invalid/
+  );
+  const maximalKeyId = "k".repeat(128);
+  const maximalKeyEnvelope = await signPayload(canonical, maximalKeyId);
+  assert.equal(
+    (await verifyTelemetryEnvelope({ envelope: maximalKeyEnvelope, publicKeys: { [maximalKeyId]: publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).public_key_id,
+    maximalKeyId
+  );
 });

@@ -1,4 +1,4 @@
-import { loadSystemModel } from "./lib/system-model.mjs";
+import { isMainModule, loadSystemModel } from "./lib/system-model.mjs";
 
 export async function runSystemCheck(logger = console) {
   const model = await loadSystemModel();
@@ -6,7 +6,7 @@ export async function runSystemCheck(logger = console) {
   return model;
 }
 
-if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (isMainModule(import.meta.url)) {
   runSystemCheck().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

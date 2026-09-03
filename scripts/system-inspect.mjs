@@ -4,7 +4,7 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
-import { gitChangedPaths, loadSystemModel, planForPaths, repositoryRoot } from "./lib/system-model.mjs";
+import { gitChangedPaths, isMainModule, loadSystemModel, planForPaths, repositoryRoot } from "./lib/system-model.mjs";
 
 const execFileAsync = promisify(execFile);
 const gitEnvironment = { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0", GIT_NO_LAZY_FETCH: "1" };
@@ -218,7 +218,7 @@ export async function runInspectCli(args = process.argv.slice(2), logger = conso
 }
 
 /* c8 ignore start -- direct-entry failure plumbing is covered through the exported command API. */
-if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
+if (isMainModule(import.meta.url)) {
   runInspectCli().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

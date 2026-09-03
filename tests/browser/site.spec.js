@@ -76,7 +76,19 @@ test("homepage is responsive and has no detectable accessibility violations", as
 });
 
 test("homepage reveal bootstrap keeps content visible across capability and construction failures", async ({ browser }) => {
+  test.setTimeout(90_000);
   const cases = [
+    // Audit 2026-09: the three failure variants below all reach visibility without a
+    // constructed IntersectionObserver, so the production path — observer options,
+    // the observe loop, and the "is-revealed" class name at index.html:59-64 — was
+    // unpinned. "working observer" is the only variant a real visitor gets.
+    {
+      name: "working observer",
+      context: await browser.newContext(),
+      install: async () => {},
+      expectsJSClass: true,
+      scrollTargets: true
+    },
     {
       name: "reduced motion",
       context: await browser.newContext({ reducedMotion: "reduce" }),
@@ -109,7 +121,24 @@ test("homepage reveal bootstrap keeps content visible across capability and cons
       await page.goto("/");
       await expect(page.locator("html")).toHaveClass(variant.expectsJSClass ? /\bjs\b/ : /^(?!.*\bjs\b)/);
       const targets = page.locator("[data-reveal]");
-      expect(await targets.count(), `${variant.name} has reveal targets`).toBeGreaterThan(0);
+      const targetCount = await targets.count();
+      expect(targetCount, `${variant.name} has reveal targets`).toBeGreaterThan(0);
+      if (variant.scrollTargets) {
+        // One scroll per task, each awaited: the observer at index.html:62 uses
+        // threshold 0.08 with a -10% bottom margin, so every section needs its own
+        // rendering opportunity. Batching the scrolls into one evaluateAll would only
+        // ever render the final position and leave earlier sections unobserved.
+        for (let index = 0; index < targetCount; index += 1) {
+          // The stylesheet opts into smooth scrolling, so an animated scroll would still be in
+          // flight when the next one retargets it and the element would never be centred.
+          await targets.nth(index).evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" }));
+          // Intersection observations are computed once per rendering update and delivered in a
+          // later task, so give each scroll position a frame of its own before moving on.
+          await page.evaluate(() => new Promise((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 0)));
+          }));
+        }
+      }
       if (variant.expectsJSClass) await expect(page.locator("[data-reveal]:not(.is-revealed)")).toHaveCount(0);
       await expect.poll(
         () => targets.evaluateAll((elements) => elements.every((element) => getComputedStyle(element).opacity === "1")),
@@ -143,20 +172,26 @@ test("homepage accepts only bounded height messages from its simulator frame", a
       [{ type: "bounder-simulator-height", height: "701.2" }, {}],
       [{ type: "bounder-simulator-height", height: Number.NaN }, {}],
       [{ type: "bounder-simulator-height", height: Number.POSITIVE_INFINITY }, {}],
-      [{ type: "bounder-simulator-height", height: 499 }, {}],
-      [{ type: "bounder-simulator-height", height: 2401 }, {}],
       [{ type: "bounder-simulator-height", height: 900 }, { origin: "https://example.invalid" }],
       [{ type: "bounder-simulator-height", height: 900 }, { source: window }]
     ];
     for (const [data, options] of ignored) observed.push(send(data, options));
+    // Out-of-range but trusted measurements are clamped, never discarded: a narrow viewport
+    // legitimately reports several thousand pixels, and a fixed rejection left the frame clipped.
+    observed.push(send({ type: "bounder-simulator-height", height: 499 }));
+    observed.push(send({ type: "bounder-simulator-height", height: 2401 }));
+    observed.push(send({ type: "bounder-simulator-height", height: 1_000_000 }));
     observed.push(send({ type: "bounder-simulator-height", height: 500 }));
     observed.push(send({ type: "bounder-simulator-height", height: 2400 }));
-    return observed;
+    return { observed, ceiling: `${Math.max(2400, Math.round(window.innerHeight * 8))}px` };
   });
 
-  expect(heights).toEqual([
+  expect(heights.observed).toEqual([
     "702px",
-    ...Array(10).fill("702px"),
+    ...Array(8).fill("702px"),
+    "500px",
+    "2401px",
+    heights.ceiling,
     "500px",
     "2400px"
   ]);
@@ -403,6 +438,92 @@ test("malformed, late, out-of-order and partial resilience streams fall back whi
   expect(errors).toEqual([]);
 });
 
+test("resilience transport controls and the scrubber move the console through recorded evidence", async ({ page }) => {
+  // Audit 2026-09: only "Run fault" was ever clicked. Pause, Step, Reset and the
+  // scrubber were guarded by literal string matches on the markup, which cannot see a
+  // dead handler or a control stuck disabled. The clock is installed before navigation
+  // so the recorded replay advances only when this test says so.
+  test.setTimeout(90_000);
+  const errors = collectErrors(page);
+  await page.clock.install();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/simulator.html");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-fleet-ready", "true", { timeout: 20_000 });
+
+  const action = (name) => page.locator(`[data-resilience-action="${name}"]`);
+  const transport = page.locator('[data-resilience="transport"]');
+  const scrubber = page.locator("[data-resilience-scrubber]");
+  const currentCode = page.locator(".resilience-event.is-current code");
+  const currentEvent = page.locator(".resilience-event.is-current");
+  const eventTime = page.locator('[data-resilience="time"]');
+
+  await page.locator(".resilience-scenario").first().click();
+  await expect(transport).toHaveText("Ready");
+  await expect(scrubber).toHaveValue("0");
+  // The range is taken from the selected scenario's last event, not the markup literal.
+  await expect(scrubber).toHaveAttribute("max", "2100");
+  await expect(currentEvent).toHaveCount(0);
+  for (const name of ["run", "step", "reset"]) await expect(action(name)).toBeEnabled();
+  await expect(action("pause")).toBeDisabled();
+
+  // Freeze the clock now: install() alone keeps real time flowing, so on a loaded host the
+  // whole 2.1 s replay can fire before the first assertion polls.
+  await page.clock.pauseAt(Date.now() + 1);
+  await action("run").click();
+  await expect(transport).toHaveText("Deterministic evidence replay");
+  await expect(action("pause")).toBeEnabled();
+  await page.clock.fastForward(700);
+  await expect(currentCode).toHaveText("fleet_unreachable");
+  await expect(scrubber).toHaveValue("650");
+
+  // Pause must clear the pending replay timers, not merely relabel the transport.
+  await action("pause").click();
+  await expect(transport).toHaveText("Paused");
+  await expect(action("pause")).toBeDisabled();
+  await page.clock.fastForward(3_000);
+  await expect(transport).toHaveText("Paused");
+  await expect(currentCode).toHaveText("fleet_unreachable");
+  await expect(scrubber).toHaveValue("650");
+
+  // Step advances by exactly one recorded event and clamps at the last one.
+  await action("step").click();
+  await expect(currentCode).toHaveText("civilian_proximity");
+  await expect(scrubber).toHaveValue("1350");
+  await expect(page.locator(".decision-code")).toHaveText("civilian_proximity");
+  await action("step").click();
+  await expect(currentCode).toHaveText("signed_receipt");
+  await expect(scrubber).toHaveValue("2100");
+  await action("step").click();
+  await expect(currentCode).toHaveText("signed_receipt");
+  await expect(scrubber).toHaveValue("2100");
+  await expect(currentEvent).toHaveCount(1);
+
+  // Reset returns the console to its pre-run state without granting authority.
+  await action("reset").click();
+  await expect(scrubber).toHaveValue("0");
+  await expect(eventTime).toHaveText("0.00 s");
+  await expect(transport).toHaveText("Ready");
+  await expect(page.locator(".decision-code")).toHaveText("ready");
+  await expect(currentEvent).toHaveCount(0);
+
+  // The scrubber selects the last recorded event at or before its value. Every fixture
+  // scenario starts at 0 ms and the control's min is 0, so the input handler's
+  // "no event yet" fallback is unreachable through the UI; 0 selects the baseline.
+  await scrubber.fill("1350");
+  await expect(currentCode).toHaveText("civilian_proximity");
+  await expect(eventTime).toHaveText("1.35 s");
+  await scrubber.fill("700");
+  await expect(currentCode).toHaveText("fleet_unreachable");
+  await expect(eventTime).toHaveText("0.65 s");
+  await scrubber.fill("0");
+  await expect(currentCode).toHaveText("policy_active");
+  await expect(eventTime).toHaveText("0.00 s");
+  await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-alpha");
+
+  expect(errors).toEqual([]);
+});
+
 test("visibility, focus exceptions and WebGL context loss stop active state safely", async ({ page }) => {
   const errors = collectErrors(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -501,22 +622,42 @@ test("contact success and simulator embed query states expose only their intende
   await expect(page.locator(".simulator-workbench")).toBeVisible();
 });
 
-test("mobile pages do not overflow and retain usable controls", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/simulator.html?webgl=off", "/contact.html", "/privacy.html", "/terms.html", "/404.html"]) {
-    await page.goto(path);
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-      await new Promise(requestAnimationFrame);
-    });
-    if (path.includes("simulator.html")) {
-      await expect(page.locator(".simulator-stage")).toHaveAttribute("data-receipts-ready", "true", { timeout: 20_000 });
-    }
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow, `${path} overflows the mobile viewport`).toBeLessThanOrEqual(1);
-    await expect(page.locator("h1")).toHaveCount(1);
-    if (path.includes("simulator.html")) {
-      await expect(page.getByRole("button", { name: "Verify published example" })).toBeVisible();
+test("pages do not overflow and retain usable controls across every declared breakpoint band", async ({ page }) => {
+  // Audit 2026-09: 390px and Chromium's 1280px default were the only widths ever
+  // rendered, so four of the six bands declared by the stylesheets were unguarded.
+  // The declared max-width breakpoints are styles.css:1358 (900) and :1409 (680),
+  // simulator.css:1141 (960), :1156 (560), :1381 (1050) and :1407 (680). One width
+  // per band: 390 (<=560), 620 (561-680), 820 (681-900), 930 (901-960), 1000
+  // (961-1050); 1280 (>1050) is covered by every other test in this file.
+  // 390 keeps the full page sweep; the four added widths run on the two pages that
+  // carry all six breakpoints between them, which keeps the serial suite affordable.
+  test.setTimeout(120_000);
+  const everyPath = ["/", "/simulator.html?webgl=off", "/contact.html", "/privacy.html", "/terms.html", "/404.html"];
+  const complexPaths = ["/", "/simulator.html?webgl=off"];
+  const passes = [
+    { width: 390, height: 844, paths: everyPath },
+    { width: 620, height: 900, paths: complexPaths },
+    { width: 820, height: 900, paths: complexPaths },
+    { width: 930, height: 900, paths: complexPaths },
+    { width: 1000, height: 900, paths: complexPaths }
+  ];
+  for (const { width, height, paths } of passes) {
+    await page.setViewportSize({ width, height });
+    for (const path of paths) {
+      await page.goto(path);
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        await new Promise(requestAnimationFrame);
+      });
+      if (path.includes("simulator.html")) {
+        await expect(page.locator(".simulator-stage")).toHaveAttribute("data-receipts-ready", "true", { timeout: 20_000 });
+      }
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow, `${path} overflows at ${width}px`).toBeLessThanOrEqual(1);
+      await expect(page.locator("h1")).toHaveCount(1);
+      if (path.includes("simulator.html")) {
+        await expect(page.getByRole("button", { name: "Verify published example" })).toBeVisible();
+      }
     }
   }
 });
@@ -525,8 +666,11 @@ test("interior pages have no detectable accessibility violations", async ({ page
   // Audit 2026-07: axe previously ran only on the homepage and simulator, so
   // contrast/focus regressions on interior pages went unguarded.
   test.setTimeout(90_000);
+  // One listener pair for the life of the test: collectErrors never detaches, so
+  // calling it per iteration left four console and four pageerror listeners attached.
+  const errors = collectErrors(page);
   for (const path of ["/contact.html", "/privacy.html", "/terms.html", "/404.html"]) {
-    const errors = collectErrors(page);
+    errors.length = 0;
     await page.goto(path);
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations, `${path} has accessibility violations`).toEqual([]);
