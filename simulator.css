@@ -1445,7 +1445,11 @@
 }
 
 .simulator-embed .simulator-workbench {
-  padding: 0;
+  padding: 0 0 0 1rem;
+}
+
+.simulator-embed .evidence-tools {
+  margin-left: -1rem;
 }
 
 .simulator-embed .workbench-heading {

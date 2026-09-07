@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2 · 2026-09-07 (source candidate, unsealed)
+
+- Added a 16px left inset to the homepage demo’s light area while keeping its dark evidence sections flush left.
+
 ## 1.2.1 · 2026-09-07 (source candidate, unsealed)
 
 - Removed repetitive presentation disclaimers and consolidated homepage status as a development testbed working towards deployment.
