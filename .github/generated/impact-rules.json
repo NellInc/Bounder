@@ -119,7 +119,9 @@
         "runtime/simulator/**",
         "ui/policy-roundtrip-panel.js",
         "schemas/bounder-release-manifest-v2.schema.json",
-        ".github/workflows/receipt-drift.yml"
+        ".github/workflows/receipt-drift.yml",
+        "runtime/json/**",
+        "ui/policy-panel.js"
       ],
       "commands": [
         "unit_coverage",
@@ -138,7 +140,9 @@
         "simulator.css",
         "tests/simulator-world.test.js",
         "tests/browser/site.spec.js",
-        "simulator/**"
+        "simulator/**",
+        "ui/fleet-view.js",
+        "ui/workbench.js"
       ],
       "commands": [
         "unit_coverage",
@@ -200,7 +204,8 @@
         "tests/page-security.test.js",
         "tests/site-quality.test.js",
         "tests/browser-entry-side-effects.test.js",
-        "tests/embedded-simulator-height.test.js"
+        "tests/embedded-simulator-height.test.js",
+        "ui/contact-form.js"
       ],
       "commands": [
         "unit_coverage",

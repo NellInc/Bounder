@@ -1,4 +1,5 @@
-import { bootstrapPolicyRoundTrip, classifyAuthority, createLatestRequestGate } from "../runtime/policy/core.js";
+import { bootstrapPolicyRoundTrip } from "./policy-panel.js";
+import { classifyAuthority, createLatestRequestGate } from "../runtime/policy/presentation-state.js";
 
 export { bootstrapPolicyRoundTrip, classifyAuthority, createLatestRequestGate };
 

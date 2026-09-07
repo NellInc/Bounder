@@ -284,6 +284,8 @@ test("receipt readiness cannot be inferred from faster Fleet loading", async ({ 
   try {
     await expect(stage).toHaveAttribute("data-fleet-ready", "true");
     await expect(stage).toHaveAttribute("data-receipts-ready", "false");
+    // Isolate receipt readiness from software-GPU rendering while testing the real text view.
+    await page.getByRole("button", { name: "Text view", exact: true }).click();
     await expect(page.getByRole("button", { name: "Play simulation" })).toBeDisabled();
     await expect(page.getByRole("button", { name: "Civilian buffer" })).toBeDisabled();
   } finally {
@@ -306,6 +308,7 @@ test("malformed Fleet evidence is isolated from valid local receipt controls", a
   await expect(stage).toHaveAttribute("data-receipts-ready", "true", { timeout: 20_000 });
   await expect(stage).toHaveAttribute("data-fleet-ready", "false");
   await expect(page.getByRole("button", { name: "Show fleet" })).toBeDisabled();
+  await page.locator(".scenario-more > summary").click();
   await expect(page.getByRole("button", { name: "Friendly separation" })).toBeEnabled();
   await page.getByRole("button", { name: "Friendly separation" }).click();
   await expect(page.locator(".decision-code")).toHaveText("friendly_force_proximity");
@@ -392,6 +395,7 @@ test("malformed, late, out-of-order and partial resilience streams fall back whi
     return evidence.resilience.scenarios[0].events;
   });
   await page.locator('meta[name="bounder-resilience-stream"]').evaluate((meta) => { meta.content = "/api/resilience/events"; });
+  if (await page.locator("#fault-replay").getAttribute("open") === null) await page.locator("#fault-replay > summary").click();
   await page.getByRole("button", { name: "Run fault" }).click();
   const sourceURL = await page.evaluate(() => window.__bounderTestSources[0].url);
   expect(sourceURL).toContain("scenario=network-partition");
@@ -419,6 +423,7 @@ test("malformed, late, out-of-order and partial resilience streams fall back whi
   }, events[1]);
   await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-bravo");
 
+  if (await page.locator("#fault-replay").getAttribute("open") === null) await page.locator("#fault-replay > summary").click();
   await page.locator(".resilience-scenario").first().click();
   await page.getByRole("button", { name: "Run fault" }).click();
   await expect(page.locator(".simulator-stage")).not.toHaveAttribute("data-resilience-fallback", /.+/);
@@ -430,6 +435,7 @@ test("malformed, late, out-of-order and partial resilience streams fall back whi
   expect(await page.evaluate(() => window.__bounderTestSources[2].closed)).toBe(true);
 
   await page.clock.install();
+  if (await page.locator("#fault-replay").getAttribute("open") === null) await page.locator("#fault-replay > summary").click();
   await page.locator(".resilience-scenario").first().click();
   await page.getByRole("button", { name: "Run fault" }).click();
   await page.clock.fastForward(2_600);
@@ -458,6 +464,7 @@ test("resilience transport controls and the scrubber move the console through re
   const currentEvent = page.locator(".resilience-event.is-current");
   const eventTime = page.locator('[data-resilience="time"]');
 
+  if (await page.locator("#fault-replay").getAttribute("open") === null) await page.locator("#fault-replay > summary").click();
   await page.locator(".resilience-scenario").first().click();
   await expect(transport).toHaveText("Ready");
   await expect(scrubber).toHaveValue("0");
@@ -532,6 +539,8 @@ test("resilience transport controls and the scrubber move the console through re
 });
 
 test("visibility, focus exceptions and WebGL context loss stop active state safely", async ({ page }) => {
+  // Multi-stage GPU/focus lifecycle journey, consistent with the other 90-second simulator journeys.
+  test.setTimeout(90_000);
   const errors = collectErrors(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/simulator.html?scenario=safe");
@@ -557,7 +566,7 @@ test("visibility, focus exceptions and WebGL context loss stop active state safe
     Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await expect(stage).toHaveAttribute("data-animation-state", "scheduled");
+  await expect(stage).toHaveAttribute("data-animation-state", /scheduled|idle/);
 
   const tourButton = page.locator("[data-action='tour']");
   const tour = page.locator("[data-operator-tour]");
@@ -604,6 +613,7 @@ test("accessible evidence honours scenario deep links and remains usable without
 test("published Creed Space vector verifies locally and remains held after expiry", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/simulator.html?webgl=off");
+  await page.locator("#contract-inspector > summary").click();
   await page.getByRole("button", { name: "Verify published example" }).click();
   const status = page.locator("[data-policy-status]");
   await expect(status).toHaveAttribute("data-state", "held");
@@ -616,8 +626,8 @@ test("published Creed Space vector verifies locally and remains held after expir
 
 test("contact success and simulator embed query states expose only their intended views", async ({ page }) => {
   await page.goto("/contact.html?success=true");
-  await expect(page.locator("#form-success")).toBeVisible();
-  await expect(page.locator("#contact-form")).toBeHidden();
+  await expect(page.locator("#form-success")).toBeHidden();
+  await expect(page.locator("#contact-form")).toBeVisible();
 
   await page.goto("/simulator.html?embed=1&webgl=off");
   await expect(page.locator("html")).toHaveClass(/simulator-embed/);
@@ -663,6 +673,7 @@ test("pages do not overflow and retain usable controls across every declared bre
       expect(overflow, `${path} overflows at ${width}px`).toBeLessThanOrEqual(1);
       await expect(page.locator("h1")).toHaveCount(1);
       if (path.includes("simulator.html")) {
+        await page.locator("#contract-inspector > summary").click();
         await expect(page.getByRole("button", { name: "Verify published example" })).toBeVisible();
       }
     }

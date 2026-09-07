@@ -32,3 +32,18 @@ Recorded: publication lock owner pid, stale-lock reclaim, orphaned scratch sweep
 Re-verified after concurrent tooling work: descriptor and publication-lock citations repointed, and the lock description rewritten for the atomic stale-lock rename, mkdir-time ownership, and promotion-deferred signal handling
 Hold released: the four observability schemas are pinned by manifest v2 from v1.1.0 onward; `npm run inspect` reports unpinned schemas against the current `VERSION`, so a release cycle before its manifest is sealed reports them unpinned by design
 Boundary: README.md, SECURITY.md, CHANGELOG.md, VERSION, and guides/INTEGRATION.md are release-pinned; these edits require release-aware validation and a regenerated manifest before sealing
+
+## [2026-09-07] reconciliation | Browser workbench and named policy seams
+Updated: systems/site-architecture, systems/system-architecture, systems/runtime-observability, domain/physical-interlock, flows/agent-operating-loop, seams/evidence-provenance, index, generated/task-routes
+Rebased source citations to the current guide, page, controller, and named policy implementations. Replaced obsolete monolithic policy implementation references with validation, evaluator, round-trip, and presentation-state seams. Recorded extracted scene creation, Fleet rendering, and workbench UI ownership.
+Updated the system component inventories and impact routing for the new source modules, then regenerated task routes and CI impact rules.
+Boundary: these are local source-candidate documentation changes. Producer derivation, sealed release identity, deployed bytes, and physical authority remain separate proof gates. Historical manifests remain unchanged.
+
+## [2026-09-07] reconciliation | Contact confirmation and demand rendering
+Updated: systems/site-architecture, systems/system-architecture, index, generated/task-routes and CI impact rules
+Recorded: contact progressive enhancement, explicit native hosted submission, preserved input on unconfirmed response, query-independent confirmation, and separate live-delivery proof; simulator demand-driven frames and evidence-settled fault initialization.
+Routed ui/contact-form.js through the existing public-copy validation lane and rebased moved controller citations. No production code, tests, or deployment changed by this documentation pass.
+
+## [2026-09-07] reconciliation | Browser capture overhead
+Updated: systems/site-architecture and index
+Recorded: automatic trace filmstrips disabled while DOM/source traces and explicit QA captures remain. Assertions and application limits are unchanged.

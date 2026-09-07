@@ -23,14 +23,15 @@ test("simulator exposes focused WASD and altitude navigation", () => {
   assert.match(simulatorHtml, /Use Q to descend and E to climb/);
 });
 
-test("town buildings use footprint-aware ridged roofs", () => {
-  assert.match(simulatorScript, /makeGableRoofGeometry\(spec\.width, spec\.depth\)/);
-  assert.doesNotMatch(simulatorScript, /roof\.scale\.z = spec\.depth \/ spec\.width/);
+test("town buildings use footprint-aware ridged roofs", async () => {
+  const sceneSource = await readFile(new URL("../simulator/scene.js", import.meta.url), "utf8");
+  assert.match(sceneSource, /makeGableRoofGeometry\(spec\.width, spec\.depth\)/);
+  assert.doesNotMatch(sceneSource, /roof\.scale\.z = spec\.depth \/ spec\.width/);
 });
 
-test("the simulator stage keeps a widescreen desktop presentation", () => {
+test("the simulator stage keeps a scene and decision desktop workspace", () => {
   assert.match(simulatorStyles, /aspect-ratio: 16 \/ 9/);
-  assert.match(simulatorStyles, /grid-template-areas:\s*"header rules actuation"\s*"header rules receipt"/);
+  assert.match(simulatorStyles, /grid-template-columns: minmax\(0, 2\.35fr\) minmax\(280px, 1fr\)/);
 });
 
 test("the custom Bounder lockup is integrated into the shared wordmark", () => {
@@ -107,7 +108,7 @@ test("every abandoned live resilience stream keeps the recorded local fallback a
 
 test("bootstrap fails closed and always restores the render loop", () => {
   assert.match(simulatorScript, /const showBootstrapFailure = \(\) => \{/);
-  assert.match(simulatorScript, /\} finally \{\n\s+resize\(\);\n\s+scheduleAnimation\(\);\n\s+\}/);
+  assert.match(simulatorScript, /\} finally \{\n\s+bootstrapSettled = true;\n\s+resize\(\);\n\s+scheduleAnimation\(\);\n\s+\}/);
   assert.match(simulatorScript, /bootstrap\(\)\.catch\(/);
 });
 

@@ -3,7 +3,7 @@
 <!-- wiki:type = system -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-03 -->
+<!-- wiki:updated = 2026-09-07 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -41,7 +41,7 @@ device-specific safe response
                     release and live proof
 ```
 
-The policy envelope is bound to exact signed bytes, issuer, subject, sequence, and time. The adapter receives a bounded result and owns the platform-specific safe response. Audit delivery cannot change the local decision. (`guides/INTEGRATION.md:9-14`; `guides/INTEGRATION.md:90 "An adapter should be narrow, deterministic, separately tested, and fail safe"`; `guides/INTEGRATION.md:97 "Audit delivery failure cannot change the local decision."`)
+The policy envelope is bound to exact signed bytes, issuer, subject, sequence, and time. The adapter receives a bounded result and owns the platform-specific safe response. Audit delivery cannot change the local decision. (`guides/INTEGRATION.md:9-14`; `guides/INTEGRATION.md:128 "An adapter should be narrow, deterministic, separately tested, and fail safe"`; `guides/INTEGRATION.md:135 "Audit delivery failure cannot change the local decision."`)
 
 ## Abstraction Tower
 
@@ -57,7 +57,7 @@ The policy envelope is bound to exact signed bytes, issuer, subject, sequence, a
 | 7. Publication assurance | Which exact source bytes became the site? | Allowlisted source tree | Byte-checked `_site` artifact and release record | Site repository and CI | No deployment |
 | 8. Live assurance | What is actually reachable now? | Deployed bytes and live evidence | Time-bounded operational observation | Hosting and evidence services | Unverified current state |
 
-Levels 1 through 5 follow the published authority flow and fail-safe invariants. Levels 6 through 8 are the website and release projection implemented by this repository. (`guides/INTEGRATION.md:7-27`; `README.md:63-86`; `.github/workflows/deploy-pages.yml:19-58`)
+Levels 1 through 5 follow the published authority flow and fail-safe invariants. Levels 6 through 8 are the website and release projection implemented by this repository. (`guides/INTEGRATION.md:7-27`; `README.md:65-88`; `.github/workflows/deploy-pages.yml:19-58`)
 
 ## System Planes
 
@@ -65,19 +65,19 @@ The levels form a tower. Four planes connect them without changing their ownersh
 
 ### Authority plane
 
-Authority flows downward through a closed policy schema, exact signature verification, device binding, monotonic sequence, validity window, local evaluation, and a narrow adapter handoff. The browser can inspect this flow, while operational decisions remain outside the browser. (`guides/INTEGRATION.md:29-53`; `runtime/policy/core.js:1-7`; `runtime/policy/core.js:438-475`; `runtime/policy/core.js:593-672`)
+Authority flows downward through a closed policy schema, exact signature verification, device binding, monotonic sequence, validity window, local evaluation, and a narrow adapter handoff. The browser can inspect this flow, while operational decisions remain outside the browser. (`guides/INTEGRATION.md:29-53`; `runtime/policy/core.js:1-7`; `runtime/policy/contracts.js:107 "validatePolicy"`; `runtime/policy/evaluator.js:12 "evaluatePolicyRequest"`)
 
 ### Evidence plane
 
-Receipts, Fleet audit records, checkpoints, resilience events, recorded pilots, and continuity envelopes describe decisions and system health. They are evidence about authority use. They are never authority for a new physical action. (`guides/INTEGRATION.md:67-68 "They never grant, broaden, or revoke permission."`; `runtime/simulator/contracts-core.js:148-164`; `continuity-evidence.js:198-295`)
+Receipts, Fleet audit records, checkpoints, resilience events, recorded pilots, and continuity envelopes describe decisions and system health. They are evidence about authority use. They are never authority for a new physical action. (`guides/INTEGRATION.md:106 "They never grant, broaden, or revoke permission."`; `runtime/simulator/contracts-core.js:148-164`; `continuity-evidence.js:198-295`)
 
 Private Guardian heartbeats, Fleet snapshots, and Fleet transition events extend this plane with operational diagnosis. Their state classifications remain observational and cannot substitute for local policy, evidence, checkpoint, or lease rules. (`runtime/observability/guardian-fleet-state.js:159-194 "deriveGuardianStateUnchecked"`; `runtime/observability/guardian-fleet-state.js:286-359 "createGuardianHeartbeatGuard"`)
 
 ### Presentation plane
 
-The simulator loads recorded receipts, optional Fleet evidence, local resilience timelines, a bounded live stream, and a signed continuity feed. Its visual controls select, replay, and verify evidence. They do not recompute the canonical operational decision. (`README.md:15-30`; `simulator/controller.js:849-870 "loadReceiptBundle"`; `simulator/controller.js:1205-1243 "loadPilotEvidence"`)
+The simulator loads recorded receipts, optional Fleet evidence, local resilience timelines, a bounded live stream, and a signed continuity feed. Its visual controls select, replay, and verify evidence. They do not recompute the canonical operational decision. (`README.md:17-32`; `simulator/controller.js:1125 "loadReceiptBundle"`; `simulator/controller.js:627 "loadPilotEvidence"`)
 
-The presentation seams own their own mounting. `simulator.html` loads `ui/policy-roundtrip-panel.js` directly, and that UI module is the only thing that calls `bootstrapPolicyRoundTrip`; importing `runtime/policy/core.js` now has no DOM side effect. `staging-feed.js` likewise imports `parseStrictJSON` from the narrow `runtime/json/policy-json.js` seam rather than from the policy facade. (`simulator.html:375 "ui/policy-roundtrip-panel.js"`; `ui/policy-roundtrip-panel.js:5-6 "The UI seam owns mounting the panel."`; `staging-feed.js:1 "runtime/json/policy-json.js"`)
+The presentation seams own their own mounting. `simulator.html` loads `ui/policy-roundtrip-panel.js` directly, and that UI module is the only thing that calls `bootstrapPolicyRoundTrip`; importing `runtime/policy/core.js` now has no DOM side effect. `staging-feed.js` likewise imports `parseStrictJSON` from the narrow `runtime/json/policy-json.js` seam rather than from the policy facade. (`simulator.html:393 "ui/policy-roundtrip-panel.js"`; `ui/policy-roundtrip-panel.js:5-6 "The UI seam owns mounting the panel."`; `staging-feed.js:1 "runtime/json/policy-json.js"`)
 
 ### Assurance plane
 
@@ -91,8 +91,8 @@ Schemas, exact validators, unit tests, browser acceptance, the public allowlist,
 | Decision producer | Canonical Go Guardian described by the integration contract | Signature verification, replay and time checks, local evaluation, receipt production | Website presentation |
 | Adapter | Platform-specific integration | Mapping a bounded result to an engineered safe response | Policy composition |
 | Evidence publisher | `data/`, `schemas/`, continuity endpoint | Immutable recorded examples and bounded live proof | New operational permission |
-| Browser verifier | `runtime/policy/core.js` and `runtime/simulator/contracts-core.js` behind the `policy-roundtrip.js` and `simulator-contracts.js` facades, `staging-feed.js`, `continuity-evidence.js` | Strict local parsing, validation, cryptographic checks, freshness checks | Canonical operational decisions |
-| Simulator presenter | `simulator.js`, `simulator-fallback.js`, `simulator-world.js` | Evidence selection, visualization, fault playback, accessible fallback | Hidden decision tables that contradict receipts |
+| Browser verifier | Named `runtime/policy/` implementations and `runtime/simulator/contracts-core.js` behind the `policy-roundtrip.js` and `simulator-contracts.js` facades, `staging-feed.js`, `continuity-evidence.js` | Strict local parsing, validation, cryptographic checks, freshness checks | Canonical operational decisions |
+| Simulator presenter | `simulator/controller.js`, `simulator/scene.js`, `ui/fleet-view.js`, `ui/workbench.js`, accessible fallback | Evidence selection, visualization, fault playback, accessible fallback | Hidden decision tables that contradict receipts |
 | Site publisher | `scripts/build-site.mjs`, `_site/`, Pages workflow | Exact public inventory and byte-preserving publication | Historical workspace material |
 | Release sealer | `scripts/generate-release-manifest-v2.mjs` for new releases, `scripts/generate-release-manifest.js` for the historical v1 format, `release/` | Immutable release history and source-byte hashes | Claims of physical certification or live health |
 | Guardian observer | Published heartbeat schema and `runtime/observability/guardian-fleet-state.js` | Private bounded report of one Guardian's state | Any permission change |
@@ -103,11 +103,11 @@ These role boundaries compile the current integration guide, security boundary, 
 
 ## Repository Roles and the Provenance Gap
 
-This checkout is the public site repository. It contains static HTML, browser JavaScript, schemas, evidence copies, build tooling, release manifests, and Pages automation. It contains no Go source in its current tree. (`README.md:1-45`; `package.json:1-22`)
+This checkout is the public site repository. It contains static HTML, browser JavaScript, schemas, evidence copies, build tooling, release manifests, and Pages automation. It contains no Go source in its current tree. (`README.md:1-47`; `package.json:1-22`)
 
 Brand source material lives in `design/brand-source/`. It records the descent of the shipped marks in `assets/` and sits outside the publication allowlist, so it never reaches the built artifact. (`design/brand-source/README.md:3-5 "outside the publication"`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`)
 
-The public instructions verify producer derivation rather than regenerating and copying. `npm run verify:producer` runs against an explicit clean producer checkout supplied through `BOUNDER_PRODUCER_ROOT` or `--producer-root`, re-derives the three published outputs, and compares the thirteen shared contracts byte for byte; its receipt is what manifest v2 imports as producer provenance. (`README.md:121-131 "The path is not discovered"`; `README.md:96`; `scripts/verify-producer-derivation.mjs:13-31`)
+The public instructions verify producer derivation rather than regenerating and copying. `npm run verify:producer` runs against an explicit clean producer checkout supplied through `BOUNDER_PRODUCER_ROOT` or `--producer-root`, re-derives the three published outputs, and compares the thirteen shared contracts byte for byte; its receipt is what manifest v2 imports as producer provenance. (`README.md:121-131 "The path is not discovered"`; `README.md:98`; `scripts/verify-producer-derivation.mjs:13-31`)
 
 The system descriptor separately lists `../Bounder-from-org-agent-ergonomic` and `../Bounder-Drone` as local producer discovery candidates. They serve read-only orientation in `npm run inspect` only; the derivation gate never consults them and fails fast without an explicit root. (`system/bounder-system.v1.json:24-27`; `scripts/system-inspect.mjs:90-93 "local_discovery"`)
 
@@ -122,7 +122,7 @@ The target provenance model must carry two identities:
 
 Historical manifests remain immutable. Manifest v2 adds this distinction for new releases without rewriting prior records.
 
-The Go producer identity is no longer open. Manifest v2 names it as the `decision_producer` role at private `NellInc/Bounder-from-org`, on `master`, at a full commit, and the system descriptor carries the same statement as a standing hold. What remains open is public reproducibility, not identity: regeneration still requires producer access or a future public mirror or reviewable source bundle. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1534 "confirmed at private NellInc/Bounder-from-org on master"`)
+The Go producer identity is no longer open. Manifest v2 names it as the `decision_producer` role at private `NellInc/Bounder-from-org`, on `master`, at a full commit, and the system descriptor carries the same statement as a standing hold. What remains open is public reproducibility, not identity: regeneration still requires producer access or a future public mirror or reviewable source bundle. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1555 "confirmed at private NellInc/Bounder-from-org on master"`)
 
 ## Evidence State Model
 
@@ -137,19 +137,19 @@ Every evidence surface should expose one of these mutually exclusive states:
 | `LIVE_INVALID` | Live evidence failed transport, signature, shape, identity, or ordering | Reject it and retain the local safe state |
 | `AUTHORITY_HELD` | Valid evidence describes a policy or continuity state that cannot grant current permission | Show the reason for hold without converting evidence into authority |
 
-This vocabulary consolidates states already represented by the continuity lease, staging fallback, receipt readiness, policy validity, and simulator fail-closed behavior. (`continuity-evidence.js:417-503`; `staging-feed.js:414-463`; `runtime/policy/core.js:977-995`; `simulator-fallback.js:59-82`)
+This vocabulary consolidates states already represented by the continuity lease, staging fallback, receipt readiness, policy validity, and simulator fail-closed behavior. (`continuity-evidence.js:417-503`; `staging-feed.js:414-463`; `runtime/policy/presentation-state.js:25 "classifyAuthority"`; `simulator-fallback.js:61-85`)
 
 ## Cross-Layer Invariants
 
 1. Policy bytes are verified before parsing can influence authority. (`guides/INTEGRATION.md:9-12`)
-2. A stale, replayed, malformed, foreign, or unverified policy grants no new permission. (`guides/INTEGRATION.md:94-97 "Signature failure preserves the last verified unexpired policy and never broadens authority."`)
+2. A stale, replayed, malformed, foreign, or unverified policy grants no new permission. (`guides/INTEGRATION.md:134 "Signature failure preserves the last verified unexpired policy and never broadens authority."`)
 3. Evidence failure cannot broaden a decision. (`SECURITY.md:32-36`)
 4. Browser interaction cannot mint an operational receipt. (`guides/INTEGRATION.md:59-63 "The browser does not create authority or mint a deployment receipt."`)
-5. Simulator controls remain disabled until their own required evidence is ready. (`simulator/controller.js:1623-1636 "setScenarioControlsEnabled"`; `simulator/controller.js:1645-1660 "Receipt fixture unavailable"`)
+5. Simulator controls remain disabled until their own required evidence is ready. (`simulator/controller.js:1120 "setScenarioControlsEnabled"`; `simulator/controller.js:1085 "Receipt fixture unavailable"`)
 6. Recorded, live, source, deployment, physical, and human assurance remain separately labelled. (`SECURITY.md:51-62 "Passing software tests does not establish any of those properties."`)
 7. Public artifacts come only from the explicit allowlist and are checked byte for byte after assembly. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:350-362`)
 8. A release record identifies both the producer lineage and publisher lineage before it claims derivation from the canonical engine. This is the target rule introduced by this design.
-9. Heartbeat loss can change Fleet observation but cannot broaden or revoke local authority by itself. (`runtime/observability/guardian-fleet-state.js:286-302 "classifyValidatedGuardianHeartbeat"`; `guides/INTEGRATION.md:67-71 "They never grant, broaden, or revoke permission."`)
+9. Heartbeat loss can change Fleet observation but cannot broaden or revoke local authority by itself. (`runtime/observability/guardian-fleet-state.js:286-302 "classifyValidatedGuardianHeartbeat"`; `guides/INTEGRATION.md:106 "They never grant, broaden, or revoke permission."`)
 10. Public continuity can be projected only from a complete healthy privacy-safe aggregate. (`runtime/observability/guardian-fleet-state.js:541-576 "projectPublicContinuity"`)
 
 ## Working If
@@ -159,7 +159,7 @@ This architecture is working when an agent can answer, from one navigation path,
 ## Provenance
 
 - Sources consulted: `README.md`, `guides/INTEGRATION.md`, `SECURITY.md`, `package.json`, `policy-roundtrip.js`, `simulator-contracts.js`, `simulator.js`, `simulator-fallback.js`, `staging-feed.js`, `continuity-evidence.js`, `scripts/build-site.mjs`, `scripts/generate-release-manifest.js`, `scripts/generate-release-manifest-v2.mjs`, `scripts/verify-producer-derivation.mjs`, `scripts/system-inspect.mjs`, `system/bounder-system.v1.json`, `ui/policy-roundtrip-panel.js`, `design/brand-source/README.md`, `.github/workflows/deploy-pages.yml`, `.github/workflows/receipt-drift.yml`, `release/bounder-reference-v1.0.4.manifest.json`
-- Last verified against sources: 2026-09-03
+- Last verified against sources: 2026-09-07
 
 ## See Also
 

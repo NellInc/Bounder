@@ -1617,3 +1617,8 @@ button, a {
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
 }
+
+/* Interior headers have a light surface; retain the canonical wordmark contrast. */
+.interior-page:not(.simulator-page) .site-header .brand-lockup { background: var(--ink); }
+
+[data-hosted-submit][hidden] { display: none; }

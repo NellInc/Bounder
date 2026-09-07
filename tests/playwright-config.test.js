@@ -4,6 +4,7 @@ import test from "node:test";
 import config from "../playwright.config.js";
 
 test("browser acceptance always builds and serves an isolated publication artifact", () => {
+  assert.deepEqual(config.use.trace, { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true });
   assert.equal(config.retries, 0, "browser failures may not be hidden by a passing retry");
   assert.equal(config.webServer?.reuseExistingServer, false);
   assert.equal(config.webServer?.url, `${config.use?.baseURL}/`);

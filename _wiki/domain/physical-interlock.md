@@ -3,7 +3,7 @@
 <!-- wiki:type = domain -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-05-23 -->
-<!-- wiki:updated = 2026-09-03 -->
+<!-- wiki:updated = 2026-09-07 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -14,7 +14,7 @@ Bounder is an open reference architecture for local, auditable physical interloc
 
 The system addresses the last decision boundary before a requested digital action changes physical state. It evaluates signed authority, current policy, local state, and fresh evidence immediately before that transition. (`index.html:318-323 "a small, inspectable gate for that boundary"`; `guides/INTEGRATION.md:9-14`)
 
-The pattern covers aircraft, ground robots, autonomous boats, warehouse vehicles, inspection platforms, and fixed machinery. Each class supplies different local evidence and requires a separately engineered safe response. (`guides/INTEGRATION.md:81-88 "Fixed machinery"`)
+The pattern covers aircraft, ground robots, autonomous boats, warehouse vehicles, inspection platforms, and fixed machinery. Each class supplies different local evidence and requires a separately engineered safe response. (`guides/INTEGRATION.md:126 "Fixed machinery"`)
 
 ## Domain Questions
 
@@ -30,12 +30,12 @@ The published contracts encode issuer, subject, sequence, validity, actions, con
 
 ## Domain Invariants
 
-1. Missing verified current policy means no new permission. (`guides/INTEGRATION.md:94 "No verified current policy means no new permission."`)
-2. A replayed sequence cannot replace a newer accepted sequence. (`guides/INTEGRATION.md:95 "A replayed sequence cannot replace a newer accepted sequence."`)
-3. Network or audit failure cannot broaden local authority. (`guides/INTEGRATION.md:96-97 "Audit delivery failure cannot change the local decision."`)
-4. Expiry ends cached authority. (`guides/INTEGRATION.md:98 "Expiry ends cached authority while offline."`)
-5. Evidence-only rules cannot authorize an actuator. (`guides/INTEGRATION.md:99 "Evidence-only rules cannot become actuator authority."`)
-6. The adapter owns platform-specific safe response and fails safely on missing, stale, malformed, or unsupported input. (`guides/INTEGRATION.md:90 "An adapter should be narrow, deterministic, separately tested, and fail safe"`)
+1. Missing verified current policy means no new permission. (`guides/INTEGRATION.md:132 "No verified current policy means no new permission."`)
+2. A replayed sequence cannot replace a newer accepted sequence. (`guides/INTEGRATION.md:133 "A replayed sequence cannot replace a newer accepted sequence."`)
+3. Network or audit failure cannot broaden local authority. (`guides/INTEGRATION.md:135 "Audit delivery failure cannot change the local decision."`)
+4. Expiry ends cached authority. (`guides/INTEGRATION.md:136 "Expiry ends cached authority while offline."`)
+5. Evidence-only rules cannot authorize an actuator. (`guides/INTEGRATION.md:137 "Evidence-only rules cannot become actuator authority."`)
+6. The adapter owns platform-specific safe response and fails safely on missing, stale, malformed, or unsupported input. (`guides/INTEGRATION.md:128 "An adapter should be narrow, deterministic, separately tested, and fail safe"`)
 7. Software evidence never implies certification, production deployment, hardware compatibility, or regulatory compliance. (`SECURITY.md:51-53 "Passing software tests does not establish any of those properties."`)
 
 ## Domain Vocabulary
@@ -52,7 +52,7 @@ The published contracts encode issuer, subject, sequence, validity, actions, con
 | Continuity lease | Bounded offline window during which cached authority can remain current |
 | Evidence-only action | A scenario recorded for audit whose result cannot authorize an actuator |
 
-These meanings compile the integration contract and published schemas. (`guides/INTEGRATION.md:29-45`; `guides/INTEGRATION.md:92-100 "Fleet rollback floors survive Guardian restart."`; `schemas/creedspace-bounder-checkpoint-v1.schema.json:1-120`; `schemas/bounder.receipt.v1.schema.json:1-120`)
+These meanings compile the integration contract and published schemas. (`guides/INTEGRATION.md:29-45`; `guides/INTEGRATION.md:138 "Fleet rollback floors survive Guardian restart."`; `schemas/creedspace-bounder-checkpoint-v1.schema.json:1-120`; `schemas/bounder.receipt.v1.schema.json:1-120`)
 
 ## Explicit Boundary
 
@@ -65,7 +65,7 @@ The domain model is working when the same stable terms describe policy authoring
 ## Provenance
 
 - Sources consulted: `README.md`, `index.html`, `guides/INTEGRATION.md`, `SECURITY.md`, published JSON Schemas
-- Last verified against sources: 2026-09-03
+- Last verified against sources: 2026-09-07
 
 ## See Also
 

@@ -12,7 +12,9 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4173",
     browserName: "chromium",
-    trace: "retain-on-failure"
+    // Continuous filmstrip readbacks can stall software WebGL under host pressure.
+    // Keep DOM/source traces and the explicit visual QA captures instead.
+    trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true }
   },
   webServer: {
     command: "npm run build && python3 -m http.server 4173 --bind 127.0.0.1 --directory _site",

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 · 2026-09-07 (source candidate, unsealed)
+
+Local experience update. This candidate has not been published or release-sealed.
+
+- Scene and recorded decision share a responsive workspace, with secondary evidence tools.
+- Grouped scenarios, guided progression, full-text Fleet inspection and platform/outcome filters.
+- Overview, top-down, subject focus, text explanation and independent low-power rendering.
+- Demand rendering when paused and suspension outside the visible scene; geometry separated from evidence presentation.
+- Policy, parsing, signature and round-trip implementations moved into their existing module boundaries.
+- Clearer simulation status, public/private source ownership, and developer contract examples.
+- Contact failure recovery, provider-confirmed acceptance and explicit hosted-form fallback.
+
+Producer derivation, immutable source/manifest commits and live-byte verification remain release gates.
+
 ## 1.1.2 · 2026-09-03
 
 Broad polish release from a verified repository audit: 64 confirmed findings across

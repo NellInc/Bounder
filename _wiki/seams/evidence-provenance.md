@@ -3,7 +3,7 @@
 <!-- wiki:type = seam -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-03 -->
+<!-- wiki:updated = 2026-09-07 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -148,7 +148,7 @@ This seam is working when a receipt displayed in the browser can be traced mecha
 ## Provenance
 
 - Sources consulted: `README.md`, `guides/INTEGRATION.md`, `SECURITY.md`, `schemas/bounder.receipt.v1.schema.json`, `simulator-contracts.js`, `scripts/generate-release-manifest.js`, `scripts/generate-release-manifest-v2.mjs`, `scripts/verify-producer-derivation.mjs`, `scripts/lib/release-producer.mjs`, `.github/workflows/receipt-drift.yml`
-- Last verified against sources: 2026-09-03
+- Last verified against sources: 2026-09-07
 
 ## See Also
 

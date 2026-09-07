@@ -3,16 +3,16 @@
 <!-- wiki:type = system -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-03 -->
+<!-- wiki:updated = 2026-09-07 -->
 <!-- wiki:status = active -->
 
 ## Summary
 
-Bounder's observability reference gives Guardian heartbeats, Fleet snapshots, Fleet transition events, and the existing public continuity proof one coherent state model. It is a simulation and integration contract. Deployed Guardian behavior, Fleet capacity, hardware performance, and physical safety remain unverified until the confirmed external owners implement and measure it. (`runtime/observability/guardian-fleet-state.js:17-31 "simulation-reference-observability-only"`; `system/bounder-system.v1.json:1533-1537 "Do not present reference observability budgets as deployed Guardian or Fleet performance."`)
+Bounder's observability reference gives Guardian heartbeats, Fleet snapshots, Fleet transition events, and the existing public continuity proof one coherent state model. It is a simulation and integration contract. Deployed Guardian behavior, Fleet capacity, hardware performance, and physical safety remain unverified until the confirmed external owners implement and measure it. (`runtime/observability/guardian-fleet-state.js:17-31 "simulation-reference-observability-only"`; `system/bounder-system.v1.json:1557 "Do not present reference observability budgets as deployed Guardian or Fleet performance."`)
 
 ## Authority Separation
 
-Heartbeats are signed observations. Fleet can classify a Guardian as healthy, degraded, held, recovering, or unreachable. That classification never grants, broadens, or revokes a physical permission. The local Guardian continues to derive authority from verified policy, fresh evidence, checkpoint floors, and continuity leases. (`runtime/observability/guardian-fleet-state.js:159-194 "deriveGuardianStateUnchecked"`; `guides/INTEGRATION.md:67-71 "They never grant, broaden, or revoke permission."`)
+Heartbeats are signed observations. Fleet can classify a Guardian as healthy, degraded, held, recovering, or unreachable. That classification never grants, broadens, or revokes a physical permission. The local Guardian continues to derive authority from verified policy, fresh evidence, checkpoint floors, and continuity leases. (`runtime/observability/guardian-fleet-state.js:159-194 "deriveGuardianStateUnchecked"`; `guides/INTEGRATION.md:106 "They never grant, broaden, or revoke permission."`)
 
 Network loss therefore has two separate consequences:
 
@@ -43,7 +43,7 @@ Three contract details are now tighter than the original publication. The `ident
 
 These four schemas are shared contracts that the private decision producer must carry byte for byte. Any change here must land in the producer in lockstep, or `npm run verify:producer` fails the contract-parity comparison. (`scripts/verify-producer-derivation.mjs:13-27 "SHARED_CONTRACTS"`)
 
-Signed telemetry is parsed by the same strict parser as signed policy, reached through the narrow `runtime/json/policy-json.js` seam, so a duplicate object key or a non-UTF-8 byte fails identically on both paths and the payload byte limit is applied once. (`runtime/observability/guardian-fleet-state.js:773-779 "parseStrictJSON"`; `runtime/json/policy-json.js:1 "parseStrictJSON"`)
+Signed telemetry is parsed by the same strict parser as signed policy, reached through the narrow `runtime/json/policy-json.js` seam, so a duplicate object key or a non-UTF-8 byte fails identically on both paths and the payload byte limit is applied once. (`runtime/observability/guardian-fleet-state.js:773-779 "parseStrictJSON"`; `runtime/json/policy-json.js:17 "parseStrictJSON"`)
 
 ## Guardian State Derivation
 
@@ -87,11 +87,11 @@ Healthy Guardians report every 30 seconds, extending to 60 seconds after ten sta
 
 `npm run benchmark:observability` warms the maximum 10,000-Guardian reference corpus, measures three complete aggregations, checks median process CPU consumption against the reference budget, records monotonic wall time as a diagnostic, and checks heartbeat, snapshot, and event byte budgets. Process CPU time isolates algorithmic cost from unrelated host scheduling pressure; wall time remains visible without becoming a false regression gate. Its receipt explicitly excludes production capacity, decision latency, and hardware performance. (`scripts/benchmark-observability.mjs:62-70 "runObservabilityBenchmark"`; `scripts/benchmark-observability.mjs:136-139 "does_not_establish"`)
 
-`npm run check:changed -- --paths runtime/observability/guardian-fleet-state.js` derives the runtime proof route without spending build or browser resources. A telemetry-schema path adds publication build and browser proof because those contracts are public. (`system/bounder-system.v1.json:1144-1167 "observability_runtime"`; `scripts/lib/system-model.mjs:220-242 "planForPaths"`)
+`npm run check:changed -- --paths runtime/observability/guardian-fleet-state.js` derives the runtime proof route without spending build or browser resources. A telemetry-schema path adds publication build and browser proof because those contracts are public. (`system/bounder-system.v1.json:1161 "observability_runtime"`; `scripts/lib/system-model.mjs:220-242 "planForPaths"`)
 
 ## Deployment Handoff
 
-The website repository owns these published contracts, the pure reference model, and their tests. The final Guardian producer and Creed Space Fleet backend own integration. The decision producer is now identified — private `NellInc/Bounder-from-org` on `master` — but the Fleet backend owner and the deployed heartbeat integration are still unverified, and no deployment path is established, so this implementation does not modify the observed external checkout or claim live benefit. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1535 "The Fleet backend owner and deployed Guardian heartbeat integration remain unverified."`)
+The website repository owns these published contracts, the pure reference model, and their tests. The final Guardian producer and Creed Space Fleet backend own integration. The decision producer is now identified — private `NellInc/Bounder-from-org` on `master` — but the Fleet backend owner and the deployed heartbeat integration are still unverified, and no deployment path is established, so this implementation does not modify the observed external checkout or claim live benefit. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1556 "The Fleet backend owner and deployed Guardian heartbeat integration remain unverified."`)
 
 The deployment gate requires:
 
@@ -105,7 +105,7 @@ The deployment gate requires:
 ## Provenance
 
 - Sources consulted: runtime observability modules, public schemas, existing continuity verifier, integration guide, system descriptor, benchmark, and deterministic tests
-- Last verified against sources: 2026-09-03
+- Last verified against sources: 2026-09-07
 
 ## See Also
 

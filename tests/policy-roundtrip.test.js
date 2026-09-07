@@ -801,3 +801,32 @@ test("a step without its detail element still records the step state", () => {
   assert.equal(typeof controller?.loadPublishedExample, "function");
   controller.cancel();
 });
+
+test("unavailable published vector offers a retry and local inspection without granting authority", async () => {
+  const ui = fakePolicyPanel();
+  let verificationCalls = 0;
+  const controller = bootstrapPolicyRoundTrip(ui.root, {
+    fetchJSON: async () => { throw new Error("published vector request failed"); },
+    verifyVector: async () => { verificationCalls += 1; }
+  });
+  await controller.loadPublishedExample();
+  assert.equal(ui.status.dataset.state, "rejected");
+  assert.match(ui.status.querySelector("strong").textContent, /retry the published example/);
+  assert.match(ui.status.querySelector("strong").textContent, /local JSON file/);
+  assert.equal(ui.sampleButton.disabled, false);
+  assert.equal(verificationCalls, 0);
+  controller.cancel();
+});
+
+test("authority classification preserves explicit instant and legacy millisecond inputs", () => {
+  const validity = { notBefore: 1000, expiresAt: 2000 };
+  assert.equal(classifyAuthority(validity, 1500), "current");
+  assert.equal(classifyAuthority(validity, 1_500_000_000n), "current");
+  assert.equal(classifyAuthority(validity, { epochNanoseconds: 1_500_000_000n }), "current");
+  assert.equal(classifyAuthority(validity, "1970-01-01T00:00:01.500Z"), "current");
+  assert.equal(classifyAuthority(validity, 999), "not-yet-valid");
+  assert.equal(classifyAuthority(validity, 2000), "expired");
+  for (const invalid of [null, {}, NaN, Infinity, false]) {
+    assert.throws(() => classifyAuthority(validity, invalid), /authority evaluation time is invalid/);
+  }
+});

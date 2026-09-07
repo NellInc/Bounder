@@ -3,12 +3,12 @@
 <!-- wiki:type = flow -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-03 -->
+<!-- wiki:updated = 2026-09-07 -->
 <!-- wiki:status = active -->
 
 ## Summary
 
-An agent working on Bounder needs a low-cost path from intent to the smallest safe edit and the strongest relevant proof. This flow provides progressive disclosure, task routing, explicit state transitions, and accretive closeout. The system descriptor and agent commands select and explain the repository's unit, coverage, browser, design-lint, build, manifest, and documentation gates. (`system/bounder-system.v1.json:1-20`; `package.json:6-22 "release:manifest:v2"`; `README.md:63-86`)
+An agent working on Bounder needs a low-cost path from intent to the smallest safe edit and the strongest relevant proof. This flow provides progressive disclosure, task routing, explicit state transitions, and accretive closeout. The system descriptor and agent commands select and explain the repository's unit, coverage, browser, design-lint, build, manifest, and documentation gates. (`system/bounder-system.v1.json:1-20`; `package.json:6-22 "release:manifest:v2"`; `README.md:65-88`)
 
 ## Thirty-Second Orientation
 
@@ -37,7 +37,7 @@ Stop broad exploration once the task surface, authority boundary, and proof rout
 | Change heartbeat, Fleet state, or observability budgets | [[bounder:systems/runtime-observability]] | `runtime/observability/`, `runtime/json/`, observability tests | `npm run test:observability`, `npm run benchmark:observability`, coverage and docs | Deployed producer or Fleet integration is requested |
 | Change a public telemetry schema | [[bounder:systems/runtime-observability]] | Four observability schemas and compatible reference validators | Observability tests and benchmark, coverage, build, browser, docs | Release pinning or producer contract adoption is requested |
 
-The touched surfaces and current tests support these routes. (`README.md:9-45`; `tests/interface.test.js:13-101`; `tests/site-quality.test.js:55-84`; `tests/publication.test.js:80-113`)
+The touched surfaces and current tests support these routes. (`README.md:11-47`; `tests/interface.test.js:13-102`; `tests/site-quality.test.js:55-84`; `tests/publication.test.js:80-113`)
 
 ## Control Loop
 
@@ -126,7 +126,7 @@ Unit suites write their receipts into scratch directories rather than into the w
 
 Reproducible simulator findings from outside the team arrive through `.github/ISSUE_TEMPLATE/operator-demo.yml`, which frames them as reports about recorded reference evidence and browser presentation rather than about deployed Guardian hardware. (`.github/ISSUE_TEMPLATE/operator-demo.yml:1-9 "Operator demonstration finding"`)
 
-That template and `design/**` are covered by the `repository_provenance` impact rule, whose only command is `docs_check`: neither ships in any artifact, so the sole thing that can be wrong about them is a documentation citation. Changing either needs no build, browser, or release proof. (`system/bounder-system.v1.json:1497-1521 "repository_provenance"`)
+That template and `design/**` are covered by the `repository_provenance` impact rule, whose only command is `docs_check`: neither ships in any artifact, so the sole thing that can be wrong about them is a documentation citation. Changing either needs no build, browser, or release proof. (`system/bounder-system.v1.json:1519 "repository_provenance"`)
 
 ## Target Command Surface
 
@@ -172,7 +172,7 @@ This operating loop is working when a fresh agent can select the correct files a
 ## Provenance
 
 - Sources consulted: `CLAUDE.md`, `README.md`, `package.json`, `playwright.config.js`, `scripts/build-site.mjs`, `scripts/docs-check.mjs`, `scripts/generate-release-manifest.js`, `scripts/generate-release-manifest-v2.mjs`, `tests/agent-commands.test.js`, `tests/interface.test.js`, `tests/site-quality.test.js`, `tests/publication.test.js`, `.github/ISSUE_TEMPLATE/operator-demo.yml`
-- Last verified against sources: 2026-09-03
+- Last verified against sources: 2026-09-07
 
 ## See Also
 

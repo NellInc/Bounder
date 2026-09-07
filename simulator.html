@@ -91,23 +91,17 @@
 
   <main id="main">
     <section class="simulator-intro" aria-labelledby="simulator-title">
-      <div class="section-label">Local interlock demonstrator</div>
-      <div>
-        <h1 id="simulator-title">The last word before motion.</h1>
-        <p>Bounder sits beside the actuator. It checks signed authority, current policy, and local conditions before a requested state change can proceed. A failed rule becomes a hold, with a receipt explaining why.</p>
-      </div>
-      <aside>
-        <span>What you are seeing</span>
-        <p>A software-only town replays deterministic receipts from Bounder’s Go verifier. The local Fleet laboratory can also stream its recorded fault evidence into the controls below.</p>
-      </aside>
+      <div class="section-label">Software-only reference · Recorded evidence</div>
+      <div><h1 id="simulator-title">Watch the boundary hold.</h1></div>
+      <aside><span>No actuator connected</span><p>This town explains evidence from Bounder’s Go verifier. Browser controls never grant physical authority.</p></aside>
     </section>
 
     <section class="simulator-workbench" aria-labelledby="workbench-title">
       <div class="workbench-heading">
         <div>
           <div class="section-label">Scenario laboratory</div>
-          <h2 id="workbench-title">Test the interlock.</h2>
-          <p class="workbench-summary">Change one condition at a time. Watch the same request move from permitted to held as the local evidence changes.</p>
+          <h2 id="workbench-title">Choose a scenario</h2>
+          <p class="workbench-summary">Start with a cleared route, then explore a protective limit.</p>
         </div>
         <div class="workbench-actions">
           <button class="sim-control sim-tour" type="button" data-action="tour" aria-expanded="false" disabled>Guided tour</button>
@@ -136,24 +130,98 @@
       </section>
 
       <div class="scenario-controls" role="group" aria-label="Choose a simulation scenario">
-        <button class="scenario-button" type="button" data-scenario="safe" aria-pressed="false" disabled>Cleared route</button>
-        <button class="scenario-button" type="button" data-scenario="civilian" aria-pressed="false" disabled>Civilian buffer</button>
-        <button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false" disabled>Friendly separation</button>
-        <button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false" disabled>Protected site</button>
-        <button class="scenario-button" type="button" data-scenario="humanitarian" aria-pressed="false" disabled>Humanitarian corridor</button>
-        <button class="scenario-button" type="button" data-scenario="surrender" aria-pressed="false" disabled>Surrender observed</button>
-        <button class="scenario-button" type="button" data-scenario="incapacitated" aria-pressed="false" disabled>Incapacitated person</button>
-        <button class="scenario-button" type="button" data-scenario="identification" aria-pressed="false" disabled>Positive identification</button>
-        <button class="scenario-button" type="button" data-scenario="proportionality" aria-pressed="false" disabled>Proportionality</button>
-        <button class="scenario-button" type="button" data-scenario="human_authorization" aria-pressed="false" disabled>Human authorization</button>
-        <button class="scenario-button" type="button" data-scenario="altitude" aria-pressed="false" disabled>Altitude ceiling</button>
-        <button class="scenario-button" type="button" data-scenario="weather" aria-pressed="false" disabled>Weather limit</button>
-        <button class="scenario-button" type="button" data-scenario="window" aria-pressed="false" disabled>Operating window</button>
-        <button class="scenario-button" type="button" data-scenario="link" aria-pressed="false" disabled>Lost link</button>
-        <button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false" disabled>Policy replay</button>
+        <div class="scenario-quick"><button class="scenario-button" type="button" data-scenario="safe" aria-pressed="false" disabled>Cleared route</button>
+<button class="scenario-button" type="button" data-scenario="civilian" aria-pressed="false" disabled>Civilian buffer</button>
+<button class="scenario-button" type="button" data-scenario="weather" aria-pressed="false" disabled>Weather limit</button>
+<button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false" disabled>Policy replay</button></div>
+        <details class="scenario-more"><summary>More scenarios · people and operating limits</summary><fieldset><legend>People</legend><div class="scenario-group"><button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false" disabled>Friendly separation</button><button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false" disabled>Protected site</button><button class="scenario-button" type="button" data-scenario="humanitarian" aria-pressed="false" disabled>Humanitarian corridor</button><button class="scenario-button" type="button" data-scenario="surrender" aria-pressed="false" disabled>Surrender observed</button><button class="scenario-button" type="button" data-scenario="incapacitated" aria-pressed="false" disabled>Incapacitated person</button><button class="scenario-button" type="button" data-scenario="identification" aria-pressed="false" disabled>Positive identification</button><button class="scenario-button" type="button" data-scenario="proportionality" aria-pressed="false" disabled>Proportionality</button><button class="scenario-button" type="button" data-scenario="human_authorization" aria-pressed="false" disabled>Human authorization</button></div></fieldset><fieldset><legend>Operating limits</legend><div class="scenario-group"><button class="scenario-button" type="button" data-scenario="altitude" aria-pressed="false" disabled>Altitude ceiling</button><button class="scenario-button" type="button" data-scenario="window" aria-pressed="false" disabled>Operating window</button><button class="scenario-button" type="button" data-scenario="link" aria-pressed="false" disabled>Lost link</button></div></fieldset></details>
       </div>
 
-      <section class="fleet-control-panel" aria-labelledby="fleet-control-title">
+      <div class="simulator-grid" id="scenario-workspace">
+        <div class="scene-column">
+        <div class="simulator-stage">
+          <canvas tabindex="0" role="img" aria-keyshortcuts="W A S D Q E" aria-describedby="simulator-navigation-help" aria-label="Three-dimensional simulation of an autonomous aircraft flying above a detailed town while Bounder evaluates local protection rules"></canvas>
+          <section class="scene-explanation" aria-labelledby="scene-explanation-title" hidden>
+            <span class="section-label">Accessible explanation</span>
+            <h3 id="scene-explanation-title">Read the boundary</h3>
+            <p data-scene-explanation>Choose a scenario to inspect its recorded result.</p>
+            <p>The spatial scene is illustrative. The adjacent receipt states the recorded cause and device-specific response.</p>
+          </section>
+          <div class="stage-status" aria-live="polite">
+            <span class="status-phase">Evidence loading</span>
+            <code class="status-code">evidence_pending</code>
+          </div>
+          <div class="stage-legend" aria-hidden="true">
+            <span><i class="legend-route"></i>Route projection</span>
+            <span><i class="legend-boundary"></i>Protection boundary</span>
+            <span><i class="legend-bounder"></i>Bounder envelope</span>
+            <span class="legend-explore"><kbd>WASD</kbd> move <kbd>Q/E</kbd> altitude · drag orbit</span>
+          </div>
+          <p class="visually-hidden" id="simulator-navigation-help">Focus the scene, then use W, A, S, and D to move. Use Q to descend and E to climb. Drag to orbit the camera.</p>
+          <p class="webgl-fallback">The 3D scene could not start. The decision panel remains available.</p>
+        </div>
+
+        <div class="scene-toolbar" role="group" aria-label="Scene view">
+          <button type="button" data-camera="overview" aria-pressed="true" disabled>Overview</button>
+          <button type="button" data-camera="top" aria-pressed="false" disabled>Top-down</button>
+          <button type="button" data-camera="focus" aria-pressed="false" disabled>Focus subject</button>
+          <button type="button" data-explanation aria-pressed="false">Text view</button>
+          <label>Detail <select data-render-quality aria-label="Scene detail"><option value="standard">Standard</option><option value="low">Low power</option></select></label>
+        </div>
+        <p class="scene-caption">Dashed line: illustrative route. Coloured boundary: selected protection. The receipt supplies the outcome.</p>
+        </div>
+        <aside class="decision-panel" aria-labelledby="decision-title">
+          <div class="decision-header">
+            <h3 id="decision-title" class="visually-hidden">Decision receipt</h3>
+            <div class="section-label">Decision receipt</div>
+            <span class="receipt-source">Loading Go interlock receipt</span>
+            <strong class="decision-outcome">Unavailable</strong>
+            <code class="decision-code">evidence_pending</code>
+            <p class="decision-reason">Waiting for signed evidence before enabling the simulator.</p>
+          </div>
+
+          <div class="actuation-state">
+            <span>Recorded adapter response</span>
+            <strong class="adapter-output">No command authority</strong>
+          </div>
+          <details class="receipt-details">
+            <summary>Inspect receipt evidence</summary>
+          <ol class="rule-stack" aria-label="Evaluated rule stack">
+            <li data-rule="fleet"><span>Fleet signature and device binding</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="authority"><span>Signed authority</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="civilian"><span>Civilian protection</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="friendly"><span>Friendly-force separation</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="protected"><span>Protected sites</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="humanitarian"><span>Humanitarian corridors</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="surrender"><span>Surrender protection</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="incapacitated"><span>Incapacitated-person protection</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="identification"><span>Positive identification</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="proportionality"><span>Proportionality condition</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="authorization"><span>Human authorization</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="operating"><span>Operating envelope</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="weather"><span>Weather and visibility</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="link"><span>Link and telemetry</span><strong>UNAVAILABLE</strong></li>
+          </ol>
+            <dl>
+              <div><dt>Engine</dt><dd data-receipt="engine">Loading</dd></div>
+              <div><dt>Signature</dt><dd data-receipt="signature">Loading</dd></div>
+              <div><dt>Policy</dt><dd data-receipt="policy">Loading</dd></div>
+              <div><dt>Issuer</dt><dd data-receipt="issuer">Loading</dd></div>
+              <div><dt>Subject</dt><dd data-receipt="subject">Loading</dd></div>
+              <div><dt>Sequence</dt><dd data-receipt="sequence">Loading</dd></div>
+              <div><dt>Evidence</dt><dd data-receipt="evidence">Loading</dd></div>
+              <div><dt>Evaluated</dt><dd data-receipt="evaluated">Loading</dd></div>
+              <div class="receipt-hash"><dt>Policy hash</dt><dd data-receipt="hash">Loading</dd></div>
+            </dl>
+            <p><a href="data/bounder-receipts.v1.json">Raw receipts</a> · <a href="schemas/bounder.receipt.v1.schema.json">JSON schema</a></p>
+          </details>
+        </aside>
+      </div>
+      <p class="workspace-proof">Evidence is recorded for review. Permission to operate is never granted here.</p>
+      <nav class="evidence-nav" aria-label="Evidence tools"><a href="#fleet-evidence">Fleet evidence</a><a href="#fault-replay">Fault replay</a><a href="#contract-inspector">Contract inspector</a></nav>
+      <div class="evidence-tools">
+      <details class="evidence-disclosure" id="fleet-evidence"><summary><strong>Fleet evidence</strong><span>Inspect recorded Guardians</span></summary>
+<section class="fleet-control-panel" aria-labelledby="fleet-control-title">
         <div>
           <h3 id="fleet-control-title" class="visually-hidden">Fleet control panel</h3>
           <span class="fleet-kicker">Creed Space Fleet</span>
@@ -166,18 +234,27 @@
           <div><dt>Policy</dt><dd data-fleet="policy">Loading</dd></div>
           <div><dt>Evidence</dt><dd data-fleet="evidence">Loading</dd></div>
         </dl>
+        <div class="fleet-filters">
+          <label>Find a Guardian<input type="search" data-fleet-search placeholder="Device, scenario or reason"></label>
+          <label>Platform<select data-fleet-platform aria-label="Platform"><option value="all">All platforms</option></select></label>
+          <label>Outcome<select data-fleet-outcome aria-label="Outcome"><option value="all">All outcomes</option><option value="allowed">Allowed request</option><option value="held">Protective hold</option></select></label>
+        </div>
+        <p data-fleet-count role="status">Waiting for recorded evidence.</p>
+        <p class="fleet-reading-note">A protective hold can be the expected successful result. Expand a Guardian to read its full reason and evidence.</p>
         <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder guardian outcomes"></div>
         <p class="fleet-evidence-caveat">This browser checks the published Fleet records for exact contracts, payload mirrors, digests, and signature encoding. The fixture omits the audit public key bytes, so its audit signatures are recorded evidence rather than authenticated here.</p>
         <p class="fleet-contract-links"><a href="data/bounder-staging-pilot.v1.json">100-Guardian pilot evidence</a> · <a href="data/bounder-fleet-evidence.v1.json">Resilience evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a> · <a href="schemas/creedspace-bounder-checkpoint-v1.schema.json">Checkpoint schema</a></p>
       </section>
+</details>
 
-      <section class="policy-roundtrip" data-policy-roundtrip aria-labelledby="policy-roundtrip-title">
+      <details class="evidence-disclosure" id="contract-inspector"><summary><strong>Contract inspector</strong><span>Verify signed bytes locally</span></summary>
+<section class="policy-roundtrip" data-policy-roundtrip aria-labelledby="policy-roundtrip-title">
         <div class="policy-roundtrip-heading">
           <div>
             <h3 id="policy-roundtrip-title" class="visually-hidden">Policy round trip</h3>
             <span class="fleet-kicker">Creed Space contract round trip</span>
             <strong>Verify signed Fleet authority before it reaches motion.</strong>
-            <p>Load the published cross-language vector or inspect your own compatible JSON. Bounder verifies the exact Ed25519-signed payload bytes, validates the device policy, and links the policy profile to a recorded Go interlock receipt. Nothing uploaded leaves this browser.</p>
+            <p>The published example is historical: its signature can verify while its expired policy remains held. Load that vector or inspect compatible JSON. Bounder verifies the exact Ed25519-signed payload bytes, validates the device policy, and links the policy profile to a recorded Go interlock receipt. The selected file stays in this browser.</p>
           </div>
           <div class="policy-roundtrip-actions">
             <button type="button" data-policy-action="sample">Verify published example</button>
@@ -209,8 +286,10 @@
         </dl>
         <p class="policy-roundtrip-note">The browser verifies the published contract and displays recorded evidence. It does not issue authority or generate a deployment receipt. <a href="data/creedspace-bounder-golden-v1.json">Signed vector</a> · <a href="data/creedspace-bounder-roundtrip-v1.json">Signed receipt</a> · <a href="schemas/creedspace-bounder-roundtrip-v1.schema.json">Receipt schema</a> · <a href="https://github.com/NellInc/Bounder/blob/main/guides/INTEGRATION.md" target="_blank" rel="noopener noreferrer">Integration guide <span aria-hidden="true">↗</span></a></p>
       </section>
+</details>
 
-      <section class="resilience-lab" aria-labelledby="resilience-title" hidden>
+      <details class="evidence-disclosure" id="fault-replay"><summary><strong>Fault replay</strong><span>Explore recorded failure timelines</span></summary>
+<section class="resilience-lab" aria-labelledby="resilience-title" hidden>
         <div class="resilience-heading">
           <div>
             <h3 id="resilience-title" class="visually-hidden">Fleet resilience laboratory</h3>
@@ -265,69 +344,8 @@
           </div>
         </div>
       </section>
+</details>
 
-      <div class="simulator-grid">
-        <div class="simulator-stage">
-          <canvas tabindex="0" role="img" aria-keyshortcuts="W A S D Q E" aria-describedby="simulator-navigation-help" aria-label="Three-dimensional simulation of an autonomous aircraft flying above a detailed town while Bounder evaluates local protection rules"></canvas>
-          <div class="stage-status" aria-live="polite">
-            <span class="status-phase">Evidence loading</span>
-            <code class="status-code">evidence_pending</code>
-          </div>
-          <div class="stage-legend" aria-hidden="true">
-            <span><i class="legend-route"></i>Route projection</span>
-            <span><i class="legend-boundary"></i>Protection boundary</span>
-            <span><i class="legend-bounder"></i>Bounder envelope</span>
-            <span class="legend-explore"><kbd>WASD</kbd> move <kbd>Q/E</kbd> altitude · drag orbit</span>
-          </div>
-          <p class="visually-hidden" id="simulator-navigation-help">Focus the scene, then use W, A, S, and D to move. Use Q to descend and E to climb. Drag to orbit the camera.</p>
-          <p class="webgl-fallback">The 3D scene could not start. The decision panel remains available.</p>
-        </div>
-
-        <aside class="decision-panel" aria-labelledby="decision-title">
-          <div class="decision-header">
-            <h3 id="decision-title" class="visually-hidden">Decision receipt</h3>
-            <div class="section-label">Decision receipt</div>
-            <span class="receipt-source">Loading Go interlock receipt</span>
-            <strong class="decision-outcome">Unavailable</strong>
-            <code class="decision-code">evidence_pending</code>
-            <p class="decision-reason">Waiting for signed evidence before enabling the simulator.</p>
-          </div>
-          <ol class="rule-stack" aria-label="Evaluated rule stack">
-            <li data-rule="fleet"><span>Fleet signature and device binding</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="authority"><span>Signed authority</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="civilian"><span>Civilian protection</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="friendly"><span>Friendly-force separation</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="protected"><span>Protected sites</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="humanitarian"><span>Humanitarian corridors</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="surrender"><span>Surrender protection</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="incapacitated"><span>Incapacitated-person protection</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="identification"><span>Positive identification</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="proportionality"><span>Proportionality condition</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="authorization"><span>Human authorization</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="operating"><span>Operating envelope</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="weather"><span>Weather and visibility</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="link"><span>Link and telemetry</span><strong>UNAVAILABLE</strong></li>
-          </ol>
-          <div class="actuation-state">
-            <span>Adapter output</span>
-            <strong class="adapter-output">No command authority</strong>
-          </div>
-          <details class="receipt-details">
-            <summary>Inspect receipt evidence</summary>
-            <dl>
-              <div><dt>Engine</dt><dd data-receipt="engine">Loading</dd></div>
-              <div><dt>Signature</dt><dd data-receipt="signature">Loading</dd></div>
-              <div><dt>Policy</dt><dd data-receipt="policy">Loading</dd></div>
-              <div><dt>Issuer</dt><dd data-receipt="issuer">Loading</dd></div>
-              <div><dt>Subject</dt><dd data-receipt="subject">Loading</dd></div>
-              <div><dt>Sequence</dt><dd data-receipt="sequence">Loading</dd></div>
-              <div><dt>Evidence</dt><dd data-receipt="evidence">Loading</dd></div>
-              <div><dt>Evaluated</dt><dd data-receipt="evaluated">Loading</dd></div>
-              <div class="receipt-hash"><dt>Policy hash</dt><dd data-receipt="hash">Loading</dd></div>
-            </dl>
-            <p><a href="data/bounder-receipts.v1.json">Raw receipts</a> · <a href="schemas/bounder.receipt.v1.schema.json">JSON schema</a></p>
-          </details>
-        </aside>
       </div>
     </section>
 
@@ -373,6 +391,7 @@
     <p class="copyright">© Bounder. Licensed under Apache-2.0.</p>
   </footer>
   <script type="module" src="ui/policy-roundtrip-panel.js"></script>
+  <script type="module" src="ui/workbench.js"></script>
   <script type="module" src="simulator-bootstrap.js"></script>
 </body>
 </html>

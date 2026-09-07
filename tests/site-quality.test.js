@@ -173,3 +173,26 @@ test("every issue-template link resolves to a template that exists", async () =>
     }
   }
 });
+
+test("home page distinguishes public browser source from the private decision producer", async () => {
+  const html = await readSiteFile("index.html");
+  const hero = html.match(/<div class="hero-content">([\s\S]*?)<\/section>/)?.[1];
+  assert.ok(hero);
+  assert.match(hero, /href="simulator\.html\?tour=1">Try guided demo/);
+  assert.match(hero, /Software-only research reference/);
+  assert.match(html, /canonical Go decision engine lives in a separate private producer repository/);
+  assert.match(html, /Website source on GitHub/);
+  const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])["@graph"];
+  const source = graph.find((entry) => entry["@type"] === "SoftwareSourceCode");
+  assert.equal(source.codeRepository, "https://github.com/NellInc/Bounder");
+  assert.deepEqual(source.programmingLanguage, ["HTML", "CSS", "JavaScript"]);
+});
+
+test("contact intent guidance adds no mandatory field and is associated with the message", async () => {
+  const html = await readSiteFile("contact.html");
+  assert.match(html, /id="message-hint">Optional starting point:/);
+  assert.match(html, /<textarea[^>]*aria-describedby="message-hint"[^>]*required/);
+  const required = [...html.matchAll(/<(?:input|textarea)\b[^>]*\brequired[^>]*>/g)];
+  assert.equal(required.length, 4);
+  assert.match(html, /software-only research reference/);
+});

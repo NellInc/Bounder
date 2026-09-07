@@ -40,7 +40,8 @@ const renderReceipt = (scenario) => {
   receiptSource.textContent = "Recorded Go interlock receipt · accessible evidence view";
   phaseElement.textContent = receipt.allowed ? "Bounder permits" : "Bounder holds";
   statusCode.textContent = receipt.code;
-  outcomeElement.textContent = receipt.allowed ? "Permitted" : "Held";
+  outcomeElement.textContent = receipt.allowed ? "Request allowed" : "Request denied";
+  outcomeElement.dataset.outcome = receipt.allowed ? "allowed" : "held";
   decisionCode.textContent = receipt.code;
   reasonElement.textContent = receipt.reason;
   adapterOutput.textContent = receipt.adapter.output;
@@ -54,6 +55,8 @@ const renderReceipt = (scenario) => {
   receiptFields.evaluated.textContent = receipt.evaluated_at;
   receiptFields.hash.textContent = receipt.policy_hash;
   setRuleState(receipt.allowed ? "all" : receipt.rule);
+  const group = root.querySelector(`[data-scenario="${scenario}"]`)?.closest("details");
+  if (group) group.open = true;
 };
 
 const failClosed = (message) => {
@@ -76,6 +79,7 @@ const failClosed = (message) => {
   }
 };
 
+root.querySelector("[data-render-quality]").disabled = true;
 playButton.disabled = true;
 fleetButton.disabled = true;
 tourButton.disabled = true;

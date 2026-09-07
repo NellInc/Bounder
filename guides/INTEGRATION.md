@@ -62,6 +62,44 @@ decisions and derived evidence come from the Go interlock in the private
 producer repository. The public site republishes byte-identical contracts and
 verifies deterministic outputs from an exact clean producer commit.
 
+## Developer contract walkthrough
+
+Start with the [guided browser demo](../simulator.html?tour=1), then inspect the published contracts above. This is a static verification laboratory. It publishes no policy-issuance, device-command, or Fleet ingestion HTTP API. Producer and backend integration requires a separately agreed private implementation; schema identifiers are contract names, not service endpoints.
+
+### What crosses each boundary
+
+- **Policy and envelope:** the policy schema defines subject, Fleet, monotonic sequence, validity, provenance, and constraints. The envelope carries base64 payload bytes, signature, algorithm, and signing-key ID. A structurally valid envelope alone proves no authority.
+- **Profile and checkpoint:** a profile supplies reusable constraints; a checkpoint records restart and rollback floors. Neither substitutes for a verified current signed policy.
+- **Receipt and round trip:** a receipt describes a decision. The round-trip fixture binds policy identity and exact payload digest to the recorded Go evaluation and signed Fleet audit. A matching recorded receipt is evidence of that evaluation, never a new device command.
+- **Heartbeat and Fleet contracts:** telemetry envelopes authenticate observations; snapshots and events summarize operational state. They do not change local permission.
+
+### Signed bytes and trust
+
+Decode canonical base64 and verify Ed25519 against the exact decoded payload bytes. Do not parse, pretty-print, normalize, or reserialize the payload before signature verification. The browser pins its simulation Fleet key and key ID independently of the uploaded file; a file's self-declared public key is insufficient. After verification, strict UTF-8 JSON parsing rejects duplicate members and unsupported contract fields. Policy identity and validity are checked separately from signature authenticity.
+
+### Valid and invalid examples
+
+Use copies of the existing fixtures, leaving the published originals unchanged:
+
+| Example | Expected result |
+|---|---|
+| Unmodified [golden vector](../data/creedspace-bounder-golden-v1.json) | Authentic simulation signature, subject `bounder-alpha`, Fleet `relief-fleet`, sequence `42`. Its historical validity window is 2026-07-13 12:00:00 UTC inclusive to 12:05:00 UTC exclusive; it is expired at today's clock. |
+| Golden vector with one decoded payload byte changed and its original signature retained | Signature verification fails, even if the edited JSON is well formed. |
+| Golden vector with a replacement public key or key ID | Untrusted-key rejection, including a valid self-signature made by a different key. |
+| A signed payload containing duplicate JSON members, unsupported fields, or invalid validity ordering | Rejected by strict parsing or policy validation. A fresh valid signature cannot cure an invalid contract. |
+| Unmodified [round-trip evidence](../data/creedspace-bounder-roundtrip-v1.json) matched with its golden vector | Recorded Go and Fleet audit evidence can be verified locally, independently of whether the historical policy is current. |
+| Round-trip evidence with an unsigned request changed while keeping its signed allow receipt | Rejected when the request contradicts the bound evaluation. |
+
+Executable positive and negative examples live in [`tests/policy-roundtrip.test.js`](https://github.com/NellInc/Bounder/blob/main/tests/policy-roundtrip.test.js). Run `node --test tests/policy-roundtrip.test.js` from the source checkout. Those tests use explicit fixture times to distinguish authenticity from current authority.
+
+### Failure, expiry, and replay
+
+A malformed file, unsupported signature capability, failed signature, contract mismatch, or unavailable evidence prevents a successful inspection; it supplies no permission. Browser error messages identify verification stages, rather than HTTP API error codes. At `not_before` a policy becomes current; at `expires_at` it is expired. Offline status cannot extend that window.
+
+The Guardian integration must retain monotonic sequence and checkpoint floors: replayed or older policy cannot replace newer accepted authority, and an invalid update cannot broaden the last verified unexpired policy. Browser file inspection does not install policy, persist a Guardian replay floor, or demonstrate restart durability. Verify those guarantees in the producer and target adapter separately.
+
+Selecting a JSON file reads its contents in the browser and does not upload it. The page may still fetch published reference evidence and its optional continuity feed. Local file inspection therefore describes the selected file's handling, not a promise that the whole page is network-free. The contact form is a separate Formspree submission channel.
+
 ## Guardian and Fleet observability
 
 Heartbeats, Fleet snapshots, and transition events describe operational state.

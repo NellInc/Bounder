@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-hxNNZUtiY2ty1BP1SvRTeJQ+cD0dcLxwy5TGTKO81fk='; connect-src 'self'; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self'; connect-src 'self' https://formspree.io; frame-src 'none'">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <title>Contact | Bounder</title>
   <meta name="description" content="Talk to Bounder about physical interlocks, safety research, integrations, and open-source collaboration.">
@@ -72,7 +72,7 @@
     <section class="interior-intro">
       <p class="section-label">Contact</p>
       <h1>Bring a real boundary.</h1>
-      <p>We welcome physical-interlock use cases, safety critiques, research collaboration, and contributions to the open reference implementation.</p>
+      <p>We welcome physical-interlock use cases, safety critiques, research collaboration, and contributions to the public website and browser laboratory. Bounder is a software-only research reference.</p>
     </section>
 
     <section class="contact-layout">
@@ -89,9 +89,10 @@
 
       <div class="contact-form-wrap">
         <div id="form-success" class="form-notice" role="status" hidden>
-          <strong>Message received.</strong>
-          <p>Thank you. We will respond as soon as practical.</p>
+          <strong>Enquiry accepted.</strong>
+          <p>Formspree accepted your enquiry. Thank you for getting in touch.</p>
         </div>
+        <p id="form-error" class="form-notice" role="alert" hidden></p>
         <h2 id="contact-form-title">Start a conversation</h2>
         <form action="https://formspree.io/f/xqalyykn" method="post" id="contact-form">
           <div class="form-field">
@@ -104,7 +105,8 @@
           </div>
           <div class="form-field">
             <label for="message">Message <span aria-hidden="true">*</span></label>
-            <textarea name="message" id="message" rows="8" required></textarea>
+            <p id="message-hint">Optional starting point: tell us whether this is a research question, integration idea, safety critique, or website contribution. Please leave out secrets and sensitive device data.</p>
+            <textarea name="message" id="message" rows="8" aria-describedby="message-hint" required></textarea>
           </div>
           <div class="form-consent">
             <input type="checkbox" name="privacy_consent" id="privacy_consent" required>
@@ -112,8 +114,8 @@
           </div>
           <input class="honeypot" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
           <input type="hidden" name="_subject" value="New Bounder enquiry">
-          <input type="hidden" name="_next" value="https://www.bounder.io/contact.html?success=true">
           <button class="button button-dark" type="submit">Send enquiry <span aria-hidden="true">→</span></button>
+          <button class="button button-dark" type="submit" data-hosted-submit hidden>Continue on Formspree</button>
         </form>
       </div>
     </section>
@@ -130,11 +132,6 @@
     </nav>
     <p class="copyright">© Bounder. Licensed under Apache-2.0.</p>
   </footer>
-  <script>
-    if (new URLSearchParams(window.location.search).get('success') === 'true') {
-      document.getElementById('form-success').hidden = false;
-      document.getElementById('contact-form').hidden = true;
-    }
-  </script>
+  <script type="module" src="ui/contact-form.js"></script>
 </body>
 </html>

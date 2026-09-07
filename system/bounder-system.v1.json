@@ -240,7 +240,19 @@
       "source_paths": [
         "policy-roundtrip.js",
         "schemas/creedspace-bounder-policy-v1.schema.json",
-        "schemas/creedspace-bounder-envelope-v1.schema.json"
+        "schemas/creedspace-bounder-envelope-v1.schema.json",
+        "runtime/policy/contracts.js",
+        "runtime/policy/core.js",
+        "runtime/policy/evaluator.js",
+        "runtime/policy/presentation-state.js",
+        "runtime/policy/primitives.js",
+        "runtime/policy/request.js",
+        "runtime/policy/roundtrip.js",
+        "runtime/json/policy-json.js",
+        "runtime/crypto/encoding.js",
+        "runtime/transport/bounded-json.js",
+        "ui/policy-roundtrip-panel.js",
+        "ui/policy-panel.js"
       ],
       "test_paths": [
         "tests/policy-roundtrip.test.js"
@@ -296,7 +308,11 @@
         "simulator-contracts.js",
         "simulator-fallback.js",
         "simulator-world.js",
-        "staging-feed.js"
+        "staging-feed.js",
+        "simulator/controller.js",
+        "simulator/scene.js",
+        "ui/fleet-view.js",
+        "ui/workbench.js"
       ],
       "test_paths": [
         "tests/simulator-contracts.test.js",
@@ -1278,7 +1294,9 @@
         "runtime/simulator/**",
         "ui/policy-roundtrip-panel.js",
         "schemas/bounder-release-manifest-v2.schema.json",
-        ".github/workflows/receipt-drift.yml"
+        ".github/workflows/receipt-drift.yml",
+        "runtime/json/**",
+        "ui/policy-panel.js"
       ],
       "components": [
         "guardian_decision",
@@ -1320,7 +1338,9 @@
         "simulator.css",
         "tests/simulator-world.test.js",
         "tests/browser/site.spec.js",
-        "simulator/**"
+        "simulator/**",
+        "ui/fleet-view.js",
+        "ui/workbench.js"
       ],
       "components": [
         "simulator"
@@ -1433,7 +1453,8 @@
         "tests/page-security.test.js",
         "tests/site-quality.test.js",
         "tests/browser-entry-side-effects.test.js",
-        "tests/embedded-simulator-height.test.js"
+        "tests/embedded-simulator-height.test.js",
+        "ui/contact-form.js"
       ],
       "components": [
         "simulator",

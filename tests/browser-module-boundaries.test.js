@@ -43,3 +43,37 @@ test("narrow contract and transport seams expose only their declared responsibil
   assert.deepEqual(Object.keys(roundtrip).sort(), ["sameJSONValue", "validateRoundTripEvidence"]);
   assert.deepEqual(Object.keys(panel).sort(), ["bootstrapPolicyRoundTrip", "classifyAuthority", "createLatestRequestGate"]);
 });
+
+test("policy implementations form an acyclic graph and keep the compatibility facade inert", async () => {
+  const coreURL = new URL("../runtime/policy/core.js", import.meta.url);
+  const coreSource = await readFile(coreURL, "utf8");
+  assert.ok(coreSource.length < 1600);
+  assert.doesNotMatch(coreSource, /(?:const|function)\s+\w+\s*[=(]/);
+  const visited = new Set();
+  const visit = async (url, ancestors = new Set()) => {
+    assert.equal(ancestors.has(url.href), false, `cyclic policy dependency: ${url.href}`);
+    if (visited.has(url.href)) return;
+    const source = await readFile(url, "utf8");
+    const next = new Set([...ancestors, url.href]);
+    for (const match of source.matchAll(/(?:import|export)\s+[\s\S]*?\bfrom\s+["']([^"']+)["']/g)) {
+      const dependency = new URL(match[1], url);
+      assert.notEqual(dependency.href, coreURL.href, "implementation must not import the compatibility facade");
+      await visit(dependency, next);
+    }
+    visited.add(url.href);
+  };
+  await visit(coreURL);
+  const panel = await readFile(new URL("../ui/policy-panel.js", import.meta.url), "utf8");
+  assert.doesNotMatch(panel, /bootstrapPolicyRoundTrip\(document\)/);
+  for (const [path, symbol] of [
+    ["runtime/json/policy-json.js", "parseStrictJSON"],
+    ["runtime/crypto/encoding.js", "decodeBase64"],
+    ["runtime/transport/bounded-json.js", "fetchBoundedJSON"],
+    ["runtime/policy/contracts.js", "verifyEnvelope"],
+    ["runtime/policy/evaluator.js", "evaluatePolicyRequest"],
+    ["runtime/policy/roundtrip.js", "validateRoundTripEvidence"]
+  ]) {
+    const source = await readFile(new URL(`../${path}`, import.meta.url), "utf8");
+    assert.match(source, new RegExp(`export const ${symbol} =`));
+  }
+});

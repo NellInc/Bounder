@@ -82,6 +82,12 @@ test("every endpoint origin a page configures is an origin its policy permits", 
     for (const origin of origins) {
       assert.ok(connect.includes(origin), `${path} configures an endpoint on ${origin} but connect-src does not allow it`);
     }
+    // The contact form progressively submits to its existing Formspree action as JSON.
+    if (path === "contact.html") {
+      const html = await readPage(path);
+      const action = html.match(/<form action="([^"]+)"/)[1];
+      origins.add(new URL(action).origin);
+    }
     const foreign = connect.filter((value) => value !== "'self'");
     assert.deepEqual(foreign.sort(), [...origins].sort(), `${path} connect-src permits origins it never configures`);
   }
