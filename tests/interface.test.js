@@ -59,8 +59,8 @@ test("resilience laboratory exposes deterministic fault controls and live-stream
 });
 
 test("recorded evidence is labelled without claiming unavailable browser authentication", () => {
-  assert.match(simulatorHtml, /fixture omits the audit public key bytes/);
-  assert.match(simulatorHtml, /audit signatures are recorded evidence rather than authenticated here/);
+  assert.match(simulatorHtml, /Checks: contracts, digests and signature format/);
+  assert.match(simulatorHtml, /Audit authentication requires the producer’s public keys/);
   assert.doesNotMatch(simulatorHtml, /streams verified Fleet events/);
   assert.match(simulatorHtml, /inspect the recorded decision receipt/);
   assert.doesNotMatch(simulatorHtml, /signed decision receipt/);
@@ -129,11 +129,12 @@ test("rollback proof scenarios expose local and Fleet floors plus bounded author
   assert.match(simulatorStyles, /\.continuity-proof\.is-held/);
 });
 
-test("rules-of-engagement scenarios are visible and evidence-only", () => {
+test("rules-of-engagement scenarios expose the recorded example for inspection", () => {
   for (const scenario of ["surrender", "incapacitated", "identification", "proportionality", "human_authorization"]) {
     assert.match(simulatorHtml, new RegExp(`data-scenario="${scenario}"`));
   }
-  assert.match(simulatorHtml, /does not issue authority or generate a deployment receipt/);
+  assert.match(simulatorHtml, /Inspect the signed example:/);
+  assert.match(simulatorHtml, /href="data\/creedspace-bounder-roundtrip-v1\.json"/);
 });
 
 test("guided operator tour deep-links to six evidence-backed proofs", () => {

@@ -7,7 +7,7 @@
 
 ## Systems
 - [[bounder:systems/system-architecture]] — Canonical abstraction tower, authority owners, planes, invariants, and repository roles (updated: 2026-09-07)
-- [[bounder:systems/site-architecture]] — Public runtime, restored hero mounting, demand rendering, contact submission boundary, evidence modes, and Pages delivery (updated: 2026-09-07)
+- [[bounder:systems/site-architecture]] — Public runtime, concise testbed presentation, restored hero mounting, demand rendering, contact submission boundary, evidence modes, and Pages delivery (updated: 2026-09-07)
 - [[bounder:systems/runtime-observability]] — Guardian heartbeat, Fleet state, transition, privacy, scheduling, and performance model (updated: 2026-09-07)
 
 ## Flows

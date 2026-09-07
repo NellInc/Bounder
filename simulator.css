@@ -1586,7 +1586,7 @@
 /* Matched-viewport polish: preserve the canonical mark and keep the scene controls in view. */
 .simulator-page .site-header { width: 100%; padding: 1.4rem max(1.5rem, calc((100vw - 1440px) / 2)); background: var(--ink); color: var(--paper-bright); border: 0; }
 .simulator-page .header-nav a::after { background: var(--signal); }
-.simulator-intro { padding: 1.2rem 0; gap: .7rem 3rem; }
+.simulator-intro { grid-template-columns: minmax(0, 1fr); padding: 1.2rem 0; gap: .7rem 3rem; }
 .simulator-intro h2 { font-size: clamp(3rem, 5vw, 4.6rem); }
 .simulator-intro > .section-label { grid-column: 1; text-transform: none; }
 .simulator-intro aside { grid-column: 2; grid-row: 1 / 3; }

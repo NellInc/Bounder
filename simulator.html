@@ -232,9 +232,8 @@
     </section>
 
     <section class="simulator-intro" aria-labelledby="simulator-title">
-      <div class="section-label">Software-only reference · Recorded evidence</div>
+      <div class="section-label">Scenario laboratory</div>
       <div><h2 id="simulator-title">Watch the boundary hold.</h2></div>
-      <aside><span>No actuator connected</span><p>This town explains evidence from Bounder’s Go verifier. Browser controls never grant physical authority.</p></aside>
     </section>
 
     <section class="simulator-workbench" aria-labelledby="workbench-title">
@@ -358,7 +357,6 @@
           </details>
         </aside>
       </div>
-      <p class="workspace-proof">Evidence is recorded for review. Permission to operate is never granted here.</p>
       <nav class="evidence-nav" aria-label="Evidence tools"><a href="#fleet-evidence">Fleet evidence</a><a href="#fault-replay">Fault replay</a><a href="#contract-inspector">Contract inspector</a></nav>
       <div class="evidence-tools">
       <details class="evidence-disclosure" id="fleet-evidence"><summary><strong>Fleet evidence</strong><span>Inspect recorded Guardians</span></summary>
@@ -384,7 +382,7 @@
         <p id="fleet-result-count" data-fleet-count role="status">Waiting for recorded evidence.</p>
         <p class="fleet-reading-note">A protective hold can be the expected successful result. Expand a Guardian to read its full reason and evidence.</p>
         <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder guardian outcomes"></div>
-        <p class="fleet-evidence-caveat">This browser checks the published Fleet records for exact contracts, payload mirrors, digests, and signature encoding. The fixture omits the audit public key bytes, so its audit signatures are recorded evidence rather than authenticated here.</p>
+        <p class="fleet-evidence-caveat">Checks: contracts, digests and signature format. Audit authentication requires the producer’s public keys.</p>
         <p class="fleet-contract-links"><a href="data/bounder-staging-pilot.v1.json">100-Guardian pilot evidence</a> · <a href="data/bounder-fleet-evidence.v1.json">Resilience evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a> · <a href="schemas/creedspace-bounder-checkpoint-v1.schema.json">Checkpoint schema</a></p>
       </section>
 </details>
@@ -426,7 +424,7 @@
           <div><dt>Payload digest</dt><dd data-policy-field="digest">Not loaded</dd></div>
           <div><dt>Recorded receipt</dt><dd data-policy-field="receipt">Not loaded</dd></div>
         </dl>
-        <p class="policy-roundtrip-note">The browser verifies the published contract and displays recorded evidence. It does not issue authority or generate a deployment receipt. <a href="data/creedspace-bounder-golden-v1.json">Signed vector</a> · <a href="data/creedspace-bounder-roundtrip-v1.json">Signed receipt</a> · <a href="schemas/creedspace-bounder-roundtrip-v1.schema.json">Receipt schema</a> · <a href="https://github.com/NellInc/Bounder/blob/main/guides/INTEGRATION.md" target="_blank" rel="noopener noreferrer">Integration guide <span aria-hidden="true">↗</span></a></p>
+        <p class="policy-roundtrip-note">Inspect the signed example: <a href="data/creedspace-bounder-golden-v1.json">Signed vector</a> · <a href="data/creedspace-bounder-roundtrip-v1.json">Signed receipt</a> · <a href="schemas/creedspace-bounder-roundtrip-v1.schema.json">Receipt schema</a> · <a href="https://github.com/NellInc/Bounder/blob/main/guides/INTEGRATION.md" target="_blank" rel="noopener noreferrer">Integration guide <span aria-hidden="true">↗</span></a></p>
       </section>
 </details>
 
@@ -495,7 +493,7 @@
       <div class="section-heading">
         <div class="section-label">Why Bounder</div>
         <h2 id="rules-title">A narrow component with a serious job.</h2>
-        <p>Bounder does not plan missions or choose goals. It sits between decision software and physical actuation, checking whether a requested change is authorized, current, and within policy.</p>
+        <p>Bounder sits between decision software and physical actuation, checking whether a requested change is authorized, current, and within policy.</p>
       </div>
       <div class="rules-context-grid">
         <article>
@@ -513,10 +511,6 @@
           <h3>Enforce ordinary limits</h3>
           <p>Altitude, time, weather, communications, battery, identity, geography, and policy freshness are first-class constraints.</p>
         </article>
-      </div>
-      <div class="simulator-boundary-note">
-        <strong>Demonstrator, not deployment assurance.</strong>
-        <p>The displayed decisions come from deterministic Go interlock receipts and a recorded Fleet contract published with their JSON schemas. Bounder is a simulation-only reference, not certified safety software or an engagement system.</p>
       </div>
     </section>
   </main>

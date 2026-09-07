@@ -40,7 +40,7 @@ simulator.html
         +-- runtime/json/policy-json.js + runtime/transport/bounded-json.js
 ```
 
-The controller and UI imports establish this dependency shape. (`simulator/controller.js:4 "createTownScene"`; `ui/policy-panel.js:1-6`; `ui/policy-roundtrip-panel.js:1 "policy-panel.js"`) The UI seam, not the policy runtime, mounts the round-trip panel. (`simulator.html:535 "ui/policy-roundtrip-panel.js"`; `simulator-bootstrap.js:28-49`; `simulator/controller.js:1-14`; `simulator-fallback.js:1-8`; `runtime/simulator/contracts-core.js:1-1`; `staging-feed.js:1-1`)
+The controller and UI imports establish this dependency shape. (`simulator/controller.js:4 "createTownScene"`; `ui/policy-panel.js:1-6`; `ui/policy-roundtrip-panel.js:1 "policy-panel.js"`) The UI seam, not the policy runtime, mounts the round-trip panel. (`simulator.html:529 "ui/policy-roundtrip-panel.js"`; `simulator-bootstrap.js:28-49`; `simulator/controller.js:1-14`; `simulator-fallback.js:1-8`; `runtime/simulator/contracts-core.js:1-1`; `staging-feed.js:1-1`)
 
 ## Component Map
 

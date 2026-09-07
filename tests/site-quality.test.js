@@ -181,7 +181,8 @@ test("home page distinguishes public browser source from the private decision pr
   assert.match(hero, /href="https:\/\/github\.com\/NellInc\/Bounder"[^>]*>Explore the code/);
   assert.match(hero, /Open physical interlocks/);
   assert.doesNotMatch(hero, /Local by design|hero-note/);
-  assert.match(html, /canonical Go decision engine lives in a separate private producer repository/);
+  assert.match(html, /Development testbed/);
+  assert.match(html, /working towards deployment/);
   assert.match(html, /Website source on GitHub/);
   const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])["@graph"];
   const source = graph.find((entry) => entry["@type"] === "SoftwareSourceCode");
@@ -195,7 +196,7 @@ test("contact intent guidance adds no mandatory field and is associated with the
   assert.match(html, /<textarea[^>]*aria-describedby="message-hint"[^>]*required/);
   const required = [...html.matchAll(/<(?:input|textarea)\b[^>]*\brequired[^>]*>/g)];
   assert.equal(required.length, 4);
-  assert.match(html, /software-only research reference/);
+  assert.match(html, /We welcome research collaborations and contributions/);
 });
 
 test("standalone simulator restores the original animated hero without duplicating the embedded hero", async () => {
@@ -208,4 +209,16 @@ test("standalone simulator restores the original animated hero without duplicati
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
   assert.match(html, /interlockObserver.observe\(interlock\)/);
   assert.match(await readSiteFile("simulator.css"), /\.simulator-embed \.hero,/);
+});
+
+test("public presentation keeps development status concise without repeated disclaimer blocks", async () => {
+  const home = await readSiteFile("index.html");
+  const simulator = await readSiteFile("simulator.html");
+  assert.match(home, /Development testbed/);
+  assert.match(home, /The path to deployment/);
+  assert.doesNotMatch(home, /Optional evidence is never|Reference software, honestly|not certified flight-control|Live hardware is outside project scope/);
+  assert.doesNotMatch(simulator, /No actuator connected|Permission to operate is never|Demonstrator, not deployment assurance|not certified safety software/);
+  const continuity = await readSiteFile("continuity-evidence.js");
+  assert.match(continuity, /Live feed unavailable\. Explore the recorded run below\./);
+  assert.doesNotMatch(continuity, /does not treat network failure as authority/);
 });

@@ -146,7 +146,7 @@ export async function buildManifestV2({
       public_inventory_sha256: inventoryHash(files),
       verification_receipt_sha256: verificationReceipt.sha256
     },
-    deployment: { status: "unverified", reason: "No deployment was authorized for this local release candidate." },
+    deployment: { status: "unverified", reason: "Deployment is verified separately after this source manifest is sealed." },
     live_observation: { status: "unverified", reason: "Live bytes and continuity evidence require a separate authorized observation after deployment." },
     observations: [
       observation("data/bounder-fleet-evidence.v1.json", "Recorded 16-Guardian Fleet laboratory evidence; it is not the deterministic producer Fleet fixture."),

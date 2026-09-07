@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 · 2026-09-07 (source candidate, unsealed)
+
+- Removed repetitive presentation disclaimers and consolidated homepage status as a development testbed working towards deployment.
+- Shortened live-feed fallback text and replaced the warning section with a development roadmap.
+- Preserved the v1.2.0 source seal and recorded the final presentation changes in a new release.
+
 ## 1.2.0 · 2026-09-07 (source candidate, unsealed)
 
 Local experience update. This candidate has not been published or release-sealed.

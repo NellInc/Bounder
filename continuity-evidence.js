@@ -433,7 +433,7 @@ const renderUnavailable = (root) => {
   for (const selector of ["[data-continuity-devices]", "[data-continuity-policies]", "[data-continuity-checkpoints]", "[data-continuity-decisions]", "[data-continuity-updated]"]) {
     root.querySelector(selector).textContent = "Unavailable";
   }
-  root.querySelector("[data-continuity-note]").textContent = "The live staging proof is unavailable or could not be verified. The simulator continues with immutable recorded evidence and does not treat network failure as authority.";
+  root.querySelector("[data-continuity-note]").textContent = "Live feed unavailable. Explore the recorded run below.";
 };
 
 export const createContinuityLeaseController = (root, {

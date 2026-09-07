@@ -51,3 +51,7 @@ Recorded: automatic trace filmstrips disabled while DOM/source traces and explic
 ## [2026-09-07] reconciliation | Restored hero release readiness
 Updated: systems/site-architecture, systems/system-architecture and index
 Rebased the UI mounting citations after the restored illustrated hero moved the simulator script entry points. No authority or contract semantics changed.
+
+## [2026-09-07] reconciliation | Concise testbed presentation
+Updated: systems/site-architecture, systems/system-architecture and index
+Rebased simulator mounting citations after removing repetitive presentation disclaimers. Development status is stated once on the homepage; verification and decision behavior are unchanged.

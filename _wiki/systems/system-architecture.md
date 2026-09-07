@@ -77,7 +77,7 @@ Private Guardian heartbeats, Fleet snapshots, and Fleet transition events extend
 
 The simulator loads recorded receipts, optional Fleet evidence, local resilience timelines, a bounded live stream, and a signed continuity feed. Its visual controls select, replay, and verify evidence. They do not recompute the canonical operational decision. (`README.md:17-32`; `simulator/controller.js:1125 "loadReceiptBundle"`; `simulator/controller.js:627 "loadPilotEvidence"`)
 
-The presentation seams own their own mounting. `simulator.html` loads `ui/policy-roundtrip-panel.js` directly, and that UI module is the only thing that calls `bootstrapPolicyRoundTrip`; importing `runtime/policy/core.js` now has no DOM side effect. `staging-feed.js` likewise imports `parseStrictJSON` from the narrow `runtime/json/policy-json.js` seam rather than from the policy facade. (`simulator.html:535 "ui/policy-roundtrip-panel.js"`; `ui/policy-roundtrip-panel.js:5-6 "The UI seam owns mounting the panel."`; `staging-feed.js:1 "runtime/json/policy-json.js"`)
+The presentation seams own their own mounting. `simulator.html` loads `ui/policy-roundtrip-panel.js` directly, and that UI module is the only thing that calls `bootstrapPolicyRoundTrip`; importing `runtime/policy/core.js` now has no DOM side effect. `staging-feed.js` likewise imports `parseStrictJSON` from the narrow `runtime/json/policy-json.js` seam rather than from the policy facade. (`simulator.html:529 "ui/policy-roundtrip-panel.js"`; `ui/policy-roundtrip-panel.js:5-6 "The UI seam owns mounting the panel."`; `staging-feed.js:1 "runtime/json/policy-json.js"`)
 
 ### Assurance plane
 
