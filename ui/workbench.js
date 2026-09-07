@@ -31,8 +31,10 @@ const nodes = root.querySelector('[data-fleet-nodes]');
 const search = root.querySelector('[data-fleet-search]');
 const platform = root.querySelector('[data-fleet-platform]');
 const outcome = root.querySelector('[data-fleet-outcome]');
+const reset = root.querySelector('[data-fleet-reset]');
 const filterFleet = () => {
   const query = search.value.trim().toLowerCase();
+  reset.disabled = !search.value && platform.value === 'all' && outcome.value === 'all';
   const rows = [...nodes.querySelectorAll('.fleet-node')];
   let visible = 0;
   for (const row of rows) {
@@ -48,6 +50,13 @@ const refreshFleet = () => {
   platform.value = classes.includes(current) ? current : 'all';
   filterFleet();
 };
+reset.addEventListener('click', () => {
+  search.value = '';
+  platform.value = 'all';
+  outcome.value = 'all';
+  filterFleet();
+  search.focus();
+});
 search.addEventListener('input', filterFleet);
 platform.addEventListener('change', filterFleet);
 outcome.addEventListener('change', filterFleet);

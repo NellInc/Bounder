@@ -4,6 +4,8 @@
 
 Local experience update. This candidate has not been published or release-sealed.
 
+- Restored original illustrated, animated hero and headline; removed the unwanted tagline.
+- Refined mobile navigation, keyboard focus and evidence targets; added one-click Fleet filter reset.
 - Scene and recorded decision share a responsive workspace, with secondary evidence tools.
 - Grouped scenarios, guided progression, full-text Fleet inspection and platform/outcome filters.
 - Overview, top-down, subject focus, text explanation and independent low-power rendering.

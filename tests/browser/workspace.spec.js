@@ -66,6 +66,10 @@ test('Fleet inspector filters real records and exposes complete reasons without 
   await page.getByLabel('Find a Guardian').fill('no-matching-guardian');
   await expect(rows).toHaveCount(0);
   await expect(page.locator('[data-fleet-count]')).toContainText('No matching results');
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(page.locator('[data-fleet-count]')).toHaveText('100 of 100 recorded Guardians');
+  await expect(page.getByLabel('Find a Guardian')).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Clear filters', exact: true })).toBeDisabled();
 });
 
 test('mobile workspace and expanded evidence stay accessible and within viewport', async ({ page }) => {

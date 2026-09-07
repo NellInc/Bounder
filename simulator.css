@@ -15,7 +15,7 @@
   padding: clamp(4.5rem, 7vw, 7rem) 0 clamp(3.5rem, 5vw, 5rem);
 }
 
-.simulator-intro h1 {
+.simulator-intro h2 {
   max-width: 900px;
   margin: 0;
   font-family: var(--font-display);
@@ -1436,6 +1436,7 @@
   background: var(--ink);
 }
 
+.simulator-embed .hero,
 .simulator-embed .site-header,
 .simulator-embed .simulator-intro,
 .simulator-embed .rules-context,
@@ -1468,7 +1469,7 @@
 .simulator-page { color-scheme: light; --focus-ring: var(--ink); }
 .simulator-intro { grid-template-columns: minmax(0, 1fr) 260px; gap: 1rem 3rem; padding: 2.8rem 0 1.5rem; width: min(calc(100% - 3rem), 1440px); }
 .simulator-intro > .section-label { grid-column: 1 / -1; }
-.simulator-intro h1 { font-size: clamp(3rem, 5.6vw, 5.4rem); line-height: 1; }
+.simulator-intro h2 { font-size: clamp(3rem, 5.6vw, 5.4rem); line-height: 1; }
 .simulator-intro > div > p { margin-top: 1rem; font-size: 1rem; }
 .simulator-intro aside { align-self: center; }
 .simulator-workbench { --focus-ring: var(--ink); color: var(--ink); background: var(--paper); padding: 1.5rem max(1.5rem, calc((100vw - 1440px) / 2)) 3rem; }
@@ -1573,7 +1574,7 @@
 @media (max-width: 420px) {
   .simulator-workbench { padding-left: 1rem; padding-right: 1rem; }
   .simulator-intro { width: calc(100% - 2rem); padding-top: 2rem; }
-  .simulator-intro h1 { font-size: 3rem; }
+  .simulator-intro h2 { font-size: 3rem; }
   .sim-control { padding: .65rem .7rem; }
   .scenario-button { font-size: .85rem; padding: .65rem; }
   .stage-legend { display: none; }
@@ -1586,7 +1587,7 @@
 .simulator-page .site-header { width: 100%; padding: 1.4rem max(1.5rem, calc((100vw - 1440px) / 2)); background: var(--ink); color: var(--paper-bright); border: 0; }
 .simulator-page .header-nav a::after { background: var(--signal); }
 .simulator-intro { padding: 1.2rem 0; gap: .7rem 3rem; }
-.simulator-intro h1 { font-size: clamp(3rem, 5vw, 4.6rem); }
+.simulator-intro h2 { font-size: clamp(3rem, 5vw, 4.6rem); }
 .simulator-intro > .section-label { grid-column: 1; text-transform: none; }
 .simulator-intro aside { grid-column: 2; grid-row: 1 / 3; }
 .simulator-workbench { padding-top: 1rem; }
@@ -1602,3 +1603,34 @@
 .simulator-stage.is-explaining .webgl-fallback { display: none; }
 
 .simulator-intro > .section-label { letter-spacing: .04em; }
+
+/* Finish the restored hero and keep secondary inspection comfortable at every width. */
+.simulator-page .hero, .simulator-page .site-header { --focus-ring: var(--signal); }
+.simulator-page .header-nav [aria-current="page"] { color: var(--signal); }
+.simulator-page .header-nav [aria-current="page"]::after { transform: scaleX(1); }
+.evidence-nav a { display: inline-flex; align-items: center; min-height: 44px; text-underline-offset: .25em; }
+.fleet-filters { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto; align-items: end; }
+.fleet-reset { min-height: 44px; padding: .6rem .9rem; border: 1px solid #7a8272; background: transparent; color: white; font: inherit; cursor: pointer; }
+.fleet-reset:disabled { color: #aab3a1; border-color: var(--line-light); cursor: default; }
+.fleet-nodes { scrollbar-gutter: stable; scroll-padding-block: .75rem; }
+.fleet-node summary:focus-visible { outline-offset: -4px; }
+@media (hover: hover) {
+  .fleet-node summary:hover { background: rgba(201, 255, 87, .06); }
+  .fleet-reset:not(:disabled):hover { color: var(--signal); border-color: var(--signal); }
+}
+@media (max-width: 1050px) {
+  .simulator-intro aside { display: block; grid-column: 1; grid-row: auto; max-width: 65ch; border-top: 1px solid var(--line); padding-top: .75rem; }
+  .simulator-intro aside p { margin-top: .35rem; }
+  .fleet-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fleet-filters label:first-child { grid-column: 1 / -1; }
+  .fleet-reset { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 680px) {
+  .simulator-page .site-header { flex-direction: column; gap: .75rem; padding: 1rem 1.5rem .5rem; }
+  .simulator-page .header-nav { display: flex; flex-wrap: wrap; gap: 0 1.1rem; text-align: left; }
+  .simulator-page .header-nav a { justify-content: flex-start; }
+  .simulator-page .hero-content { margin-top: 0; padding-block: 3rem; }
+}
+@media (max-width: 360px) {
+  .fleet-filters { grid-template-columns: minmax(0, 1fr); }
+}

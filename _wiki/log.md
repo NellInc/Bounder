@@ -47,3 +47,7 @@ Routed ui/contact-form.js through the existing public-copy validation lane and r
 ## [2026-09-07] reconciliation | Browser capture overhead
 Updated: systems/site-architecture and index
 Recorded: automatic trace filmstrips disabled while DOM/source traces and explicit QA captures remain. Assertions and application limits are unchanged.
+
+## [2026-09-07] reconciliation | Restored hero release readiness
+Updated: systems/site-architecture, systems/system-architecture and index
+Rebased the UI mounting citations after the restored illustrated hero moved the simulator script entry points. No authority or contract semantics changed.

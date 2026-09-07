@@ -178,8 +178,9 @@ test("home page distinguishes public browser source from the private decision pr
   const html = await readSiteFile("index.html");
   const hero = html.match(/<div class="hero-content">([\s\S]*?)<\/section>/)?.[1];
   assert.ok(hero);
-  assert.match(hero, /href="simulator\.html\?tour=1">Try guided demo/);
-  assert.match(hero, /Software-only research reference/);
+  assert.match(hero, /href="https:\/\/github\.com\/NellInc\/Bounder"[^>]*>Explore the code/);
+  assert.match(hero, /Open physical interlocks/);
+  assert.doesNotMatch(hero, /Local by design|hero-note/);
   assert.match(html, /canonical Go decision engine lives in a separate private producer repository/);
   assert.match(html, /Website source on GitHub/);
   const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])["@graph"];
@@ -195,4 +196,16 @@ test("contact intent guidance adds no mandatory field and is associated with the
   const required = [...html.matchAll(/<(?:input|textarea)\b[^>]*\brequired[^>]*>/g)];
   assert.equal(required.length, 4);
   assert.match(html, /software-only research reference/);
+});
+
+test("standalone simulator restores the original animated hero without duplicating the embedded hero", async () => {
+  const html = await readSiteFile("simulator.html");
+  const home = await readSiteFile("index.html");
+  const hero = html.match(/<section class="hero"[\s\S]*?<\/section>/)[0];
+  const original = home.match(/<section class="hero"[\s\S]*?<\/section>/)[0];
+  assert.equal(hero, original.replace('href="#architecture"', 'href="index.html#architecture"'));
+  assert.ok(html.indexOf(hero) < html.indexOf('<section class="simulator-intro"'));
+  assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  assert.match(html, /interlockObserver.observe\(interlock\)/);
+  assert.match(await readSiteFile("simulator.css"), /\.simulator-embed \.hero,/);
 });
