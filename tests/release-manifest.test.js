@@ -996,9 +996,9 @@ test("the current release line has either a sealed v2 manifest or an explicit so
     source = await fs.readFile(target, "utf8");
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
-    assert.equal(version, "1.2.2");
+    assert.equal(version, "1.2.3");
     const changelog = await fs.readFile(join(root, "CHANGELOG.md"), "utf8");
-    assert.match(changelog, /1\.2\.2.*source candidate, unsealed/);
+    assert.match(changelog, /1\.2\.3.*source candidate, unsealed/);
     await Promise.all([
       fs.access(join(root, "scripts", "generate-release-manifest-v2.mjs")),
       fs.access(join(root, "schemas", "bounder-release-manifest-v2.schema.json"))

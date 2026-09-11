@@ -20,20 +20,11 @@ Include the affected revision, entry point, expected trust boundary, reproductio
 
 ## Threat model summary
 
-Protected assets include the integrity of published evidence, policy examples,
-schemas, release manifests, the simulator's fail-closed decisions, visitor
-privacy, and the distinction between simulation evidence and operational proof.
+**Protected assets:** the integrity of published evidence and schemas, the simulator's fail-closed decisions, visitor privacy, and the clear line between simulation evidence and operational proof.
 
-Primary threats include tampered evidence, replayed or expired policy examples,
-unexpected cross-origin data, compromised dependencies or deployment automation,
-unsafe file uploads to the local verifier, and claims that overstate what the
-simulation demonstrates.
+**Primary threats:** tampered evidence, replayed or expired policy, unexpected cross-origin data, compromised dependencies or deployment automation, unsafe file uploads to the local verifier, and claims that overstate what the simulation demonstrates.
 
-Critical controls include exact Ed25519 payload verification, pinned evidence
-keys and hashes, strict schemas, sequence and expiry checks, same-origin runtime
-fixtures, bounded cross-origin continuity fetching, fail-closed UI states,
-self-hosted runtime dependencies, immutable release manifests, and an allowlisted
-deployment artifact.
+**Critical controls:** exact Ed25519 payload verification, pinned evidence keys, strict schemas, sequence and expiry checks, same-origin fixtures, bounded cross-origin continuity fetching, fail-closed UI states, self-hosted dependencies, immutable release manifests, and an allowlisted deployment artifact.
 
 Every published page also carries a `Content-Security-Policy` `<meta>` element
 with a `default-src 'self'` fallback, `object-src 'none'`, `style-src 'self'`,
@@ -63,7 +54,4 @@ that request against the signed policy before displaying a result.
 
 ## Security gates
 
-Do not connect this reference site or its simulator to live hardware. A physical
-deployment requires a separately reviewed implementation, hazard analysis,
-device-specific safe states, hardware-in-the-loop testing, operational controls,
-and applicable regulatory approval.
+Do not connect this reference site or its simulator to live hardware. A real deployment requires a separately reviewed implementation, hazard analysis, device-specific safe states, hardware-in-the-loop testing, and applicable regulatory approval. The simulation proves the pattern; the deployment proves the machine.

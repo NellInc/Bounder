@@ -34,7 +34,7 @@ allowlisted publication artifact
 deployed bytes + time-bounded live observations
 ```
 
-The website’s published fixtures include deterministic receipts, Fleet evidence, a signed policy vector, a signed round-trip record, and schemas. (`README.md:26-32 "creedspace-bounder-roundtrip-v1.json"`) The browser verifies strict structures, bounded transports, selected signatures, relationships, and freshness according to the surface being inspected. (`guides/INTEGRATION.md:47-57 "Inspection is entirely local"`; `SECURITY.md:55-62 "cannot authenticate those signatures"`)
+The website’s published fixtures include deterministic receipts, Fleet evidence, a signed policy vector, a signed round-trip record, and schemas. (`README.md:26-32 "creedspace-bounder-roundtrip-v1.json"`) The browser verifies strict structures, bounded transports, selected signatures, relationships, and freshness according to the surface being inspected. (`guides/INTEGRATION.md:47-57 "Inspection is entirely local"`; `SECURITY.md:46-53 "cannot authenticate those signatures"`)
 
 ## Proof Lattice
 
@@ -52,7 +52,7 @@ Each row is a separate claim class. Evidence may move upward only through the na
 | Physical safety | Device hazard analysis, safe-state design, hardware-in-the-loop tests, operational controls | Independent review and applicable certification | Established by any website gate |
 | Human, legal, rights, or regulatory assurance | Named competent authority and review record | Current independent approval | Established by software tests |
 
-The repository already separates software evidence from physical certification in its security boundary. (`SECURITY.md:51-62 "Passing software tests does not establish any of those properties."`; `SECURITY.md:64-69 "Do not connect this reference site or its simulator to live hardware."`) The target lattice extends that separation to producer, publisher, deployment, and live-operation claims.
+The repository already separates software evidence from physical certification in its security boundary. (`SECURITY.md:42-44 "Passing software tests does not establish any of those properties."`; `SECURITY.md:55-57 "Do not connect this reference site or its simulator to live hardware."`) The target lattice extends that separation to producer, publisher, deployment, and live-operation claims.
 
 ## Identity Tuple
 

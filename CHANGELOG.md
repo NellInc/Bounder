@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.3 · 2026-09-11 (source candidate, unsealed)
+
+- Copy pass across all visitor-facing prose: replaced dry noun-lists with sentences that carry stakes, added one-line "why" to README and integration guide, tightened legal prose, reformatted SECURITY threat model.
+- Updated wiki citations to match shifted SECURITY.md line numbers.
+
 ## 1.2.2 · 2026-09-07 (source candidate, unsealed)
 
 - Added a 16px left inset to the homepage demo’s light area while keeping its dark evidence sections flush left.

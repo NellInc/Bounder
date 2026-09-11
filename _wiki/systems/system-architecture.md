@@ -81,7 +81,7 @@ The presentation seams own their own mounting. `simulator.html` loads `ui/policy
 
 ### Assurance plane
 
-Schemas, exact validators, unit tests, browser acceptance, the public allowlist, release manifests, CI, and post-deployment checks establish different proof classes. Passing one class cannot be promoted into another. (`package.json:6-22 "release:manifest:v2"`; `scripts/build-site.mjs:10-19`; `scripts/generate-release-manifest-v2.mjs:101-130`; `SECURITY.md:51-62 "Passing software tests does not establish any of those properties."`)
+Schemas, exact validators, unit tests, browser acceptance, the public allowlist, release manifests, CI, and post-deployment checks establish different proof classes. Passing one class cannot be promoted into another. (`package.json:6-22 "release:manifest:v2"`; `scripts/build-site.mjs:10-19`; `scripts/generate-release-manifest-v2.mjs:101-130`; `SECURITY.md:42-44 "Passing software tests does not establish any of those properties."`)
 
 ## Stable Component Roles
 
@@ -143,10 +143,10 @@ This vocabulary consolidates states already represented by the continuity lease,
 
 1. Policy bytes are verified before parsing can influence authority. (`guides/INTEGRATION.md:9-12`)
 2. A stale, replayed, malformed, foreign, or unverified policy grants no new permission. (`guides/INTEGRATION.md:134 "Signature failure preserves the last verified unexpired policy and never broadens authority."`)
-3. Evidence failure cannot broaden a decision. (`SECURITY.md:32-36`)
+3. Evidence failure cannot broaden a decision. (`SECURITY.md:27`)
 4. Browser interaction cannot mint an operational receipt. (`guides/INTEGRATION.md:59-63 "The browser does not create authority or mint a deployment receipt."`)
 5. Simulator controls remain disabled until their own required evidence is ready. (`simulator/controller.js:1120 "setScenarioControlsEnabled"`; `simulator/controller.js:1085 "Receipt fixture unavailable"`)
-6. Recorded, live, source, deployment, physical, and human assurance remain separately labelled. (`SECURITY.md:51-62 "Passing software tests does not establish any of those properties."`)
+6. Recorded, live, source, deployment, physical, and human assurance remain separately labelled. (`SECURITY.md:42-44 "Passing software tests does not establish any of those properties."`)
 7. Public artifacts come only from the explicit allowlist and are checked byte for byte after assembly. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:350-362`)
 8. A release record identifies both the producer lineage and publisher lineage before it claims derivation from the canonical engine. This is the target rule introduced by this design.
 9. Heartbeat loss can change Fleet observation but cannot broaden or revoke local authority by itself. (`runtime/observability/guardian-fleet-state.js:286-302 "classifyValidatedGuardianHeartbeat"`; `guides/INTEGRATION.md:106 "They never grant, broaden, or revoke permission."`)

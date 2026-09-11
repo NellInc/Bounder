@@ -34,7 +34,7 @@ form.addEventListener('submit', async (event) => {
     form.hidden = true;
     success.focus();
   } catch {
-    error.textContent = 'We could not confirm that your enquiry was accepted. Your message is still here. Please check your connection and try again; if the provider already accepted it, retrying could send a duplicate.';
+    error.textContent = 'Something went wrong and we could not confirm delivery. Your message is still here — check your connection and try again, or use the hosted form below.';
     error.hidden = false;
     hostedSubmit.hidden = false;
     error.tabIndex = -1;

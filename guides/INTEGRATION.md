@@ -1,6 +1,6 @@
 # Integrating Bounder with Creed Space Fleet
 
-Bounder is the local Guardian for embodied movement and physical-action boundaries. Creed Space Fleet governs and distributes policy. A platform adapter owns the safest physical response.
+Bounder is the local Guardian for embodied movement and physical-action boundaries — the component that asks whether a machine should move right now. Creed Space Fleet governs and distributes policy. A platform adapter owns the safest physical response.
 
 This project is simulation-only. The contract is suitable for software integration and assurance work, not a claim of certified deployment safety.
 
@@ -125,7 +125,7 @@ deployed Guardian timing, Fleet capacity, and physical safety remain unverified.
 | Inspection platform | approach asset, energize tool, enter exclusion area | permit, tool state, personnel clearance | inhibit, retract, isolate |
 | Fixed machinery | move axis, open valve, energize process | guards, lockout state, pressure, operator key | interlock, stop, vent, isolate |
 
-An adapter should be narrow, deterministic, separately tested, and fail safe when its input is missing, stale, malformed, or outside its declared capability.
+An adapter should be narrow, deterministic, separately tested, and fail safe. When its input is missing, stale, malformed, or beyond its declared capability, it does the safest thing available — not nothing.
 
 ## Fail-safe invariants
 

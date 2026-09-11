@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-P4bXYSAMYMBLNXLUWjrfTxlWMkNbsbx+kFcrLpT/sDc='; connect-src 'self' https://bounder-fleet-continuity-staging.onrender.com; frame-src 'self'">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <title>Bounder | Trust at the Point of Action</title>
-  <meta name="description" content="Bounder is an open reference architecture for local, auditable physical interlocks between verified digital policy and device-safe action.">
+  <meta name="description" content="Open physical interlocks for machines that move. Bounder checks signed policy against local conditions and permits only what is authorised and safe.">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="https://www.bounder.io/">
   <meta name="theme-color" content="#11130f">
@@ -21,7 +21,7 @@
   <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://www.bounder.io/">
   <meta property="og:title" content="Bounder | Trust at the Point of Action">
-  <meta property="og:description" content="Open, local safety gates between verified policy and physical action.">
+  <meta property="og:description" content="Open physical interlocks. The last check between a digital decision and a machine that moves.">
   <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
   <meta property="og:image:width" content="2400">
   <meta property="og:image:height" content="1800">
@@ -29,7 +29,7 @@
   <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bounder | Trust at the Point of Action">
-  <meta name="twitter:description" content="Open, local safety gates between verified policy and physical action.">
+  <meta name="twitter:description" content="Open physical interlocks. The last check between a digital decision and a machine that moves.">
   <meta name="twitter:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
   <meta name="twitter:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
 
@@ -104,7 +104,7 @@
         "@id": "https://www.bounder.io/#website",
         "url": "https://www.bounder.io/",
         "name": "Bounder",
-        "description": "Open reference architecture for local, auditable physical interlocks.",
+        "description": "Open physical interlocks for machines that move.",
         "inLanguage": "en-GB",
         "publisher": {"@id": "https://www.bounder.io/#nell-watson"}
       },
@@ -113,7 +113,7 @@
         "@id": "https://www.bounder.io/#webpage",
         "url": "https://www.bounder.io/",
         "name": "Bounder | Trust at the Point of Action",
-        "description": "Bounder is an open reference architecture for local, auditable physical interlocks between verified digital policy and device-safe action.",
+        "description": "Open physical interlocks for machines that move. Bounder checks signed policy against local conditions and permits only what is authorised and safe.",
         "isPartOf": {"@id": "https://www.bounder.io/#website"},
         "about": {"@id": "https://www.bounder.io/#software"},
         "inLanguage": "en-GB"
@@ -122,7 +122,7 @@
         "@type": "SoftwareSourceCode",
         "@id": "https://www.bounder.io/#software",
         "name": "Bounder",
-        "description": "Public website and browser verification laboratory for the software-only Bounder research reference. The canonical Go decision producer is maintained separately.",
+        "description": "Public website and browser verification laboratory for the Bounder physical-interlock reference. The canonical Go decision producer is maintained separately.",
         "url": "https://www.bounder.io/",
         "codeRepository": "https://github.com/NellInc/Bounder",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -318,20 +318,20 @@
       <div class="section-label">The proposition</div>
       <div class="intro-copy">
         <h2 id="intro-title">Digital governance needs a last metre.</h2>
-        <p>Policy platforms can decide. Assurance systems can attest. Devices can act. The dangerous gap is the translation between them.</p>
-        <p>Bounder is a small, inspectable gate for that boundary. It turns signed policy, optional verified evidence, and local state into an allow or deny decision, while a device-specific adapter owns the safest physical response.</p>
+        <p>Policy platforms can decide. Assurance systems can attest. Devices can act. But none of them own the moment a machine is about to move and a person is in the way.</p>
+        <p>Bounder is a small, inspectable gate at that boundary. It checks signed policy against local conditions and permits only what is both authorised and safe — while a device-specific adapter owns the physical response.</p>
       </div>
       <aside class="status-block" aria-label="Project status">
         <p class="status-kicker">Current status</p>
         <strong>Development testbed</strong>
-        <p>Browser simulations, policy contracts and recorded runs, working towards deployment.</p>
+        <p>Browser simulations, policy contracts, and recorded runs, working towards deployment on real platforms.</p>
       </aside>
     </section>
 
     <section class="architecture section section-dark" id="architecture" aria-labelledby="architecture-title">
       <div class="section-heading section-heading-offset" data-reveal>
         <h2 id="architecture-title">Four layers. One narrow handoff.</h2>
-        <p>Authority gets smaller as it approaches the machine.</p>
+        <p>Authority narrows as it approaches the machine. By the time it reaches motion, only the minimum necessary permission remains.</p>
       </div>
 
       <div class="authority-wedge" data-reveal aria-hidden="true">
@@ -345,7 +345,7 @@
           <svg class="step-icon" aria-hidden="true" focusable="false"><use href="#i-govern"/></svg>
           <div>
             <h3>Govern</h3>
-            <p>Creed Space Fleet distributes one signed protective rule across an enrolled team, with immutable policy provenance.</p>
+            <p>Creed Space Fleet distributes a signed protective rule across an enrolled team. The policy is immutable once issued.</p>
           </div>
         </li>
         <li>
@@ -353,7 +353,7 @@
           <svg class="step-icon" aria-hidden="true" focusable="false"><use href="#i-issue"/></svg>
           <div>
             <h3>Issue</h3>
-            <p>Fleet creates a short-lived, device-bound projection with a monotonic sequence for every Bounder guardian.</p>
+            <p>Fleet creates a short-lived, device-bound projection for every Bounder Guardian. It expires; it cannot be replayed.</p>
           </div>
         </li>
         <li>
@@ -361,7 +361,7 @@
           <svg class="step-icon" aria-hidden="true" focusable="false"><use href="#i-bound"/></svg>
           <div>
             <h3>Bound</h3>
-            <p>Bounder checks signature, subject, expiry, replay sequence, action scope, and local sensors.</p>
+            <p>The local Guardian checks the signature, subject, expiry, replay sequence, action scope, and what its own sensors see right now.</p>
           </div>
         </li>
         <li>
@@ -384,7 +384,7 @@
         <article>
           <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-local"/></svg>
           <h3>Local first</h3>
-          <p>Safety decisions continue when cloud services or network links disappear.</p>
+          <p>The network can go dark. The cloud can be unreachable. The Guardian still decides, with no one else's permission.</p>
         </article>
         <article>
           <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-narrow"/></svg>
@@ -394,12 +394,12 @@
         <article>
           <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-deny"/></svg>
           <h3>Deny new authority</h3>
-          <p>Missing, stale, replayed, or ambiguous evidence cannot create permission.</p>
+          <p>Silence is not consent. Missing, stale, replayed, or ambiguous evidence creates no permission.</p>
         </article>
         <article>
           <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-failsafe"/></svg>
           <h3>Fail physically safe</h3>
-          <p>Each device defines its safe transition through a documented hazard analysis.</p>
+          <p>When something goes wrong, the machine does the safest thing it can: land, stop, hold position. Each response defined by that device's hazard analysis.</p>
         </article>
       </div>
     </section>
@@ -414,28 +414,28 @@
           <p><strong>Bounder</strong> is the Guardian for embodied movement and physical-action boundaries.</p>
           <p><strong>Creed Space Fleet</strong> distributes and governs its policies.</p>
         </div>
-        <p class="guardian-pattern-reach">It need not be limited to drones. The same architecture could cover ground robots, autonomous boats, warehouse vehicles, inspection platforms and even fixed machinery with spatial or safety interlocks.</p>
+        <p class="guardian-pattern-reach">Anywhere a machine is about to move and the stakes are physical, the same architecture applies: ground robots, autonomous boats, warehouse vehicles, inspection platforms, fixed machinery.</p>
       </div>
       <div class="application-list" data-reveal>
         <article>
           <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-vehicle"/></svg>
           <h3>Autonomous vehicles</h3>
-          <p>Gate takeoff or mission changes on identity, location, time, battery, and a current signed policy.</p>
+          <p>No takeoff without identity, location, battery, and a current signed policy. The gate holds until every condition is met.</p>
         </article>
         <article>
           <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-lab"/></svg>
           <h3>Laboratory systems</h3>
-          <p>Enable hazardous modes only when verified operator, protocol, and physical conditions agree.</p>
+          <p>Hazardous modes unlock only when operator, protocol, and physical conditions all agree. One missing piece and the interlock holds.</p>
         </article>
         <article>
           <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-robot"/></svg>
           <h3>Robots in shared space</h3>
-          <p>Require current consent and supervision evidence before entering human environments.</p>
+          <p>Before a robot enters a room where people are, it needs current consent and supervision evidence. Not a schedule. A live check.</p>
         </article>
         <article>
           <svg class="application-mark" aria-hidden="true" focusable="false"><use href="#i-maintenance"/></svg>
           <h3>Critical maintenance</h3>
-          <p>Combine a signed maintenance window with a local key, measured state, and an auditable receipt.</p>
+          <p>A signed window, a physical key, measured state, and a receipt that proves what happened. Every step auditable.</p>
         </article>
       </div>
     </section>
@@ -448,7 +448,7 @@
         </div>
         <span class="continuity-state" data-continuity-state role="status" aria-live="polite">Verifying live proof</span>
       </div>
-      <p class="continuity-summary" data-reveal>One hundred software Guardians across aerial, ground, marine, warehouse, inspection, and fixed-machinery classes continuously fetch device-bound policy from Creed Space Fleet, verify signed checkpoints locally, exercise protective decisions, and return sampled signed audits.</p>
+      <p class="continuity-summary" data-reveal>One hundred software Guardians across six platform classes — aerial, ground, marine, warehouse, inspection, and fixed machinery — each independently fetch policy, verify checkpoints, make protective decisions, and return signed audits. No Guardian trusts another's word for it.</p>
       <dl class="continuity-metrics" data-reveal>
         <div><dt>Guardians</dt><dd data-continuity-devices>Checking</dd></div>
         <div><dt>Policies verified</dt><dd data-continuity-policies>Checking</dd></div>
@@ -469,7 +469,7 @@
       <div class="home-simulator-heading" data-reveal>
         <div>
           <h2 id="simulator-preview-title">Watch the boundary hold.</h2>
-          <p>Explore civilian protection, friendly-force separation, protected people and places, surrender, incapacitation, positive identification, proportionality, human authorization, communications, policy integrity, and one Creed Space policy enforced across an entire simulated fleet.</p>
+          <p>Explore the rules that protect civilians, separate friendly forces, honour surrender and incapacitation, require identification and proportionality, and enforce one Creed Space policy across an entire simulated fleet.</p>
         </div>
         <a class="text-link" href="simulator.html?tour=1">Take the guided fleet tour <span aria-hidden="true">→</span></a>
       </div>
@@ -480,7 +480,7 @@
       <div class="section-label">Development roadmap</div>
       <div>
         <h2 id="safety-title">The path to deployment.</h2>
-        <p>Develop the interlock in simulation, then validate it on the platforms it will serve.</p>
+        <p>Prove it in simulation first. Then validate it on the platforms where the stakes are real.</p>
       </div>
       <ul>
         <li><strong>Policy checks:</strong> signatures, expiry, replay, assurance, commands and sensors.</li>
@@ -491,7 +491,7 @@
 
     <section class="cta section" aria-labelledby="cta-title">
       <h2 id="cta-title">Help build the missing boundary.</h2>
-      <p>Use the interlock pattern, challenge the threat model, extend the simulator, or connect a governance control plane.</p>
+      <p>Use the pattern. Challenge the threat model. Extend the simulator. Or bring a governance layer that needs a physical boundary beneath it.</p>
       <div class="cta-actions">
         <a class="button button-primary" href="simulator.html?tour=1">Run the six-step demo</a>
         <a class="button button-secondary" href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">Website source on GitHub <span aria-hidden="true">↗</span></a>

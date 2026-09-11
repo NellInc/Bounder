@@ -12,7 +12,7 @@ Bounder is an open reference architecture for local, auditable physical interloc
 
 ## Domain Problem
 
-The system addresses the last decision boundary before a requested digital action changes physical state. It evaluates signed authority, current policy, local state, and fresh evidence immediately before that transition. (`index.html:318-323 "a small, inspectable gate for that boundary"`; `guides/INTEGRATION.md:9-14`)
+The system addresses the last decision boundary before a requested digital action changes physical state. It evaluates signed authority, current policy, local state, and fresh evidence immediately before that transition. (`index.html:318-323 "a small, inspectable gate at that boundary"`; `guides/INTEGRATION.md:9-14`)
 
 The pattern covers aircraft, ground robots, autonomous boats, warehouse vehicles, inspection platforms, and fixed machinery. Each class supplies different local evidence and requires a separately engineered safe response. (`guides/INTEGRATION.md:126 "Fixed machinery"`)
 
@@ -36,7 +36,7 @@ The published contracts encode issuer, subject, sequence, validity, actions, con
 4. Expiry ends cached authority. (`guides/INTEGRATION.md:136 "Expiry ends cached authority while offline."`)
 5. Evidence-only rules cannot authorize an actuator. (`guides/INTEGRATION.md:137 "Evidence-only rules cannot become actuator authority."`)
 6. The adapter owns platform-specific safe response and fails safely on missing, stale, malformed, or unsupported input. (`guides/INTEGRATION.md:128 "An adapter should be narrow, deterministic, separately tested, and fail safe"`)
-7. Software evidence never implies certification, production deployment, hardware compatibility, or regulatory compliance. (`SECURITY.md:51-53 "Passing software tests does not establish any of those properties."`)
+7. Software evidence never implies certification, production deployment, hardware compatibility, or regulatory compliance. (`SECURITY.md:44 "Passing software tests does not establish any of those properties."`)
 
 ## Domain Vocabulary
 

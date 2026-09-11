@@ -2,7 +2,7 @@
 
 This repository contains the public website for [bounder.io](https://www.bounder.io/).
 
-Bounder is an open reference architecture for trustworthy physical interlocks. The website presents the current project, integration model, interactive simulator, verified software status, and explicit hardware limitations.
+Bounder is an open reference architecture for trustworthy physical interlocks — the last check between a digital decision and a machine that moves. The website presents the current project, integration model, interactive simulator, verified software status, and explicit hardware limitations.
 
 The public source here is the website and JavaScript browser laboratory. The canonical Go decision engine is maintained in the private [NellInc/Bounder-from-org producer repository](https://github.com/NellInc/Bounder-from-org). Public fixtures support local verification; independent producer regeneration requires access to that separate checkout. See the [developer contract guide](guides/INTEGRATION.md#developer-contract-walkthrough) for signed bytes, examples, and failure semantics.
 
