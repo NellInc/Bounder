@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bounder.io/contracts/creedspace-bounder-manipulator-profile-v1.schema.json",
+  "title": "Creed Space Bounder Manipulator Profile v1",
+  "description": "Contact-class constraints for a manipulator interlock: what may be held, what it may approach, release into, or pour into. Sibling of the drone profile; class names are matched only against these signed lists.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "ttl_seconds",
+    "constraints"
+  ],
+  "properties": {
+    "version": {
+      "const": "creedspace-bounder-manipulator-profile/v1"
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 3600
+    },
+    "constraints": {
+      "$ref": "#/$defs/constraints"
+    }
+  },
+  "$defs": {
+    "token": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]{1,64}$"
+    },
+    "tokenList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/token"
+      }
+    },
+    "familyMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_]{1,64}$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/$defs/token"
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_actions",
+        "max_evidence_age_seconds"
+      ],
+      "properties": {
+        "allowed_actions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "hold",
+              "retract",
+              "release_safe"
+            ]
+          }
+        },
+        "hazard_classes": {
+          "$ref": "#/$defs/familyMap",
+          "default": {}
+        },
+        "protected_classes": {
+          "$ref": "#/$defs/tokenList",
+          "default": []
+        },
+        "hazard_targets": {
+          "$ref": "#/$defs/familyMap",
+          "default": {}
+        },
+        "min_distance_metres": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z0-9_]{1,64}:[a-z0-9_]{1,64}$"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "default": {}
+        },
+        "prohibit_release_into": {
+          "$ref": "#/$defs/familyMap",
+          "default": {}
+        },
+        "prohibit_pour_when_vessel_contains": {
+          "$ref": "#/$defs/familyMap",
+          "default": {}
+        },
+        "require_human_authorization_for_classes": {
+          "$ref": "#/$defs/tokenList",
+          "default": []
+        },
+        "required_mettle_tier": {
+          "enum": [
+            "",
+            "bronze",
+            "silver",
+            "gold",
+            "platinum"
+          ],
+          "default": ""
+        },
+        "max_evidence_age_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 604800
+        }
+      }
+    }
+  }
+}

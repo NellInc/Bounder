@@ -1,0 +1,86 @@
+{
+  "version": "creedspace-bounder-manipulator-profile/v1",
+  "ttl_seconds": 300,
+  "constraints": {
+    "allowed_actions": [
+      "hold",
+      "retract",
+      "release_safe"
+    ],
+    "hazard_classes": {
+      "blade": [
+        "knife",
+        "scissors"
+      ],
+      "conductor": [
+        "screwdriver",
+        "fork",
+        "metal_rod"
+      ],
+      "pressurised": [
+        "compressed_air_can",
+        "aerosol"
+      ],
+      "energy_store": [
+        "power_bank",
+        "battery"
+      ],
+      "reactive": [
+        "bleach",
+        "ammonia"
+      ]
+    },
+    "protected_classes": [
+      "human_figure",
+      "animal_figure"
+    ],
+    "hazard_targets": {
+      "heat_source": [
+        "burner",
+        "stove",
+        "hob"
+      ],
+      "live_appliance": [
+        "toaster",
+        "socket"
+      ],
+      "liquid": [
+        "pot_of_water",
+        "sink"
+      ],
+      "vessel": [
+        "cup",
+        "bowl",
+        "beaker"
+      ]
+    },
+    "min_distance_metres": {
+      "blade:protected": 0.3,
+      "conductor:live_appliance": 0.2,
+      "pressurised:heat_source": 0.5,
+      "energy_store:liquid": 0.2
+    },
+    "prohibit_release_into": {
+      "pressurised": [
+        "heat_source"
+      ],
+      "conductor": [
+        "live_appliance"
+      ],
+      "energy_store": [
+        "liquid"
+      ]
+    },
+    "prohibit_pour_when_vessel_contains": {
+      "reactive": [
+        "reactive"
+      ]
+    },
+    "require_human_authorization_for_classes": [
+      "blade",
+      "pressurised"
+    ],
+    "required_mettle_tier": "",
+    "max_evidence_age_seconds": 2
+  }
+}
