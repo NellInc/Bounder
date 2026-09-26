@@ -228,7 +228,9 @@ test("a vertical touch swipe over the scene scrolls the page without tilting the
     const stage = page.locator(".simulator-stage");
     await expect(stage).toHaveAttribute("data-fleet-ready", "true", { timeout: 20_000 });
     await stage.evaluate((element) => element.scrollIntoView({ block: "start" }));
-    await expect(stage).toHaveAttribute("data-camera-polar", /\d/);
+    // The first frame after the stage scrolls into view is a full software-rendered frame at
+    // twice the device pixels, which can hold the main thread for several seconds under load.
+    await expect(stage).toHaveAttribute("data-camera-polar", /\d/, { timeout: 20_000 });
     const cdp = await context.newCDPSession(page);
     const touch = (type, points) => cdp.send("Input.dispatchTouchEvent", {
       type,
@@ -268,7 +270,7 @@ test("a vertical touch swipe over the scene scrolls the page without tilting the
 });
 
 test("guided tour traverses all six proofs and restores focus when finished", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/simulator.html?scenario=safe");
   const root = page.locator(".simulator-workbench");
@@ -469,6 +471,8 @@ test("the accessible iframe fallback reports height evidence to its parent", asy
 });
 
 test("the embedded simulator frame shrinks again after an evidence disclosure closes", async ({ page }) => {
+  // The embedded frame builds the full 3D scene, consistent with the other simulator journeys.
+  test.setTimeout(90_000);
   await page.goto("/");
   const iframe = page.locator("[data-bounder-simulator]");
   await iframe.scrollIntoViewIfNeeded();
@@ -770,8 +774,8 @@ test("resilience transport controls and the scrubber move the console through re
 });
 
 test("visibility, focus exceptions and WebGL context loss stop active state safely", async ({ page }) => {
-  // Multi-stage GPU/focus lifecycle journey, consistent with the other 90-second simulator journeys.
-  test.setTimeout(90_000);
+  // The longest GPU/focus lifecycle journey: about twenty stages, each waiting on a software-rendered frame.
+  test.setTimeout(180_000);
   const errors = collectErrors(page);
   // Full motion: under reduced motion Play settles on the decision after about a second, which
   // would let the hidden-page assertions below pass without an active animation to stop.

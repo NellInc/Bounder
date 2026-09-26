@@ -17,7 +17,8 @@ export default defineConfig({
     trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true }
   },
   webServer: {
-    command: "npm run build && node scripts/serve-site.mjs --root _site --host 127.0.0.1 --port 4173",
+    // exec replaces the shell, so stopping the web server stops Node rather than orphaning it.
+    command: "npm run build && exec node scripts/serve-site.mjs --root _site --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173/",
     reuseExistingServer: false,
     timeout: 120_000
