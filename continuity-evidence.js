@@ -198,14 +198,16 @@ export const verifyContinuityEnvelope = async ({
   return replayGuard.accept(verified);
 };
 
-export const formatEvidenceTime = (value) => new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZoneName: "short"
-}).format(new Date(parseUtcTimestamp(value, "continuity timestamp").milliseconds));
+const MONTHS_SHORT = Object.freeze(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]);
+
+// Built from fixed parts in UTC rather than Intl, whose month abbreviations and joiners
+// differ by engine and ICU build ("Sept" or "Sep", "," or " at"). Every visitor sees the
+// same string for the same proof, and it matches the UTC timestamps in the evidence.
+export const formatEvidenceTime = (value) => {
+  const date = new Date(parseUtcTimestamp(value, "continuity timestamp").milliseconds);
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getUTCDate()} ${MONTHS_SHORT[date.getUTCMonth()]} ${date.getUTCFullYear()}, ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
+};
 
 const readBoundedBody = async (response, maxBytes, signal) => {
   if (!response.body?.getReader) throw new Error("continuity feed body is unavailable");
@@ -330,6 +332,7 @@ const NBSP = " ";
 const renderEvidence = (root, evidence) => {
   root.dataset.state = "verified";
   delete root.dataset.reason;
+  delete root.dataset.reasonDetail;
   root.querySelector("[data-continuity-state]").textContent = "Verified live";
   root.querySelector("[data-continuity-state]").setAttribute("aria-label", "Live staging evidence verified");
   root.querySelector("[data-continuity-devices]").textContent = String(evidence.device_count);
@@ -337,7 +340,10 @@ const renderEvidence = (root, evidence) => {
   root.querySelector("[data-continuity-checkpoints]").textContent = String(evidence.checkpoints_verified);
   // Non-breaking spaces keep each count with its word when the narrow cell wraps.
   root.querySelector("[data-continuity-decisions]").textContent = `${evidence.allowed}${NBSP}allow / ${evidence.held}${NBSP}hold`;
-  root.querySelector("[data-continuity-updated]").textContent = formatEvidenceTime(evidence.generated_at);
+  const issued = root.querySelector("[data-continuity-updated]");
+  issued.textContent = formatEvidenceTime(evidence.generated_at);
+  // Machine-readable instant for the <time> element: the exact signed generated_at.
+  issued.setAttribute("datetime", evidence.generated_at);
   root.querySelector("[data-continuity-note]").textContent = "Exact Ed25519 payload verified in this browser. All 100 software Guardians completed policy sync, signed checkpoint verification, and local interlock evaluation.";
 };
 
@@ -369,7 +375,7 @@ const unavailableStates = Object.freeze({
   preview: {
     badge: "Live proof unavailable",
     label: "Live verification runs only on bounder.io; the recorded run remains available",
-    note: () => `Live verification runs only on www.bounder.io. ${RECORDED_RUN}`
+    note: () => `Live verification runs only on bounder.io. ${RECORDED_RUN}`
   }
 });
 
@@ -383,7 +389,10 @@ const renderUnavailable = (root, reason = "offline", { expiresAt, detail } = {})
   else delete root.dataset.reasonDetail;
   root.querySelector("[data-continuity-state]").textContent = copy.badge;
   root.querySelector("[data-continuity-state]").setAttribute("aria-label", copy.label);
+  // The live cells are hidden in this state (the recorded run shows instead), and they are
+  // cleared as well, so no unverified or expired figure survives anywhere in the DOM.
   for (const selector of METRIC_SELECTORS) root.querySelector(selector).textContent = NO_FIGURE;
+  root.querySelector("[data-continuity-updated]").removeAttribute?.("datetime");
   root.querySelector("[data-continuity-note]").textContent = copy.note({ expiresAt });
 };
 

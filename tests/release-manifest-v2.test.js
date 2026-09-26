@@ -15,6 +15,7 @@ import {
   HISTORICAL_MANIFEST_SHA256,
   assertHistoricalManifests,
   assertPublisherCommit,
+  assertCommitInventoryComplete,
   assertCompleteVerification,
   assertReceipt,
   assertStatementMatchesInventory,
@@ -41,7 +42,8 @@ async function makeManifestFixture(t) {
     "README.md": "fixture\n",
     "data/bounder-fleet-evidence.v1.json": "{}\n",
     "data/bounder-staging-pilot.v1.json": "{}\n",
-    "data/creedspace-bounder-manipulator-profile-v1.example.json": "{\"mirror\":true}\n"
+    "data/creedspace-bounder-manipulator-profile-v1.example.json": "{\"mirror\":true}\n",
+    "schemas/shared-contract.schema.json": "{}\n"
   };
   await Promise.all([
     ...Object.entries(publicSources).map(([path, source]) => writeFile(join(root, path), source)),
@@ -61,13 +63,13 @@ async function makeManifestFixture(t) {
   const producerReceipt = {
     version: "bounder-producer-derivation-verification/v1",
     success: true,
-    producer: { commit: producerCommit },
+    producer: { commit: producerCommit, default_ref_contains_commit: true },
     producer_statement: {
       version: "bounder-evidence-provenance/v1",
       producer_source: { repository: "https://github.com/NellInc/Bounder-from-org", commit: producerCommit },
       generator: { entrypoint: "scripts/export-website-artifacts.py", version: "1" },
       inputs: [producerRecord],
-      contracts: [producerRecord],
+      contracts: [fileRecord("schemas/shared-contract.schema.json", "{}\n")],
       outputs: [producerRecord]
     }
   };
@@ -245,6 +247,14 @@ test("release manifest v2 rejects stale history, receipts, source identity, and 
   await assert.rejects(() => buildManifestV2(options), /no complete evidence statement/);
   await writeProducer((receipt) => { receipt.producer_statement.producer_source.commit = "b".repeat(40); });
   await assert.rejects(() => buildManifestV2(options), /commit disagreement/);
+  // discovery_ref "master" must be true of the producer commit when the seal is made.
+  for (const mutate of [
+    (receipt) => { receipt.producer.default_ref_contains_commit = false; },
+    (receipt) => { delete receipt.producer.default_ref_contains_commit; }
+  ]) {
+    await writeProducer(mutate);
+    await assert.rejects(() => buildManifestV2(options), /not recorded as reachable from origin\/master/);
+  }
   await writeFile(fixture.producerReceiptPath, `${JSON.stringify(fixture.producerReceipt)}\n`);
 
   const writeVerification = async (mutate) => {
@@ -255,7 +265,7 @@ test("release manifest v2 rejects stale history, receipts, source identity, and 
   await writeVerification((receipt) => { receipt.candidate.dirty = true; });
   await assert.rejects(() => buildManifestV2(options), /clean source commit/);
   await writeFile(fixture.verificationReceiptPath, `${JSON.stringify(fixture.verificationReceipt)}\n`);
-  await assert.rejects(() => buildManifestV2({ ...options, publicPaths: ["VERSION", "README.md"] }), /recorded observation is missing/);
+  await assert.rejects(() => buildManifestV2({ ...options, publicPaths: ["VERSION", "README.md", "schemas/shared-contract.schema.json"] }), /recorded observation is missing/);
 
   await writeFile(join(fixture.root, "VERSION"), "1.1.0");
   await assert.rejects(() => buildManifestV2(options), /VERSION must contain/);
@@ -324,6 +334,42 @@ test("a seal refuses a producer statement that hashes a published file different
   await writeFile(fixture.producerReceiptPath, `${JSON.stringify(exported)}\n`);
   const manifest = await buildManifestV2(options);
   assert.equal(manifest.observations.some(({ path }) => path === mirrored.path), false);
+});
+
+test("a seal refuses a producer statement naming a contract or published output it does not pin", async (t) => {
+  const fixture = await makeManifestFixture(t);
+  const options = { ...fixture, historicalManifestDigests: {} };
+  for (const [section, record] of [
+    ["contracts", fileRecord("schemas/unsealed.schema.json", "{}\n")],
+    ["outputs", fileRecord("data/unsealed.json", "{}\n")]
+  ]) {
+    const receipt = structuredClone(fixture.producerReceipt);
+    receipt.producer_statement[section].push(record);
+    const sealedContract = fixture.producerReceipt.producer_statement.contracts;
+    assert.throws(() => assertStatementMatchesInventory(receipt.producer_statement, sealedContract), new RegExp(`names ${record.path.replace(".", "\\.")}, which is absent`));
+    await writeFile(fixture.producerReceiptPath, `${JSON.stringify(receipt)}\n`);
+    await assert.rejects(() => buildManifestV2(options), /which is absent from the publisher inventory/);
+  }
+  // Producer-only outputs are never published, so they are not required in the inventory.
+  assert.doesNotThrow(() => assertStatementMatchesInventory({ outputs: [fileRecord("producer/fleet.json")] }, []));
+});
+
+test("a tracked public file missing from the working tree fails sealing instead of being left out", async (t) => {
+  const fixture = await makeManifestFixture(t);
+  // A directory allowlist is where a deletion goes unnoticed: the tree walk simply finds one
+  // file fewer, while the commit that deploy-pages publishes still carries it.
+  const options = { ...fixture, publicPaths: ["README.md", "VERSION", "data", "schemas"], historicalManifestDigests: {} };
+  await buildManifestV2(options);
+  await rm(join(fixture.root, "data", "creedspace-bounder-manipulator-profile-v1.example.json"));
+  await assert.rejects(
+    () => buildManifestV2(options),
+    /public files tracked in commit [0-9a-f]{40} are missing from the working tree: data\/creedspace-bounder-manipulator-profile-v1\.example\.json/
+  );
+  await assert.rejects(
+    () => assertCommitInventoryComplete(fixture.root, fixture.publisherCommit, ["README.md", "VERSION"], [fileRecord("VERSION", "1.1.0\n")]),
+    /missing from the working tree: README\.md/
+  );
+  await assertCommitInventoryComplete(fixture.root, fixture.publisherCommit, ["VERSION"], [fileRecord("VERSION", "1.1.0\n")]);
 });
 
 test("an untracked file under a public path fails sealing with its name", async (t) => {

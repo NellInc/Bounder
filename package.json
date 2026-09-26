@@ -20,6 +20,7 @@
     "benchmark:observability": "node scripts/benchmark-observability.mjs",
     "verify:producer": "node scripts/verify-producer-derivation.mjs",
     "verify:changed": "node scripts/verify-changed.mjs",
+    "check:live": "node scripts/check-live.mjs",
     "test:coverage": "node scripts/coverage.mjs",
     "test:browser": "playwright test",
     "quality": "npm run test:coverage && npm run test:browser && node_modules/.bin/impeccable detect .",

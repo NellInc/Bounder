@@ -66,7 +66,8 @@ export async function runObservabilityBenchmark({
   cpuClock = PROCESS_CPU_CLOCK,
   wallClock = performance,
   warmupRuns = 1,
-  measuredRuns = 3
+  measuredRuns = 3,
+  aggregator = aggregateFleetSnapshot
 } = {}) {
   const budgets = validateObservabilityBudgets(budgetOverrides);
   if (!Number.isSafeInteger(guardianCount) || guardianCount < 1 || guardianCount > budgets.fleet_max_guardians) {
@@ -78,7 +79,9 @@ export async function runObservabilityBenchmark({
   }
   const heartbeats = Array.from({ length: guardianCount }, (_, index) => makeBenchmarkHeartbeat(index, nowMs));
   const expectedGuardians = heartbeats.map(({ guardian_id, platform }) => ({ guardian_id, platform }));
-  const aggregate = () => aggregateFleetSnapshot({ fleetId: "relief-fleet", expectedGuardians, heartbeats, nowMs, cycleStartedAtMs: nowMs, budgets });
+  // Each heartbeat is received as it is generated; the map is built once, outside the timed runs.
+  const receivedAtMs = new Map(heartbeats.map(({ guardian_id }) => [guardian_id, nowMs]));
+  const aggregate = () => aggregator({ fleetId: "relief-fleet", expectedGuardians, heartbeats, receivedAtMs, nowMs, cycleStartedAtMs: nowMs, budgets });
   for (let run = 0; run < warmupRuns; run += 1) aggregate();
   const cpuSamples = [];
   const wallSamples = [];
@@ -100,7 +103,7 @@ export async function runObservabilityBenchmark({
   const median = (samples) => [...samples].sort((left, right) => left - right)[Math.floor(samples.length / 2)];
   const aggregationCpuMs = median(cpuSamples);
   const aggregationWallMs = median(wallSamples);
-  const connected = await deriveFleetEvents({ currentHeartbeat: heartbeats[0], observedAtMs: nowMs, budgets });
+  const connected = await deriveFleetEvents({ currentHeartbeat: heartbeats[0], observedAtMs: nowMs, receivedAtMs: nowMs, budgets });
   const encoder = new TextEncoder();
   const sizes = {
     heartbeat_bytes: encoder.encode(JSON.stringify(heartbeats[0])).byteLength,
@@ -114,6 +117,11 @@ export async function runObservabilityBenchmark({
   };
   const failures = [];
   for (const [key, value] of Object.entries(sizes)) if (value > limits[key]) failures.push(`${key} ${value} > ${limits[key]}`);
+  // A fast wrong answer is not a pass. Every benchmark heartbeat is healthy and fresh, so the
+  // snapshot must observe every Guardian and carry its own complete, healthy verdict.
+  if (snapshot?.complete !== true || snapshot?.healthy !== true || snapshot?.observed_guardians !== guardianCount) {
+    failures.push(`aggregation result is incorrect: observed ${snapshot?.observed_guardians} of ${guardianCount} Guardians, complete ${snapshot?.complete}, healthy ${snapshot?.healthy}`);
+  }
   if (guardianCount === budgets.fleet_max_guardians && aggregationCpuMs > budgets.aggregation_10000_max_cpu_ms) {
     failures.push(`aggregation_cpu_ms ${aggregationCpuMs.toFixed(3)} > ${budgets.aggregation_10000_max_cpu_ms}`);
   }

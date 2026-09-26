@@ -363,6 +363,14 @@ test("docs:check contains citations to the repository and verifies quoted anchor
   await assert.rejects(() => assertFileLine(root, ".", 1, 1, "page"), /unsafe citation path/);
   await assertFileLine(root, "README.md", 2, 2, "page");
 
+  // README.md has three lines and a final newline. Line 4 is the empty remainder of the split,
+  // not a line of the file, so a citation to it must fail.
+  await assertFileLine(root, "README.md", 3, 3, "page");
+  await assert.rejects(() => assertFileLine(root, "README.md", 4, 4, "page"), /invalid range README\.md:4-4/);
+  await writeFile(join(root, "nested", "unterminated.txt"), "one\ntwo");
+  await assertFileLine(root, "nested/unterminated.txt", 2, 2, "page");
+  await assert.rejects(() => assertFileLine(root, "nested/unterminated.txt", 3, 3, "page"), /invalid range/);
+
   // The anchor turns "the file is long enough" into "the cited lines say what is claimed".
   await assertFileLine(root, "README.md", 2, 2, "page", "beta gamma");
   await assert.rejects(
@@ -427,6 +435,7 @@ test("generated wiki pages carry no hand-written freshness marker and are still 
   const report = await checkDocumentation({ root, model });
   assert.deepEqual(report.errors, []);
   assert.equal(report.anchored_citations, 0);
+  assert.equal(report.unanchored_citations, 0);
 
   // A hand-written page without the marker is still an error.
   await writeFile(join(root, "_wiki", "systems", "one.md"), "# One\n");

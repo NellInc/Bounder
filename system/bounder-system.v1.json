@@ -279,7 +279,8 @@
       "role": "browser_verifier",
       "purpose": "Verify, order, and expire signed public continuity evidence.",
       "source_paths": [
-        "continuity-evidence.js"
+        "continuity-evidence.js",
+        "runtime/json/strict-json.js"
       ],
       "test_paths": [
         "tests/continuity-evidence.test.js"
@@ -300,6 +301,35 @@
       "depends_on": []
     },
     {
+      "id": "browser_evidence_verifier",
+      "role": "browser_verifier",
+      "purpose": "Validate recorded decision receipts, Fleet evidence, and resilience evidence in the browser before the simulator presents them.",
+      "source_paths": [
+        "runtime/simulator/contracts-core.js",
+        "runtime/receipts/contracts.js",
+        "runtime/fleet/contracts.js",
+        "runtime/resilience/contracts.js",
+        "runtime/transport/simulator-json.js"
+      ],
+      "test_paths": [
+        "tests/simulator-contracts.test.js",
+        "tests/receipt-bundle.test.js"
+      ],
+      "inputs": [
+        "decision_receipt"
+      ],
+      "outputs": [],
+      "failure_state": "Reject the evidence and present the recorded fallback; nothing is granted.",
+      "mutates": "memory",
+      "network": "optional_read",
+      "secrets": "none",
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior"
+      ],
+      "depends_on": []
+    },
+    {
       "id": "simulator",
       "role": "simulator_presenter",
       "purpose": "Present deterministic decisions, Fleet evidence, and resilience scenarios.",
@@ -312,13 +342,21 @@
         "simulator/controller.js",
         "simulator/scene.js",
         "ui/fleet-view.js",
-        "ui/workbench.js"
+        "ui/workbench.js",
+        "ui/receipt-copy.js",
+        "simulator-bootstrap.js",
+        "simulator.html",
+        "simulator.css"
       ],
       "test_paths": [
         "tests/simulator-contracts.test.js",
         "tests/simulator-world.test.js",
         "tests/staging-feed.test.js",
-        "tests/browser/site.spec.js"
+        "tests/browser/site.spec.js",
+        "tests/browser/workspace.spec.js",
+        "tests/ui-presentation.test.js",
+        "tests/embedded-simulator-height.test.js",
+        "tests/simulator-presentation.test.js"
       ],
       "inputs": [
         "decision_receipt",
@@ -334,7 +372,8 @@
         "browser_behavior"
       ],
       "depends_on": [
-        "browser_policy_verifier"
+        "browser_policy_verifier",
+        "browser_evidence_verifier"
       ]
     },
     {
@@ -347,7 +386,8 @@
         "schemas/creedspace-bounder-telemetry-envelope-v1.schema.json"
       ],
       "test_paths": [
-        "tests/guardian-fleet-observability.test.js"
+        "tests/guardian-fleet-observability.test.js",
+        "tests/helpers/observability-fixtures.js"
       ],
       "inputs": [
         "decision_receipt"
@@ -375,11 +415,13 @@
       "source_paths": [
         "runtime/observability/guardian-fleet-state.js",
         "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
-        "schemas/creedspace-bounder-fleet-event-v1.schema.json"
+        "schemas/creedspace-bounder-fleet-event-v1.schema.json",
+        "scripts/benchmark-observability.mjs"
       ],
       "test_paths": [
         "tests/guardian-fleet-observability.test.js",
-        "tests/observability-benchmark.test.js"
+        "tests/observability-benchmark.test.js",
+        "tests/helpers/observability-fixtures.js"
       ],
       "inputs": [
         "guardian_heartbeat"
@@ -404,14 +446,59 @@
       ]
     },
     {
+      "id": "public_pages",
+      "role": "site_publisher",
+      "purpose": "Present the public pages, shared styles, page scripts, and contact form that frame the simulator and its evidence.",
+      "source_paths": [
+        "index.html",
+        "contact.html",
+        "privacy.html",
+        "terms.html",
+        "404.html",
+        "site.js",
+        "styles.css",
+        "ui/contact-form.js",
+        "ui/text.js"
+      ],
+      "test_paths": [
+        "tests/interface.test.js",
+        "tests/page-security.test.js",
+        "tests/site-quality.test.js",
+        "tests/browser-entry-side-effects.test.js",
+        "tests/contact-form.test.js",
+        "tests/browser/site.spec.js"
+      ],
+      "inputs": [],
+      "outputs": [],
+      "failure_state": "Keep the visitor's message and say that delivery could not be confirmed; the recorded evidence stays readable when the live feed is unavailable.",
+      "mutates": "memory",
+      "network": "write",
+      "secrets": "none",
+      "proof_classes": [
+        "source_behavior",
+        "browser_behavior"
+      ],
+      "depends_on": [
+        "simulator",
+        "continuity_verifier"
+      ]
+    },
+    {
       "id": "publication_builder",
       "role": "site_publisher",
       "purpose": "Assemble and byte-check the explicit public artifact.",
       "source_paths": [
-        "scripts/build-site.mjs"
+        "scripts/build-site.mjs",
+        "scripts/serve-site.mjs",
+        "playwright.config.js",
+        "scripts/check-live.mjs"
       ],
       "test_paths": [
-        "tests/publication.test.js"
+        "tests/publication.test.js",
+        "tests/serve-site.test.js",
+        "tests/playwright-config.test.js",
+        "tests/brand-assets.test.js",
+        "tests/check-live.test.js"
       ],
       "inputs": [
         "public_continuity"
@@ -429,7 +516,8 @@
       "depends_on": [
         "continuity_verifier",
         "simulator",
-        "fleet_observability_reference"
+        "fleet_observability_reference",
+        "public_pages"
       ]
     },
     {
@@ -440,10 +528,14 @@
         "scripts/generate-release-manifest.js",
         "release/**",
         "scripts/generate-release-manifest-v2.mjs",
-        "schemas/bounder-release-manifest-v2.schema.json"
+        "schemas/bounder-release-manifest-v2.schema.json",
+        "scripts/verify-producer-derivation.mjs",
+        "scripts/lib/release-producer.mjs"
       ],
       "test_paths": [
-        "tests/release-manifest.test.js"
+        "tests/release-manifest.test.js",
+        "tests/release-manifest-v2.test.js",
+        "tests/producer-derivation.test.js"
       ],
       "inputs": [
         "site_artifact",
@@ -479,13 +571,18 @@
         "scripts/verify-changed.mjs",
         ".github/generated/impact-rules.json",
         ".github/workflows/site-quality.yml",
-        ".github/workflows/receipt-drift.yml"
+        ".github/workflows/receipt-drift.yml",
+        "scripts/validate-system.mjs",
+        "scripts/coverage.mjs"
       ],
       "test_paths": [
         "tests/system-model.test.js",
         "tests/agent-commands.test.js",
         "tests/browser-module-boundaries.test.js",
-        "tests/producer-derivation.test.js"
+        "tests/producer-derivation.test.js",
+        "tests/generated-control.test.js",
+        "tests/coverage-runner.test.js",
+        "tests/tooling-hygiene.test.js"
       ],
       "inputs": [],
       "outputs": [
@@ -1306,7 +1403,8 @@
       "components": [
         "guardian_decision",
         "browser_policy_verifier",
-        "simulator"
+        "simulator",
+        "browser_evidence_verifier"
       ],
       "commands": [
         "unit_coverage",
@@ -1348,7 +1446,8 @@
         "ui/workbench.js",
         "simulator-bootstrap.js",
         "ui/**",
-        "tests/ui-presentation.test.js"
+        "tests/ui-presentation.test.js",
+        "tests/simulator-presentation.test.js"
       ],
       "components": [
         "simulator"
@@ -1393,7 +1492,9 @@
         "robots.txt",
         "CNAME",
         "LICENSE",
-        "NOTICE"
+        "NOTICE",
+        "scripts/check-live.mjs",
+        "tests/check-live.test.js"
       ],
       "components": [
         "publication_builder"
@@ -1481,7 +1582,8 @@
       ],
       "components": [
         "simulator",
-        "publication_builder"
+        "publication_builder",
+        "public_pages"
       ],
       "commands": [
         "unit_coverage",
@@ -1580,7 +1682,7 @@
     "wiki_index": "_wiki/index.md",
     "wiki_log": "_wiki/log.md",
     "holds": [
-      "The decision producer is confirmed at private NellInc/Bounder-from-org on master; public regeneration still requires repository access or a public mirror or reviewable source bundle.",
+      "The decision producer is private NellInc/Bounder-from-org. Sealed manifests v1.1.2 to v1.2.4 name producer commit d058ae1 with discovery_ref master, but that commit is not on master: it is reachable only from branch codex/agent-ergonomic-system until the owner merges it. Sealing now refuses a producer commit that the derivation run did not see on origin/master. Public regeneration still requires repository access or a public mirror or reviewable source bundle.",
       "The Fleet backend owner and deployed Guardian heartbeat integration remain unverified.",
       "Do not present reference observability budgets as deployed Guardian or Fleet performance.",
       "Do not publish, tag, push, deploy, or mutate live external state without explicit authority."

@@ -80,6 +80,7 @@ test("documentation and descriptor CLIs validate the compiled knowledge graph wh
   const warnings = [];
   await runDocsCheckCli([], { log: (message) => messages.push(message), warn: (message) => warnings.push(message) });
   assert.match(messages[0], /Documentation:/);
+  assert.match(messages[0], /\d+ range-checked only/);
   assert.equal(warnings.length, 0);
   const json = [];
   await runDocsCheckCli(["--json"], { log: (message) => json.push(message), warn() {} });
@@ -208,7 +209,7 @@ test("inspection primitives handle clean repositories, missing upstreams, option
   });
   assert.match(richRendered, /2 ahead, 1 behind/);
   assert.match(richRendered, /Working tree: 1 changed paths/);
-  assert.match(richRendered, /generated views missing/);
+  assert.match(richRendered, /generated views stale or missing/);
   assert.match(richRendered, /origin.*dirty/);
   assert.match(richRendered, /schemas\/new.json/);
 });
@@ -306,13 +307,38 @@ test("inspection reads verification receipts and manifests from the checkout it 
   await execFileAsync("git", ["-C", root, "checkout", "--quiet", "HEAD", "--", "."]);
   // The inspector under test is this working tree's code, so the clone carries this working
   // tree's descriptor too; a committed descriptor may predate an uncommitted budget rule.
-  await writeFile(
-    join(root, "system", "bounder-system.v1.json"),
-    await readFile(join(repositoryRoot, "system", "bounder-system.v1.json"))
-  );
+  const descriptorSource = await readFile(join(repositoryRoot, "system", "bounder-system.v1.json"));
+  await writeFile(join(root, "system", "bounder-system.v1.json"), descriptorSource);
+  // That descriptor may also name files added since HEAD; the loader requires every named path
+  // to exist, so carry those working-tree files into the clone as well.
+  for (const component of JSON.parse(descriptorSource).components) {
+    for (const path of [...component.source_paths, ...component.test_paths].filter((entry) => !entry.includes("*"))) {
+      try {
+        await readFile(join(root, path));
+      } catch {
+        await mkdir(join(root, path, ".."), { recursive: true });
+        await writeFile(join(root, path), await readFile(join(repositoryRoot, path)));
+      }
+    }
+  }
+
+  for (const view of ["_wiki/generated/task-routes.md", ".github/generated/impact-rules.json"]) {
+    await writeFile(join(root, view), await readFile(join(repositoryRoot, view)));
+  }
 
   const bare = await inspectSystem({ root });
   assert.equal(bare.health.last_aggregate_verification, null, "a clone without artifacts reports no aggregate verification");
+  assert.equal(bare.health.generated_views_current, true);
+
+  // A view that exists but no longer matches the descriptor is stale, exactly as system:check
+  // reports it; presence alone is not currency.
+  const impactView = join(root, ".github", "generated", "impact-rules.json");
+  const currentView = await readFile(impactView, "utf8");
+  await writeFile(impactView, currentView.replace('"rules": [', '"rules": [ '));
+  const stale = await inspectSystem({ root });
+  assert.equal(stale.health.generated_views_current, false);
+  assert.match(renderInspectionHuman(stale), /generated views stale or missing/);
+  await writeFile(impactView, currentView);
 
   await mkdir(join(root, "artifacts", "verification"), { recursive: true });
   await writeFile(join(root, "artifacts", "verification", "latest.json"), JSON.stringify({

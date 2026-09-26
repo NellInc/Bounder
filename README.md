@@ -47,7 +47,7 @@ the build actually publishes.
 | `styles.css` | Shared responsive design system |
 | `sitemap.xml` and `robots.txt` | Search discovery |
 | `CNAME` | `www.bounder.io` custom domain |
-| `LICENSE` and `NOTICE` | Apache-2.0 project licence and attribution notice |
+| `LICENSE` and `NOTICE` | Apache-2.0 project licence and attribution notice; the Bounder name, wordmark and mark are not licensed |
 
 Repository-only material is not published: `tests/` holds the unit, contract and
 browser suites; `scripts/` holds the build, verification and release tooling;

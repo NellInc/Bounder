@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -5,6 +7,18 @@ from PIL import Image, ImageDraw, ImageFont
 
 OUT = Path(__file__).parent
 SIZE = 1200
+
+# The shipped wordmark traces the letters B and UNDER set in Avenir Next Heavy, collection
+# index 8 of the macOS system font file. The face is not bundled here. Another font renders a
+# different wordmark, so point these variables only at a licensed copy of the same face.
+WORDMARK_FONT = Path(os.environ.get("BOUNDER_WORDMARK_FONT", "/System/Library/Fonts/Avenir Next.ttc"))
+WORDMARK_FONT_INDEX = int(os.environ.get("BOUNDER_WORDMARK_FONT_INDEX", "8"))
+if not WORDMARK_FONT.is_file():
+    sys.exit(
+        f"wordmark font not found: {WORDMARK_FONT}. Set BOUNDER_WORDMARK_FONT (and, for a font "
+        "collection, BOUNDER_WORDMARK_FONT_INDEX) to a licensed copy of Avenir Next Heavy. "
+        "Nothing was written."
+    )
 
 
 def canvas():
@@ -84,7 +98,7 @@ def tracked_text(draw, position, text, font, tracking):
 
 lockup = Image.new("RGB", (3000, 720), "white")
 lockup_draw = ImageDraw.Draw(lockup)
-lockup_font = ImageFont.truetype("/System/Library/Fonts/Avenir Next.ttc", 390, index=8)
+lockup_font = ImageFont.truetype(str(WORDMARK_FONT), 390, index=WORDMARK_FONT_INDEX)
 text_y = 78
 x = tracked_text(lockup_draw, (80, text_y), "B", lockup_font, 18)
 x += 12

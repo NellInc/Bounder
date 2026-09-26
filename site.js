@@ -26,7 +26,42 @@ if (embeddedSimulator) {
   const requestEmbeddedHeight = () => {
     embeddedSimulator.contentWindow?.postMessage({ type: "bounder-simulator-height-request" }, window.location.origin);
   };
-  embeddedSimulator.addEventListener("load", requestEmbeddedHeight);
+
+  // A lazy frame fetched after the connection drops loads the browser's own error page, which
+  // is opaque to this origin, and a missing page loads without the simulator's workbench. In
+  // both cases the frame is replaced with plain links to the simulator and recorded evidence.
+  // Only a completed load is judged: a slow simulator is never swapped out on a timer.
+  const embeddedSimulatorLoaded = () => {
+    try {
+      return Boolean(embeddedSimulator.contentDocument?.querySelector(".simulator-stage"));
+    } catch {
+      return false;
+    }
+  };
+
+  const showEmbeddedSimulatorUnavailable = () => {
+    const card = document.createElement("div");
+    card.className = "home-simulator-unavailable";
+    card.setAttribute("role", "status");
+    const message = document.createElement("p");
+    message.textContent = "The simulator could not load here. Open it directly, or read the recorded decisions it replays.";
+    const links = document.createElement("p");
+    links.className = "home-simulator-unavailable-links";
+    for (const [href, label] of [["simulator.html", "Open the simulator"], ["data/bounder-receipts.v1.json", "Recorded decision receipts as JSON"]]) {
+      const link = document.createElement("a");
+      link.className = "text-link";
+      link.href = href;
+      link.textContent = label;
+      links.append(link);
+    }
+    card.append(message, links);
+    embeddedSimulator.replaceWith(card);
+  };
+
+  embeddedSimulator.addEventListener("load", () => {
+    if (embeddedSimulatorLoaded()) requestEmbeddedHeight();
+    else showEmbeddedSimulatorUnavailable();
+  });
   requestEmbeddedHeight();
 }
 
@@ -46,7 +81,9 @@ if (continuityRoot) {
       badge.textContent = "Cannot verify here";
       badge.setAttribute("aria-label", "This browser cannot verify the live proof; the recorded run remains available");
     }
-    for (const figure of continuityRoot.querySelectorAll(".continuity-metrics dd")) figure.textContent = "—";
+    // The live cells are hidden once the state is "unavailable" and the recorded run shows
+    // instead; they are cleared too. The recorded cells are static and left alone.
+    for (const figure of continuityRoot.querySelectorAll("[data-continuity-devices], [data-continuity-policies], [data-continuity-checkpoints], [data-continuity-decisions], [data-continuity-updated]")) figure.textContent = "—";
     const note = continuityRoot.querySelector("[data-continuity-note]");
     if (note) note.textContent = "This browser could not run the live proof verifier, so no live figures are shown. The recorded 100-Guardian run remains available to inspect.";
   });

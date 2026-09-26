@@ -60,10 +60,20 @@ export function makeExpectedGuardians(count) {
   }));
 }
 
+// Fleet receive times keyed by Guardian id. By default each heartbeat is received when it was
+// generated, which models a Guardian whose clock agrees with Fleet's.
+export function receivedAt(heartbeats, receivedAtMs) {
+  return new Map(heartbeats
+    .filter((heartbeat) => typeof heartbeat?.guardian_id === "string")
+    .map((heartbeat) => [heartbeat.guardian_id, receivedAtMs ?? Date.parse(heartbeat.generated_at)]));
+}
+
 export function makeFleet(count, nowMs = TEST_NOW_MS) {
+  const heartbeats = Array.from({ length: count }, (_, index) => makeHeartbeat({ index, nowMs }));
   return {
     expectedGuardians: makeExpectedGuardians(count),
-    heartbeats: Array.from({ length: count }, (_, index) => makeHeartbeat({ index, nowMs }))
+    heartbeats,
+    receivedAtMs: receivedAt(heartbeats)
   };
 }
 

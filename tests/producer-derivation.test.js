@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { link, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -13,6 +13,7 @@ import {
   SHARED_CONTRACTS,
   execute,
   inspectProducerCheckout,
+  isolatedProducerWorktree,
   parseProducerArguments,
   validateRecordInventory,
   verifyProducerDerivation,
@@ -38,6 +39,13 @@ test("producer record inventories reject ambiguity", () => {
     { path: "b", bytes: 1, sha256: "0".repeat(64) },
     { path: "a", bytes: 1, sha256: "0".repeat(64) }
   ], "fixture"), /sorted/);
+  // Code-point order, as Python sorted() produces it: "-" (0x2d) before "_" (0x5f) and
+  // uppercase before lowercase. ICU collation orders both pairs the other way round.
+  const record = (value) => ({ path: value, bytes: 1, sha256: "0".repeat(64) });
+  validateRecordInventory([record("data/a-b.json"), record("data/a_b.json")], "fixture");
+  validateRecordInventory([record("B"), record("a")], "fixture");
+  assert.throws(() => validateRecordInventory([record("data/a_b.json"), record("data/a-b.json")], "fixture"), /sorted/);
+  assert.throws(() => validateRecordInventory([record("a"), record("B")], "fixture"), /sorted/);
   assert.throws(() => validateRecordInventory([{ path: "../escape", bytes: 1, sha256: "0".repeat(64) }], "fixture"), /unsafe/);
   assert.throws(() => validateRecordInventory([{ path: "a", bytes: -1, sha256: "0".repeat(64) }], "fixture"), /byte count/);
   assert.throws(() => validateRecordInventory([{ path: "a", bytes: 1, sha256: "bad" }], "fixture"), /digest/);
@@ -73,7 +81,7 @@ test("producer export verification checks exact contracts, outputs, hashes, and 
   const commit = "a".repeat(40);
   const contracts = [];
   for (const name of SHARED_CONTRACTS) contracts.push(await record(exportRoot, `schemas/${name}`));
-  contracts.sort((left, right) => left.path.localeCompare(right.path, "en"));
+  contracts.sort((left, right) => (left.path < right.path ? -1 : left.path > right.path ? 1 : 0));
   const outputs = [];
   for (const output of [...PUBLISHED_OUTPUTS, producerFixture].sort()) outputs.push(await record(exportRoot, output));
   const provenance = {
@@ -117,7 +125,7 @@ test("producer export verification rejects malformed source, incomplete inventor
   const makeProvenance = async () => {
     const contracts = [];
     for (const name of SHARED_CONTRACTS) contracts.push(await record(exportRoot, `schemas/${name}`));
-    contracts.sort((left, right) => left.path.localeCompare(right.path, "en"));
+    contracts.sort((left, right) => (left.path < right.path ? -1 : left.path > right.path ? 1 : 0));
     const outputs = [];
     for (const output of [...PUBLISHED_OUTPUTS, "producer/fixture.json"].sort()) outputs.push(await record(exportRoot, output));
     return {
@@ -161,6 +169,19 @@ test("producer export verification rejects malformed source, incomplete inventor
   const goodRecord = { path: "ok", bytes: 3, sha256: sha256("ok\n") };
   await verifyRecordInventory(bounded, [goodRecord], "bounded");
   await assert.rejects(() => verifyRecordInventory(bounded, [{ ...goodRecord, bytes: 2 }], "bounded"), /hash mismatch/);
+
+  // Links are refused exactly as the producer's file_record refuses them: a symlink, a hard link
+  // and a file reached through a linked directory would all compare bytes from outside the tree.
+  const elsewhere = path.join(temporary, "elsewhere");
+  await mkdir(elsewhere);
+  await writeFile(path.join(elsewhere, "ok"), "ok\n");
+  await symlink(path.join(elsewhere, "ok"), path.join(bounded, "symlinked"));
+  await assert.rejects(() => verifyRecordInventory(bounded, [{ ...goodRecord, path: "symlinked" }], "bounded"), /non-linked file/);
+  await link(path.join(elsewhere, "ok"), path.join(bounded, "hardlinked"));
+  await assert.rejects(() => verifyRecordInventory(bounded, [{ ...goodRecord, path: "hardlinked" }], "bounded"), /non-linked file/);
+  await rm(path.join(bounded, "hardlinked"));
+  await symlink(elsewhere, path.join(bounded, "linked-directory"));
+  await assert.rejects(() => verifyRecordInventory(bounded, [{ ...goodRecord, path: "linked-directory/ok" }], "bounded"), /linked directory/);
 });
 
 test("producer checkout identity and process execution fail closed", async (t) => {
@@ -175,6 +196,17 @@ test("producer checkout identity and process execution fail closed", async (t) =
   await execFileAsync("/usr/bin/git", ["-C", root, "remote", "add", "origin", "git@github.com:NellInc/Bounder-from-org.git"]);
   const checkout = await inspectProducerCheckout(root);
   assert.equal(checkout.repository, PRODUCER_REPOSITORY);
+  // Reachability from the default branch is recorded from remote-tracking refs, never fetched.
+  assert.equal(checkout.default_ref_contains_commit, false);
+  assert.deepEqual(checkout.remote_refs_containing_commit, []);
+  await execFileAsync("/usr/bin/git", ["-C", root, "update-ref", "refs/remotes/origin/feature", "HEAD"]);
+  const featureOnly = await inspectProducerCheckout(root);
+  assert.equal(featureOnly.default_ref_contains_commit, false);
+  assert.deepEqual(featureOnly.remote_refs_containing_commit, ["refs/remotes/origin/feature"]);
+  await execFileAsync("/usr/bin/git", ["-C", root, "update-ref", "refs/remotes/origin/master", "HEAD"]);
+  const onMaster = await inspectProducerCheckout(root);
+  assert.equal(onMaster.default_ref_contains_commit, true);
+  assert.deepEqual(onMaster.remote_refs_containing_commit, ["refs/remotes/origin/feature", "refs/remotes/origin/master"]);
   await writeFile(path.join(root, "tracked"), "dirty\n");
   await assert.rejects(() => inspectProducerCheckout(root), /must be clean/);
   await execFileAsync("/usr/bin/git", ["-C", root, "checkout", "--", "tracked"]);
@@ -196,15 +228,21 @@ test("producer derivation orchestration emits an atomic receipt and always remov
   const producer = { root: path.join(root, "producer"), commit: "d".repeat(40), repository: PRODUCER_REPOSITORY, default_ref: "master" };
   const provenance = { version: "bounder-evidence-provenance/v1" };
   const times = ["2026-09-01T12:00:00.000Z", "2026-09-01T12:00:01.000Z"];
+  let disposed = 0;
   const result = await verifyProducerDerivation({
     siteRoot: root,
     producerRoot: producer.root,
     outputRoot,
     checkoutInspector: async () => producer,
+    workspaceFactory: async ({ producer: inspected, scratchParent }) => {
+      assert.equal(inspected, producer);
+      assert.equal(path.dirname(scratchParent), outputRoot);
+      return { root: path.join(scratchParent, "producer"), assertUnchanged: async () => {}, dispose: async () => { disposed += 1; } };
+    },
     commandRunner: async (command, args, options) => {
       assert.equal(command, "python3");
       assert.equal(args[0], "scripts/export-website-artifacts.py");
-      assert.equal(options.cwd, producer.root);
+      assert.match(options.cwd, /\.work-[^/]+\/producer$/u);
       return { stdout: "generated\n", stderr: "" };
     },
     exportVerifier: async ({ expectedCommit }) => {
@@ -218,6 +256,7 @@ test("producer derivation orchestration emits an atomic receipt and always remov
   assert.equal(result.receipt.producer_statement, provenance);
   assert.equal(JSON.parse(await readFile(path.join(outputRoot, "latest.json"), "utf8")).producer.commit, producer.commit);
   assert.equal((await readdir(outputRoot)).some((name) => name.startsWith(".work-")), false);
+  assert.equal(disposed, 1);
 
   const failureRoot = path.join(root, "failures");
   await assert.rejects(() => verifyProducerDerivation({
@@ -225,9 +264,41 @@ test("producer derivation orchestration emits an atomic receipt and always remov
     producerRoot: producer.root,
     outputRoot: failureRoot,
     checkoutInspector: async () => producer,
+    workspaceFactory: async ({ scratchParent }) => ({ root: scratchParent, assertUnchanged: async () => {}, dispose: async () => { disposed += 1; } }),
     commandRunner: async () => { throw new Error("export failed"); }
   }), /export failed/);
   assert.equal((await readdir(failureRoot)).some((name) => name.startsWith(".work-")), false);
+  assert.equal(disposed, 2, "the isolated worktree is disposed when the generator fails");
+});
+
+test("the generator runs in a fresh worktree of the inspected commit that ignored local files cannot reach", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "bounder-producer-worktree-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const checkoutRoot = path.join(root, "checkout");
+  await mkdir(checkoutRoot);
+  const git = (...args) => execFileAsync("/usr/bin/git", ["-C", checkoutRoot, ...args]);
+  await git("init", "-q");
+  await git("config", "user.email", "test@example.com");
+  await git("config", "user.name", "Test");
+  await writeFile(path.join(checkoutRoot, ".gitignore"), ".env\n");
+  await writeFile(path.join(checkoutRoot, "tracked"), "one\n");
+  await git("add", ".");
+  await git("commit", "-qm", "fixture");
+  await writeFile(path.join(checkoutRoot, ".env"), "LOCAL_OVERRIDE=1\n");
+  const commit = (await git("rev-parse", "HEAD")).stdout.trim();
+  const scratchParent = path.join(root, "scratch");
+  await mkdir(scratchParent);
+
+  const workspace = await isolatedProducerWorktree({ producer: { root: checkoutRoot, commit }, scratchParent });
+  assert.equal(await readFile(path.join(workspace.root, "tracked"), "utf8"), "one\n");
+  await assert.rejects(() => readFile(path.join(workspace.root, ".env")), /ENOENT/);
+  await workspace.assertUnchanged();
+  await writeFile(path.join(workspace.root, "tracked"), "rewritten by the generator\n");
+  await assert.rejects(() => workspace.assertUnchanged(), /modified its source checkout/);
+  await workspace.dispose();
+  const worktrees = (await git("worktree", "list", "--porcelain")).stdout.match(/^worktree /gmu) || [];
+  assert.equal(worktrees.length, 1, "the temporary worktree is removed and pruned");
+  assert.equal(await readFile(path.join(checkoutRoot, ".env"), "utf8"), "LOCAL_OVERRIDE=1\n", "the live checkout is untouched");
 });
 
 test("producer command arguments accept an explicit path or environment and reject ambiguity", () => {

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { generateKeyPairSync, sign, webcrypto } from "node:crypto";
 import test from "node:test";
 
@@ -221,13 +222,11 @@ test("evidence metadata pins each identity field", async (t) => {
   }
 });
 
-test("timestamp formatting keeps explicit date, time, and zone fields with nanosecond input", () => {
-  const formatted = formatEvidenceTime("2026-07-16T23:10:32.808059651Z");
-  assert.equal(
-    formatted.includes("2026") && formatted.includes("Jul") && /\d{2}:\d{2}/.test(formatted) && /(?:[A-Z]{2,5}|GMT[+-]\d{1,2}(?::\d{2})?)$/.test(formatted.trim()),
-    true,
-    formatted
-  );
+test("timestamp formatting is fixed UTC text, identical in every zone and engine, with nanosecond input", () => {
+  assert.equal(formatEvidenceTime("2026-07-16T23:10:32.808059651Z"), "16 Jul 2026, 23:10 UTC");
+  assert.equal(formatEvidenceTime("2026-09-06T04:05:59Z"), "6 Sep 2026, 04:05 UTC", "September is Sep, never Sept");
+  assert.equal(formatEvidenceTime("2026-12-31T23:59:59.999Z"), "31 Dec 2026, 23:59 UTC", "no rounding into the next day");
+  assert.throws(() => formatEvidenceTime("2026-07-16 23:10:32Z"), /continuity timestamp is invalid/);
 });
 
 test("continuity envelope verifies exact Ed25519 payload bytes", async () => {
@@ -548,7 +547,8 @@ test("live proof expires fail-closed and stale timers cannot overwrite newer sta
   const nodes = new Map(selectors.map((selector) => [selector, {
     textContent: "",
     attributes: new Map(),
-    setAttribute(name, value) { this.attributes.set(name, value); }
+    setAttribute(name, value) { this.attributes.set(name, value); },
+    removeAttribute(name) { this.attributes.delete(name); }
   }]));
   const root = { dataset: {}, querySelector: (selector) => nodes.get(selector) };
   let clockMs = NOW;
@@ -575,6 +575,8 @@ test("live proof expires fail-closed and stale timers cannot overwrite newer sta
   const secondToken = nextToken;
   assert.deepEqual(cleared, [firstToken]);
   assert.equal(nodes.get("[data-continuity-decisions]").textContent, "16\u00a0allow / 84\u00a0hold", "each count stays with its word when the cell wraps");
+  assert.equal(nodes.get("[data-continuity-updated]").textContent, "16 Jul 2026, 11:59 UTC");
+  assert.equal(nodes.get("[data-continuity-updated]").attributes.get("datetime"), second.generated_at, "the <time> carries the exact signed instant");
 
   callbacks.get(firstToken).callback();
   assert.equal(root.dataset.state, "verified", "a cancelled older generation must not downgrade newer proof");
@@ -584,6 +586,7 @@ test("live proof expires fail-closed and stale timers cannot overwrite newer sta
   assert.equal(nodes.get("[data-continuity-state]").textContent, "Proof expired");
   assert.equal(root.dataset.reason, "expired");
   assert.equal(nodes.get("[data-continuity-devices]").textContent, "\u2014", "an expired proof leaves no live figure on screen");
+  assert.equal(nodes.get("[data-continuity-updated]").attributes.has("datetime"), false, "an expired proof leaves no machine-readable issue time either");
   assert.match(nodes.get("[data-continuity-note]").textContent, /^The last verified proof expired at .+no newer proof has been verified yet\./);
   assert.equal(controller.status(), "expired");
 
@@ -621,7 +624,8 @@ const continuityRoot = () => {
   const nodes = new Map(selectors.map((selector) => [selector, {
     textContent: "",
     attributes: new Map(),
-    setAttribute(name, value) { this.attributes.set(name, value); }
+    setAttribute(name, value) { this.attributes.set(name, value); },
+    removeAttribute(name) { this.attributes.delete(name); }
   }]));
   return { nodes, root: { dataset: {}, querySelector: (selector) => nodes.get(selector) } };
 };
@@ -798,6 +802,8 @@ test("the continuity monitor keeps live proof current and never downgrades it ea
     assert.equal(harness.nodes.get("[data-continuity-state]").textContent, "Live feed offline");
     await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[0]);
     assert.equal(harness.root.dataset.state, "verified", "a later successful read restores the live proof");
+    assert.equal(harness.root.dataset.reason, undefined);
+    assert.equal(harness.root.dataset.reasonDetail, undefined, "recovery clears the old failure detail");
   });
 
   await t.test("an unsupported browser says so once and stops polling", async () => {
@@ -990,4 +996,15 @@ test("module import does not bootstrap against Node DOM-like globals", () => {
   `;
   const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], { encoding: "utf8", env: environment });
   assert.equal(result.status, 0, result.stderr);
+});
+
+test("the preview note names the same hosts the live-verification gate admits", () => {
+  const { nodes, root } = continuityRoot();
+  const controller = createContinuityLeaseController(root);
+  controller.showUnavailable("preview");
+  assert.equal(root.dataset.reason, "preview");
+  assert.match(nodes.get("[data-continuity-note]").textContent, /^Live verification runs only on bounder\.io\. /);
+  assert.doesNotMatch(nodes.get("[data-continuity-note]").textContent, /www\.bounder\.io/);
+  const source = readFileSync(new URL("../continuity-evidence.js", import.meta.url), "utf8");
+  assert.match(source, /new Set\(\["bounder\.io", "www\.bounder\.io"\]\)/, "the gate admits both the apex and www hosts");
 });

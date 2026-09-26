@@ -141,6 +141,13 @@ only the Fleet aggregator key signs snapshots. Aggregation either fails the
 cycle closed on any invalid heartbeat or, in its quarantining form, counts that
 Guardian as missing, so the snapshot cannot be healthy.
 
+Fleet also judges liveness by its own clock. Every reference entry point that
+classifies a heartbeat needs the time Fleet received it, which the replay guard
+records and returns from `receiveTimes()`, and refuses to classify without it.
+A heartbeat stops counting at the earlier of its declared expiry and its receive
+time plus the 90-second validity window, so a Guardian clock running fast cannot
+extend its own reachability.
+
 In the reference model, the public continuity projection contains only
 aggregate counts and is emitted only from a complete, healthy 100-Guardian
 snapshot with one completed evaluation per Guardian, zero decision failures and

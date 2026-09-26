@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,7 +32,9 @@ export const PUBLISHED_OUTPUTS = Object.freeze([
 ]);
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
-const compare = (left, right) => left.localeCompare(right, "en");
+// The producer orders its inventories with Python sorted(), which compares code points. ICU
+// collation disagrees on "-" versus "_" and on letter case, so it would reject a correct export.
+const compare = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
 function validateRelativePath(value, label = "path") {
   if (typeof value !== "string" || !value || isAbsolute(value) || value.includes("\\") || value.includes("\0")) {
@@ -54,11 +56,19 @@ function contained(root, path, label = "path") {
   return target;
 }
 
+// Mirrors the producer's own file_record: one regular file, not a symlink and not hard-linked,
+// reached without leaving its root through a linked directory. A link would compare bytes that
+// live somewhere other than the tree being proven.
 async function fileBytes(root, path, label = path) {
   const target = contained(root, path, label);
-  const info = await stat(target);
-  if (!info.isFile() || !Number.isSafeInteger(info.size) || info.size > MAX_EXPORT_BYTES) {
-    throw new Error(`${label} is not a bounded regular file`);
+  const info = await lstat(target);
+  if (info.isSymbolicLink() || !info.isFile() || info.nlink !== 1 || !Number.isSafeInteger(info.size) || info.size > MAX_EXPORT_BYTES) {
+    throw new Error(`${label} is not a bounded, regular, non-linked file`);
+  }
+  const [realRoot, realTarget] = await Promise.all([realpath(root), realpath(target)]);
+  const fromRoot = relative(realRoot, realTarget);
+  if (!fromRoot || fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
+    throw new Error(`${label} escapes its root through a linked directory`);
   }
   const bytes = await readFile(target);
   if (bytes.byteLength !== info.size) throw new Error(`${label} changed while being read`);
@@ -207,7 +217,48 @@ export async function inspectProducerCheckout(producerRoot) {
   if (!/^[0-9a-f]{40}$/u.test(commit)) throw new Error("producer checkout has no full commit identity");
   if (status) throw new Error("producer checkout must be clean for derivation proof");
   if (normalizeRemote(remote) !== PRODUCER_REPOSITORY) throw new Error(`unexpected producer origin: ${remote}`);
-  return Object.freeze({ root, commit, repository: PRODUCER_REPOSITORY, default_ref: PRODUCER_DEFAULT_REF });
+  // Sealed manifests name the producer's default branch as the place to find this commit. That
+  // claim is recorded here from the checkout's remote-tracking refs (as of its last fetch) and
+  // enforced at sealing. It is recorded rather than required because a CI checkout by SHA has
+  // no remote-tracking refs, and derivation itself does not depend on which branch holds the
+  // commit. Nothing is fetched: this stays a local, read-only inspection.
+  const containing = (await git(root, ["for-each-ref", "--format=%(refname)", "--contains", commit, "refs/remotes/origin/"]))
+    .split("\n")
+    .filter(Boolean)
+    .sort(compare);
+  return Object.freeze({
+    root,
+    commit,
+    repository: PRODUCER_REPOSITORY,
+    default_ref: PRODUCER_DEFAULT_REF,
+    default_ref_contains_commit: containing.includes(`refs/remotes/origin/${PRODUCER_DEFAULT_REF}`),
+    remote_refs_containing_commit: Object.freeze(containing)
+  });
+}
+
+// The generator runs in a fresh detached worktree of the inspected commit, never in the live
+// checkout. Ignored local files (.env, build outputs, caches under the tree) therefore cannot
+// influence it, and a generator that rewrites tracked files is caught afterwards.
+export async function isolatedProducerWorktree({ producer, scratchParent, gitRunner = git }) {
+  const root = join(scratchParent, "producer");
+  await gitRunner(producer.root, ["worktree", "add", "--detach", "--quiet", root, producer.commit]);
+  return Object.freeze({
+    root,
+    async assertUnchanged() {
+      const [head, status] = await Promise.all([
+        gitRunner(root, ["rev-parse", "HEAD"]),
+        gitRunner(root, ["status", "--porcelain=v1", "--untracked-files=no"])
+      ]);
+      if (head !== producer.commit || status) throw new Error("producer generator modified its source checkout");
+    },
+    async dispose() {
+      try {
+        await gitRunner(producer.root, ["worktree", "remove", "--force", root]);
+      } finally {
+        await gitRunner(producer.root, ["worktree", "prune"]).catch(() => {});
+      }
+    }
+  });
 }
 
 export function parseProducerArguments(args, environment = process.env) {
@@ -229,6 +280,7 @@ export async function verifyProducerDerivation({
   producerRoot,
   outputRoot = join(siteRoot, "artifacts", "producer-derivation"),
   checkoutInspector = inspectProducerCheckout,
+  workspaceFactory = isolatedProducerWorktree,
   commandRunner = execute,
   exportVerifier = verifyProducerExport,
   gitRunner = git,
@@ -240,7 +292,14 @@ export async function verifyProducerDerivation({
   const exportRoot = join(scratchParent, "export");
   const startedAt = clock();
   try {
-    const execution = await commandRunner("python3", ["scripts/export-website-artifacts.py", "--output", exportRoot], { cwd: producer.root });
+    const workspace = await workspaceFactory({ producer, scratchParent });
+    let execution;
+    try {
+      execution = await commandRunner("python3", ["scripts/export-website-artifacts.py", "--output", exportRoot], { cwd: workspace.root });
+      await workspace.assertUnchanged();
+    } finally {
+      await workspace.dispose();
+    }
     const result = await exportVerifier({ siteRoot, exportRoot, expectedCommit: producer.commit });
     const receipt = {
       version: "bounder-producer-derivation-verification/v1",

@@ -293,8 +293,12 @@ export function validateGuardianHeartbeat(heartbeat, {
   return deepFreeze(snapshot);
 }
 
+// Every Fleet-side classification needs the time Fleet itself received the heartbeat, taken from
+// its own clock (the guard records it as `received_at_ms`). Without it liveness would rest on the
+// Guardian's declared expiry alone, which a fast Guardian clock can stretch by the accepted skew,
+// so a missing receive time fails closed rather than falling back to the declared expiry.
 function assertReceivedAt(receivedAtMs, nowMs) {
-  if (receivedAtMs === undefined) return;
+  if (receivedAtMs === undefined) throw new Error("heartbeat receive time is required");
   if (!Number.isSafeInteger(receivedAtMs) || receivedAtMs > nowMs) throw new Error("heartbeat receive time is invalid");
 }
 
@@ -302,7 +306,7 @@ function assertReceivedAt(receivedAtMs, nowMs) {
 // validity window, so a Guardian clock running fast cannot stretch its own reachability.
 function heartbeatLivenessExpiry(heartbeat, receivedAtMs, budgets) {
   const declared = parseObservabilityTimestamp(heartbeat.expires_at, "heartbeat expires_at");
-  return receivedAtMs === undefined ? declared : Math.min(declared, receivedAtMs + budgets.heartbeat_validity_ms);
+  return Math.min(declared, receivedAtMs + budgets.heartbeat_validity_ms);
 }
 
 export function classifyGuardianHeartbeat(heartbeat, {
@@ -389,6 +393,10 @@ export function createGuardianHeartbeatGuard({
       assertIdentity(guardianId, "retired Guardian id");
       return guardians.delete(guardianId);
     },
+    // Fleet receive times for every tracked Guardian, as the `receivedAtMs` input to aggregation.
+    receiveTimes() {
+      return new Map([...guardians].map(([guardianId, value]) => [guardianId, value.receivedAt]));
+    },
     state(guardianId) {
       const value = guardians.get(guardianId);
       if (!value) return null;
@@ -453,8 +461,10 @@ function aggregateFleet({
   if (!Number.isSafeInteger(nowMs) || !Number.isSafeInteger(cycleStartedAtMs) || cycleStartedAtMs > nowMs) {
     throw new Error("Fleet snapshot clock is invalid");
   }
-  if (receivedAtMs !== undefined && !(receivedAtMs instanceof Map) && (!receivedAtMs || typeof receivedAtMs !== "object" || Array.isArray(receivedAtMs))) {
-    throw new Error("Fleet heartbeat receive times are invalid");
+  // Receive times are required as a collection even when no heartbeat arrived. A missing entry for
+  // one heartbeat is that heartbeat's fault; a missing or malformed collection is the caller's.
+  if (!(receivedAtMs instanceof Map) && (!receivedAtMs || typeof receivedAtMs !== "object" || Array.isArray(receivedAtMs))) {
+    throw new Error("Fleet heartbeat receive times are required");
   }
   assertIdentity(fleetId, "Fleet snapshot id");
   const budgets = validateObservabilityBudgets(budgetOverrides);
@@ -474,8 +484,10 @@ function aggregateFleet({
 
   const heartbeatById = new Map();
   const receivedById = new Map();
+  const indexById = new Map();
   const rejected = [];
   const duplicated = new Set();
+  const duplicateReason = "Fleet heartbeat collection has duplicate Guardian ids";
   heartbeats.forEach((heartbeat, index) => {
     try {
       const validated = validateGuardianHeartbeat(heartbeat, { nowMs, allowExpired: true, budgets });
@@ -483,13 +495,18 @@ function aggregateFleet({
       if (!expectedById.has(validated.guardian_id)) throw new Error("Fleet heartbeat is from an unknown Guardian");
       if (expectedById.get(validated.guardian_id) !== validated.platform) throw new Error("Fleet heartbeat platform does not match inventory");
       if (heartbeatById.has(validated.guardian_id) || duplicated.has(validated.guardian_id)) {
+        if (quarantine && !duplicated.has(validated.guardian_id)) {
+          // The earlier copy was accepted before the duplicate appeared; record it as quarantined too.
+          rejected.push({ index: indexById.get(validated.guardian_id), guardian_id: validated.guardian_id, reason: duplicateReason });
+        }
         duplicated.add(validated.guardian_id);
-        throw new Error("Fleet heartbeat collection has duplicate Guardian ids");
+        throw new Error(duplicateReason);
       }
-      const received = receivedAtMs === undefined ? undefined : lookupOwn(receivedAtMs, validated.guardian_id);
+      const received = lookupOwn(receivedAtMs, validated.guardian_id);
       assertReceivedAt(received, nowMs);
       heartbeatById.set(validated.guardian_id, validated);
-      if (received !== undefined) receivedById.set(validated.guardian_id, received);
+      receivedById.set(validated.guardian_id, received);
+      indexById.set(validated.guardian_id, index);
     } catch (error) {
       if (!quarantine) throw error;
       rejected.push({ index, guardian_id: rejectedGuardianId(heartbeat), reason: error instanceof Error ? error.message : "Fleet heartbeat is invalid" });
@@ -501,6 +518,7 @@ function aggregateFleet({
     heartbeatById.delete(guardianId);
     receivedById.delete(guardianId);
   }
+  rejected.sort((left, right) => left.index - right.index);
 
   const states = emptyCounts(FLEET_STATES);
   const reasonCounts = emptyCounts(OPERATIONAL_REASONS);
@@ -573,8 +591,9 @@ function aggregateFleet({
 }
 
 /**
- * Strict aggregation: any invalid, unknown, mismatched, or duplicate heartbeat aborts the cycle.
- * Callers pass only guard-accepted, inventory-matched heartbeats.
+ * Strict aggregation: any invalid, unknown, mismatched, or duplicate heartbeat, or one without a
+ * Fleet receive time, aborts the cycle. Callers pass only guard-accepted, inventory-matched
+ * heartbeats and the guard's receive times (`receivedAtMs: guard.receiveTimes()`).
  */
 export function aggregateFleetSnapshot(input) {
   return aggregateFleet(input, { quarantine: false }).snapshot;
@@ -582,9 +601,9 @@ export function aggregateFleetSnapshot(input) {
 
 /**
  * Quarantining aggregation: a heartbeat that fails validation, names an unknown Guardian or the
- * wrong Fleet or platform, or duplicates another Guardian's heartbeat is set aside, and that
- * Guardian counts as missing. The cycle therefore still produces a snapshot, but one that cannot
- * be complete or healthy. `rejected` is Fleet-private and never enters the snapshot.
+ * wrong Fleet or platform, has no Fleet receive time, or duplicates another Guardian's heartbeat
+ * is set aside, and that Guardian counts as missing. The cycle still produces a snapshot, but one
+ * that cannot be complete or healthy. `rejected` is Fleet-private and never enters the snapshot.
  */
 export function aggregateFleetObservations(input) {
   const { snapshot, rejected } = aggregateFleet(input, { quarantine: true });
@@ -775,8 +794,10 @@ export async function deriveFleetEvents({
 } = {}) {
   if (!Number.isSafeInteger(observedAtMs)) throw new Error("Fleet event clock is invalid");
   const budgets = validateObservabilityBudgets(budgetOverrides);
-  assertReceivedAt(receivedAtMs, observedAtMs);
   if (!previousHeartbeat && !currentHeartbeat) return Object.freeze([]);
+  // `receivedAtMs` is Fleet's receive time for the heartbeat being classified: the current one, or
+  // the previous one when no current heartbeat arrived.
+  assertReceivedAt(receivedAtMs, observedAtMs);
   const previous = previousHeartbeat ? validateGuardianHeartbeat(previousHeartbeat, { nowMs: observedAtMs, allowExpired: true, budgets }) : null;
   const current = currentHeartbeat ? validateGuardianHeartbeat(currentHeartbeat, { nowMs: observedAtMs, allowExpired: true, budgets }) : null;
   const heartbeat = current || previous;

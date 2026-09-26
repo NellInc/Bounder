@@ -118,8 +118,10 @@
           </div>
           <input class="honeypot" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
           <input type="hidden" name="_subject" value="New Bounder enquiry">
-          <button class="button button-dark" type="submit"><span data-label>Send enquiry</span> <span aria-hidden="true">→</span></button>
-          <button class="button button-dark" type="submit" data-hosted-submit hidden>Continue on Formspree</button>
+          <div class="form-actions">
+            <button class="button button-dark" type="submit"><span data-label>Send enquiry</span> <span aria-hidden="true">→</span></button>
+            <button class="button button-quiet" type="submit" data-hosted-submit hidden>Continue on Formspree</button>
+          </div>
         </form>
       </div>
     </section>
@@ -134,7 +136,7 @@
       <a href="contact.html" aria-current="page">Contact</a>
       <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <p class="copyright">© Nell Watson, Inc. Code and text under Apache-2.0; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
+    <p class="copyright">© Nell Watson, Inc. Code and text under <span class="nowrap">Apache-2.0</span>, except the Bounder name and marks; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
   </footer>
   <script type="module" src="ui/contact-form.js"></script>
 </body>

@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { gitChangedPaths, isMainModule, loadSystemModel, planForPaths, repositoryRoot } from "./lib/system-model.mjs";
+import { generateSystemViews } from "./generate-system-views.mjs";
 
 const execFileAsync = promisify(execFile);
 const gitEnvironment = { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0", GIT_NO_LAZY_FETCH: "1" };
@@ -155,10 +156,9 @@ export async function inspectSystem({ root = repositoryRoot, clock = () => Date.
     manifest.live_observation
   ];
   const provenanceComplete = provenanceFields.filter(Boolean).length;
-  const generatedViews = await Promise.all([
-    access(join(root, "_wiki", "generated", "task-routes.md")).then(() => true, () => false),
-    access(join(root, ".github", "generated", "impact-rules.json")).then(() => true, () => false)
-  ]);
+  // Current means byte-identical to what the descriptor compiles to, the same comparison
+  // `npm run system:check` makes. Check mode never writes, so inspection stays read-only.
+  const generatedViewsCurrent = await generateSystemViews({ root, check: true }).then(() => true, () => false);
   return Object.freeze({
     version: "bounder-inspection/v1",
     observed_at: new Date().toISOString(),
@@ -173,7 +173,7 @@ export async function inspectSystem({ root = repositoryRoot, clock = () => Date.
     },
     health: {
       descriptor: { roles: model.roles.length, components: model.components.length, artifacts: model.artifacts.length, impact_rules: model.impact_rules.length },
-      generated_views_current: generatedViews.every(Boolean),
+      generated_views_current: generatedViewsCurrent,
       changed_path_match_rate: repository.changed_paths.length ? (repository.changed_paths.length - changedPlan.unmatched_paths.length) / repository.changed_paths.length : 1,
       producer_contract_parity: { equal: producer?.contracts.filter(({ equal }) => equal).length || 0, total: producer?.contracts.length || 0 },
       provenance_completeness: { complete: provenanceComplete, required: manifest.canonical_interlock ? 1 : 5 },
@@ -201,7 +201,7 @@ export function renderInspectionHuman(report) {
       ? `Producer candidate: ${report.producer.remote || report.producer.root} | ${report.producer.branch}@${report.producer.head.slice(0, 12)} | ${report.producer.dirty ? "dirty" : "clean"}`
       : "Producer candidate: unavailable",
     `Producer contract parity: ${report.schemas.producer_comparisons.filter(({ equal }) => equal).length}/${report.schemas.producer_comparisons.length} byte-identical`,
-    `Control health: ${report.health.generated_views_current ? "generated views current" : "generated views missing"} | changed-path match ${(report.health.changed_path_match_rate * 100).toFixed(1)}% | provenance ${report.health.provenance_completeness.complete}/${report.health.provenance_completeness.required} | orientation ${report.health.orientation_probe_ms} ms`,
+    `Control health: ${report.health.generated_views_current ? "generated views current" : "generated views stale or missing"} | changed-path match ${(report.health.changed_path_match_rate * 100).toFixed(1)}% | provenance ${report.health.provenance_completeness.complete}/${report.health.provenance_completeness.required} | orientation ${report.health.orientation_probe_ms} ms`,
     "Holds:"
   ];
   for (const hold of report.holds) lines.push(`  * ${hold}`);

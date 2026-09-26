@@ -63,9 +63,41 @@ test("a failed send restores only the label text, keeping the arrow, and focuses
   const error = page.nodes["#form-error"];
   assert.equal(error.hidden, false);
   assert.equal(error.focused, true);
-  assert.match(error.textContent, /could not confirm delivery/);
+  assert.match(error.textContent, /^Our form provider could not accept this message\./, "a non-OK reply without a status is still the provider's rejection");
   assert.equal(page.hosted.hidden, false);
   assert.equal(page.nodes["#contact-form-title"].hidden, false, "the heading stays while the form is still shown");
+  assert.equal(page.form.hidden, false);
+});
+
+test("a busy provider (429) says so instead of blaming the visitor's connection", async () => {
+  const page = makePage();
+  const submit = await loadWith(page, async () => ({ ok: false, status: 429 }));
+  await submit();
+  const error = page.nodes["#form-error"];
+  assert.equal(error.hidden, false);
+  assert.match(error.textContent, /^The form is busy just now\. Your message is still here: please try again in a minute/);
+  assert.doesNotMatch(error.textContent, /connection/);
+  assert.equal(page.hosted.hidden, false, "the hosted route is still offered");
+});
+
+test("any other provider rejection is the provider's, not the connection's", async () => {
+  for (const status of [400, 403, 422, 500, 503]) {
+    const page = makePage();
+    const submit = await loadWith(page, async () => ({ ok: false, status }));
+    await submit();
+    const error = page.nodes["#form-error"];
+    assert.match(error.textContent, /^Our form provider could not accept this message\./, String(status));
+    assert.doesNotMatch(error.textContent, /connection/, String(status));
+  }
+});
+
+test("a network failure keeps the connection advice and the duplicate warning", async () => {
+  const page = makePage();
+  const submit = await loadWith(page, async () => { throw new TypeError("Failed to fetch"); });
+  await submit();
+  const error = page.nodes["#form-error"];
+  assert.match(error.textContent, /^We could not confirm delivery\. Your message is still here: check your connection/);
+  assert.match(error.textContent, /we may receive it twice\.$/);
   assert.equal(page.form.hidden, false);
 });
 
@@ -86,6 +118,7 @@ test("an unconfirmed provider response is treated as a failure, not success", as
   await submit();
   assert.equal(page.nodes["#form-success"].hidden, true);
   assert.equal(page.nodes["#form-error"].hidden, false);
+  assert.match(page.nodes["#form-error"].textContent, /^Our form provider could not accept this message\./);
   assert.equal(page.form.hidden, false);
 });
 

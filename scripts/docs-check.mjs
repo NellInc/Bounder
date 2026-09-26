@@ -42,7 +42,9 @@ export async function assertFileLine(root, sourcePath, start, end, sourcePage, a
   } catch {
     throw new Error(`${sourcePage} cites missing file: ${sourcePath}`);
   }
-  const lines = source.split("\n");
+  // A file that ends in a newline splits into one extra empty element; counting it would admit a
+  // citation to a line that does not exist.
+  const lines = (source.endsWith("\n") ? source.slice(0, -1) : source).split("\n");
   if (start < 1 || end < start || end > lines.length) throw new Error(`${sourcePage} cites invalid range ${sourcePath}:${start}-${end}`);
   if (anchor === null) return;
   if (!lines.slice(start - 1, end).join("\n").includes(anchor)) {
@@ -158,6 +160,9 @@ export async function checkDocumentation({ root = repositoryRoot, model: supplie
     links_checked: linksChecked,
     citations_checked: citationsChecked,
     anchored_citations: anchoredCitations,
+    // An unanchored citation is only range-checked, so it can drift to unrelated lines without
+    // failing. The count is reported so that drift risk stays visible.
+    unanchored_citations: citationsChecked - anchoredCitations,
     claim_holds: model.documentation.claim_holds.length,
     routing_warnings: routingWarnings,
     warnings,
@@ -173,7 +178,7 @@ export async function runDocsCheckCli(args = process.argv.slice(2), logger = con
   const report = await checkDocumentation();
   if (args.includes("--json")) logger.log(JSON.stringify(report, null, 2));
   else {
-    logger.log(`Documentation: ${report.pages_checked} pages, ${report.links_checked} links, ${report.citations_checked} citations (${report.anchored_citations} anchored), ${report.claim_holds} explicit claim holds`);
+    logger.log(`Documentation: ${report.pages_checked} pages, ${report.links_checked} links, ${report.citations_checked} citations (${report.anchored_citations} anchored, ${report.unanchored_citations} range-checked only), ${report.claim_holds} explicit claim holds`);
     for (const warning of report.warnings) logger.warn(`HELD: ${warning}`);
     for (const warning of report.routing_warnings) logger.warn(`UNROUTED: ${warning}`);
   }

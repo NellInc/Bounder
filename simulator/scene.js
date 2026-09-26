@@ -371,18 +371,23 @@ export const createTownScene = ({ scene, colours, stage }) => {
     instances.add("flower", flowerGeometry, flowerMaterial, composeMatrix(x, 0.2, z));
   }
 
-  const hillMaterial = new THREE.MeshStandardMaterial({ color: "#718866", roughness: 1 });
-  for (const [x, z, scale] of [[-19, -9, 5.2], [-17, 6, 4.4], [18, -7, 5.8], [19, 7, 4.9]]) {
-    const hill = new THREE.Mesh(new THREE.ConeGeometry(scale, scale * 0.7, 9), hillMaterial);
-    hill.position.set(x, scale * 0.23 - 0.1, z);
-    hill.scale.y = 0.72;
+  // Low rounded hills sit well beyond the town, so they frame the overview's horizon but stay
+  // outside every close scenario view.
+  const hillMaterial = new THREE.MeshStandardMaterial({ color: "#7a9068", roughness: 1 });
+  const hillGeometry = new THREE.SphereGeometry(1, 40, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+  for (const [x, z, width, height, depth] of [[-31, -15, 9, 3.2, 7], [-30, 12, 8, 2.6, 6.5], [31, -13, 10, 3.6, 7.5], [30, 14, 8.5, 2.8, 6.5], [-6, -33, 12, 3.0, 6], [12, -31, 9, 2.4, 5.5]]) {
+    const hill = new THREE.Mesh(hillGeometry, hillMaterial);
+    hill.scale.set(width, height, depth);
+    hill.position.set(x, -0.12, z);
     hill.receiveShadow = true;
     scene.add(hill);
   }
 
   const ambientClouds = new THREE.Group();
   const fairCloudMaterial = new THREE.MeshStandardMaterial({ color: "#f7fbfa", transparent: true, opacity: 0.88, roughness: 1 });
-  for (const [x, y, z, scale] of [[-11, 10, -8, 1.4], [2, 11.5, -11, 1.8], [13, 9.4, -7, 1.25]]) {
+  // Fair-weather clouds hang over the far horizon: visible along the top of the overview, never
+  // between a close scenario camera and the town.
+  for (const [x, y, z, scale] of [[-24, 8.8, -9, 1.6], [-9, 9.2, -27, 2.0], [7, 8.6, -30, 1.7], [22, 9.0, -24, 1.5]]) {
     const cloud = new THREE.Group();
     for (const [offsetX, offsetY, size] of [[-0.65, 0, 0.72], [0, 0.15, 1], [0.72, -0.02, 0.68]]) {
       const puff = new THREE.Mesh(new THREE.SphereGeometry(size * scale, 18, 12), fairCloudMaterial);
@@ -411,6 +416,8 @@ export const createTownScene = ({ scene, colours, stage }) => {
     ring.position.y = 0.035;
     group.add(ring);
     group.position.set(position.x, 0, position.z);
+    // Drawn only for the scenario that selects it; no boundary shows before a receipt loads.
+    group.visible = false;
     scene.add(group);
     return group;
   };
@@ -557,10 +564,10 @@ export const createTownScene = ({ scene, colours, stage }) => {
     human_authorization: "#6fa8dc"
   });
   const roeMarkers = Object.freeze({
-    surrender: makeROEMarker(new THREE.Vector3(-1.2, 0, -4.2), "Surrender observed", roeColours.surrender),
+    surrender: makeROEMarker(new THREE.Vector3(-1.2, 0, -4.2), "Surrender signalled", roeColours.surrender),
     incapacitated: makeROEMarker(new THREE.Vector3(3.6, 0, -1.2), "Incapacitated person", roeColours.incapacitated),
-    identification: makeROEMarker(new THREE.Vector3(3.6, 0, 3.6), "Identification uncertain", roeColours.identification),
-    proportionality: makeROEMarker(new THREE.Vector3(0, 0, 3.6), "Proportionality unresolved", roeColours.proportionality),
+    identification: makeROEMarker(new THREE.Vector3(3.6, 0, 3.6), "Identity unconfirmed", roeColours.identification),
+    proportionality: makeROEMarker(new THREE.Vector3(0, 0, 3.6), "Consequence check unresolved", roeColours.proportionality),
     human_authorization: makeROEMarker(new THREE.Vector3(-3.6, 0, 3.6), "Human authorisation absent", roeColours.human_authorization)
   });
 
@@ -625,11 +632,14 @@ export const createTownScene = ({ scene, colours, stage }) => {
     segment.position.y = -0.13 - index * 0.26;
     sock.add(segment);
   });
-  // Fully stretched downwind with a slight droop: the wind is well above the limit.
-  sock.rotation.z = Math.PI / 2 - 0.08;
+  // Fully stretched downwind (toward -x) with a slight droop: the wind is well above the limit.
+  // The segments hang along local -y, so a negative quarter turn about z points the tail at -x.
+  sock.rotation.z = -(Math.PI / 2 - 0.08);
   sock.position.set(0, 2.02, 0);
   windsock.add(windsockPole, sock);
-  windsock.position.set(1.8, 0, 5.55);
+  // On the pavement beside the weather hold, inside that scenario's framing.
+  windsock.position.set(-2.2, 0, 5.45);
+  windsock.scale.setScalar(1.35);
   weatherGroup.add(windsock);
   weatherGroup.visible = false;
   scene.add(weatherGroup);
@@ -695,9 +705,27 @@ export const createTownScene = ({ scene, colours, stage }) => {
   bounderEnvelope.userData.envelope = true;
   drone.add(bounderEnvelope);
 
+  // A plumb line and ground mark under the lead drone make its height and position legible, so a
+  // drone flying above a street never reads as sitting on a roof behind it.
+  const tetherMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color("#1b1f1a"), transparent: true, opacity: 0.45, depthWrite: false });
+  const droneTether = new THREE.Group();
+  const tetherLine = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1, 6, 1, true), tetherMaterial);
+  tetherLine.position.y = 0.5;
+  const tetherMark = new THREE.Mesh(new THREE.RingGeometry(0.13, 0.2, 24), tetherMaterial);
+  tetherMark.rotation.x = -Math.PI / 2;
+  droneTether.add(tetherLine, tetherMark);
+  droneTether.userData.line = tetherLine;
+  // Hidden until the first recorded receipt places the drone.
+  droneTether.visible = false;
+  scene.add(droneTether);
+
   // Fleet Guardians are illustrative companions. No recorded receipt maps to these meshes, so their
   // envelopes use their own neutral material and never take the lead drone's hold colour.
+  // Their bodies take a cooler grey of their own so the lead drone, whose receipt is shown, stays
+  // distinct.
   const guardianEnvelopeMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color("#dfe6dc"), transparent: true, opacity: 0.55 });
+  const guardianBodyMaterial = droneBodyMaterial.clone();
+  guardianBodyMaterial.color.set("#c3ccc6");
   const fleetDrones = Array.from({ length: 6 }, (_, index) => {
     const guardian = drone.clone(true);
     guardian.scale.setScalar(0.82);
@@ -705,6 +733,7 @@ export const createTownScene = ({ scene, colours, stage }) => {
     guardian.userData.guardianIndex = index + 2;
     guardian.traverse((part) => {
       if (part.userData.envelope) part.material = guardianEnvelopeMaterial;
+      else if (part.material === droneBodyMaterial) part.material = guardianBodyMaterial;
       if (part.userData.propeller) rotors.push(part);
     });
     scene.add(guardian);
@@ -797,6 +826,7 @@ export const createTownScene = ({ scene, colours, stage }) => {
     ambientClouds,
     curves,
     drone,
+    droneTether,
     bounderEnvelope,
     fleetDrones,
     rotors,

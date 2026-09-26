@@ -1,10 +1,35 @@
 import { MAX_VECTOR_BYTES } from "../runtime/policy/primitives.js";
+import { TRUSTED_FLEET_KEY, decodeBase64 } from "../runtime/crypto/encoding.js";
 import { parseStrictJSON } from "../runtime/json/policy-json.js";
 import { verifyEnvelope } from "../runtime/policy/contracts.js";
 import { validateRoundTripEvidence } from "../runtime/policy/roundtrip.js";
 import { fetchBoundedJSON } from "../runtime/transport/bounded-json.js";
 import { classifyAuthority, createLatestRequestGate } from "../runtime/policy/presentation-state.js";
 import { asSentence } from "./text.js";
+
+// Ed25519 in WebCrypto arrived in Safari 17, Firefox 129 and Chrome and Edge 137. An older
+// browser has judged nothing, so it is told so plainly and pointed at the signed files.
+export const ED25519_UNSUPPORTED_MESSAGE = "This browser cannot check Ed25519 signatures. Checks need Safari 17, Firefox 129, or Chrome or Edge 137 or later. The signed example files below can still be downloaded and checked elsewhere.";
+
+// Import the trusted Fleet key once, without verifying anything. Resolves false only when the
+// browser lacks Ed25519; it changes wording, never what the panel allows.
+export const probeEd25519Support = async (cryptoImpl = globalThis.crypto) => {
+  if (!cryptoImpl?.subtle) return false;
+  try {
+    const keyBytes = decodeBase64(TRUSTED_FLEET_KEY.base64, "trusted Fleet public key", { maxBytes: 32 });
+    await cryptoImpl.subtle.importKey("raw", keyBytes, { name: "Ed25519" }, false, ["verify"]);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const STEP_ORDER = ["envelope", "signature", "policy", "receipt"];
+const PASSED_STEP_TEXT = Object.freeze({
+  envelope: "Signed envelope parsed",
+  signature: "Signature verified",
+  policy: "Policy checks passed"
+});
 
 // Transport errors carry no verification stage. Tag them, non-enumerably as the runtime's
 // own stage tags are, so the failure is shown at the receipt step it actually reached.
@@ -22,7 +47,8 @@ export const bootstrapPolicyRoundTrip = (
     fetchJSON = fetchBoundedJSON,
     verifyVector = verifyEnvelope,
     validateEvidence = validateRoundTripEvidence,
-    now = Date.now
+    now = Date.now,
+    probeSignatureSupport = probeEd25519Support
   } = {}
 ) => {
   const panel = root.querySelector("[data-policy-roundtrip]");
@@ -37,6 +63,10 @@ export const bootstrapPolicyRoundTrip = (
   const fields = Object.fromEntries([...panel.querySelectorAll("[data-policy-field]")].map((element) => [element.dataset.policyField, element]));
   const steps = Object.fromEntries([...panel.querySelectorAll("[data-policy-step]")].map((element) => [element.dataset.policyStep, element]));
   const requests = createLatestRequestGate();
+  let signaturesUnsupported = false;
+  const idleMessage = () => signaturesUnsupported
+    ? ED25519_UNSUPPORTED_MESSAGE
+    : "Choose the published vector or a local compatible file.";
 
   const setStatus = (state, label, message) => {
     status.dataset.state = state;
@@ -51,7 +81,7 @@ export const bootstrapPolicyRoundTrip = (
     if (detail) detail.textContent = message;
   };
   const reset = () => {
-    setStatus("idle", "Ready", "Choose the published vector or a local compatible file.");
+    setStatus("idle", "Ready", idleMessage());
     setStep("envelope", "idle", "Awaiting signed bytes");
     setStep("signature", "idle", "Awaiting Ed25519 verification");
     setStep("policy", "idle", "Awaiting schema checks");
@@ -64,16 +94,28 @@ export const bootstrapPolicyRoundTrip = (
     setStatus("working", "Verifying", "Checking exact payload bytes and the Ed25519 signature locally.");
     return request;
   };
-  const rejectCurrent = (request, error, label = "Rejected") => {
+  // kind is "rejected" (the bytes failed a check), "unavailable" (evidence could not be
+  // fetched) or "unsupported" (this browser cannot run the check). Only a rejection is a verdict.
+  const rejectCurrent = (request, error, kind = "rejected") => {
     if (!request.isCurrent()) return;
     const detail = asSentence(error instanceof Error ? error.message : "The vector could not be verified.");
-    const unavailable = label === "Unavailable";
-    setStatus("rejected", label, unavailable
-      ? `${detail} Check your connection, then retry the published example, or inspect a compatible local JSON file.`
-      : detail);
     const stage = error instanceof Error && error.verificationStage in steps ? error.verificationStage : "envelope";
-    // A transport failure is not a verdict on the bytes: it marks where evidence ran out.
-    setStep(stage, unavailable ? "unavailable" : "rejected", unavailable ? "Evidence could not be fetched" : "Verification stopped here");
+    // Every check before the failing stage completed; say so instead of leaving it "Awaiting".
+    for (const name of STEP_ORDER.slice(0, STEP_ORDER.indexOf(stage))) {
+      if (steps[name]?.dataset.state === "idle") setStep(name, "verified", PASSED_STEP_TEXT[name]);
+    }
+    if (kind === "unsupported") {
+      signaturesUnsupported = true;
+      setStatus("unsupported", "Cannot verify here", ED25519_UNSUPPORTED_MESSAGE);
+      setStep(stage, "unsupported", "This browser cannot check Ed25519");
+    } else if (kind === "unavailable") {
+      // A transport failure is not a verdict on the bytes: it marks where evidence ran out.
+      setStatus("rejected", "Unavailable", `${detail} Check your connection, then retry the published example, or inspect a compatible local JSON file.`);
+      setStep(stage, "unavailable", "Evidence could not be fetched");
+    } else {
+      setStatus("rejected", "Rejected", detail);
+      setStep(stage, "rejected", "Verification stopped here");
+    }
   };
   // Envelope, signature and policy are settled as soon as the vector verifies, so a later
   // evidence failure can never be reported against the steps that already passed.
@@ -96,7 +138,7 @@ export const bootstrapPolicyRoundTrip = (
     setStep(
       "receipt",
       recorded ? "evidenced" : "unmatched",
-      recorded ? `Signed Go receipt verified: ${recorded.receipt.code}, sequence ${recorded.receipt.policy_sequence}` : "No signed Go receipt matches this exact policy sequence"
+      recorded ? `Signed interlock receipt (Go engine) verified: ${recorded.receipt.code}, sequence ${recorded.receipt.policy_sequence}` : "No signed interlock receipt matches this exact policy sequence"
     );
     fields.receipt.textContent = recorded
       ? `${recorded.receipt.code} · ${recorded.receipt.device_id} · policy sequence ${recorded.receipt.policy_sequence}`
@@ -118,7 +160,7 @@ export const bootstrapPolicyRoundTrip = (
     } catch (error) {
       // A browser without Ed25519 WebCrypto has judged nothing: say so rather than "Rejected".
       const unsupported = error instanceof Error && error.verificationStage === "signature" && /cannot verify Ed25519/.test(error.message);
-      rejectCurrent(request, error, unsupported ? "Unsupported" : "Rejected");
+      rejectCurrent(request, error, unsupported ? "unsupported" : "rejected");
       return;
     }
     renderVerifiedContract(request, verified);
@@ -129,7 +171,7 @@ export const bootstrapPolicyRoundTrip = (
         description: "recorded round-trip evidence"
       });
     } catch (error) {
-      rejectCurrent(request, atReceiptStage(error), "Unavailable");
+      rejectCurrent(request, atReceiptStage(error), "unavailable");
       return;
     }
     try {
@@ -156,7 +198,7 @@ export const bootstrapPolicyRoundTrip = (
       });
       await inspectBytes(fetched.bytes, request);
     } catch (error) {
-      rejectCurrent(request, error, "Unavailable");
+      rejectCurrent(request, error, "unavailable");
     } finally {
       if (request.isCurrent()) sampleButton.disabled = false;
     }
@@ -182,5 +224,15 @@ export const bootstrapPolicyRoundTrip = (
     }
   });
   reset();
+  // Say up front when this browser cannot check signatures. Both inspection paths stay open:
+  // local files still parse, and the signed files remain downloadable.
+  Promise.resolve()
+    .then(() => probeSignatureSupport())
+    .then((supported) => {
+      if (supported !== false) return;
+      signaturesUnsupported = true;
+      if (status.dataset.state === "idle") setStatus("idle", "Ready", idleMessage());
+    })
+    .catch(() => {});
   return Object.freeze({ cancel: requests.cancel, inspectBytes, loadPublishedExample });
 };

@@ -51,6 +51,10 @@ export const renderFleetRows = (container, evidence) => {
     fragment.append(row);
   }
   container.replaceChildren(fragment);
+  // The count is written here too, so it is right even if the filter controls never load; the
+  // filters rewrite it as they narrow the list.
+  const count = container.closest?.('.simulator-workbench')?.querySelector('[data-fleet-count]');
+  if (count) count.textContent = `${evidence.devices.length} of ${evidence.devices.length} recorded Guardians`;
 };
 
 const fleetFields = (root) => Object.fromEntries(
@@ -85,4 +89,6 @@ export const showFleetUnavailable = (root, message) => {
     field.textContent = 'Unavailable';
     field.removeAttribute('title');
   }
+  const count = root.querySelector('[data-fleet-count]');
+  if (count) count.textContent = 'Recorded Fleet evidence could not be loaded.';
 };

@@ -6,6 +6,7 @@ import {
 } from "./simulator-contracts.js";
 import { renderFleetRows, renderFleetSummary, showFleetUnavailable } from "./ui/fleet-view.js";
 import { asSentence } from "./ui/text.js";
+import { glossAdapterOutput, glossReason, outcomeHeadline, stageBadge } from "./ui/receipt-copy.js";
 
 // Must stay the first statement of the module body. Static imports evaluate before it, so
 // the mark proves every dependency loaded and this view began running; the bootstrap only
@@ -36,7 +37,9 @@ const setRuleState = (failedRule) => {
   for (const item of root.querySelectorAll(".rule-stack li")) {
     const failed = failedRule !== "all" && item.dataset.rule === failedRule;
     item.classList.toggle("is-failed", failed);
-    item.querySelector("strong").textContent = failed ? "HOLD" : "PASS";
+    item.classList.toggle("is-pass", !failed);
+    item.classList.remove("is-unavailable");
+    item.querySelector("strong").textContent = failed ? "HOLD" : "CLEAR";
   }
 };
 
@@ -44,14 +47,19 @@ const renderReceipt = (scenario) => {
   const receipt = receiptsByScenario.get(scenario);
   if (!receipt) return;
   for (const button of scenarioButtons) button.setAttribute("aria-pressed", String(button.dataset.scenario === scenario));
-  receiptSource.textContent = "Recorded Go interlock receipt · accessible evidence view";
-  phaseElement.textContent = receipt.allowed ? "Bounder permits" : "Bounder holds";
+  receiptSource.textContent = "Recorded interlock receipt (Go engine) · accessible evidence view";
+  // Same words as the 3D view: a plain stage label, the recorded code once in the receipt.
+  phaseElement.textContent = stageBadge(receipt);
   statusCode.textContent = receipt.code;
-  outcomeElement.textContent = receipt.allowed ? "Request allowed" : "Request denied";
+  statusCode.hidden = true;
+  outcomeElement.textContent = outcomeHeadline(receipt.allowed);
   outcomeElement.dataset.outcome = receipt.allowed ? "allowed" : "held";
   decisionCode.textContent = receipt.code;
-  reasonElement.textContent = asSentence(receipt.reason);
-  adapterOutput.textContent = receipt.adapter.output;
+  decisionCode.hidden = receipt.allowed;
+  reasonElement.textContent = asSentence(glossReason(receipt.reason));
+  adapterOutput.textContent = glossAdapterOutput(receipt.adapter.output);
+  receiptFields.reason.textContent = receipt.reason;
+  receiptFields.adapter.textContent = receipt.adapter.output;
   receiptFields.engine.textContent = bundle.engine;
   receiptFields.signature.textContent = receipt.signature_verified ? "Recorded as verified by Go engine" : "Recorded verification failed";
   receiptFields.policy.textContent = receipt.policy_id;
@@ -59,7 +67,11 @@ const renderReceipt = (scenario) => {
   receiptFields.subject.textContent = receipt.subject;
   receiptFields.sequence.textContent = String(receipt.sequence);
   receiptFields.evidence.textContent = `${receipt.evidence.tier} · ${receipt.evidence.auditor} · ${receipt.evidence.age_seconds}s old`;
-  receiptFields.evaluated.textContent = receipt.evaluated_at;
+  // The recorded timestamp, unchanged, marked up as a machine-readable time.
+  const evaluatedTime = document.createElement("time");
+  evaluatedTime.dateTime = receipt.evaluated_at;
+  evaluatedTime.textContent = receipt.evaluated_at;
+  receiptFields.evaluated.replaceChildren(evaluatedTime);
   receiptFields.hash.textContent = receipt.policy_hash;
   setRuleState(receipt.allowed ? "all" : receipt.rule);
   const group = root.querySelector(`[data-scenario="${scenario}"]`)?.closest("details");
@@ -74,14 +86,17 @@ const failClosed = (message) => {
   statusCode.textContent = "fixture_unavailable";
   outcomeElement.textContent = "Unavailable";
   decisionCode.textContent = "fixture_unavailable";
+  decisionCode.hidden = false;
   reasonElement.textContent = message;
+  for (const field of Object.values(receiptFields)) field.textContent = "Unavailable";
   adapterOutput.textContent = "No command authority";
   for (const button of scenarioButtons) {
     button.disabled = true;
     button.setAttribute("aria-pressed", "false");
   }
   for (const item of root.querySelectorAll(".rule-stack li")) {
-    item.classList.remove("is-failed", "is-monitoring");
+    item.classList.remove("is-failed", "is-monitoring", "is-pass");
+    item.classList.add("is-unavailable");
     item.querySelector("strong").textContent = "UNAVAILABLE";
   }
 };
@@ -105,7 +120,10 @@ try {
   stage.dataset.receiptsReady = "true";
   delete stage.dataset.failClosed;
 } catch (error) {
-  failClosed(error instanceof Error ? error.message : "The recorded receipt bundle could not be loaded.");
+  // The raw error ("Failed to fetch", a validator path) is diagnostic, not a decision reason;
+  // it goes to the console and the visitor reads the same sentence as the 3D view.
+  console.error(error);
+  failClosed("The recorded interlock receipt bundle could not be loaded or validated. The simulation remains paused.");
 }
 
 // Fleet evidence is plain DOM, so this view renders the recorded 100-Guardian pilot too.

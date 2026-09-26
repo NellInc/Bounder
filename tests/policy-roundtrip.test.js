@@ -18,6 +18,7 @@ import {
   validateRoundTripEvidence,
   verifyEnvelope
 } from "../policy-roundtrip.js";
+import { ED25519_UNSUPPORTED_MESSAGE, probeEd25519Support } from "../ui/policy-panel.js";
 
 const root = new URL("../", import.meta.url);
 const encoder = new TextEncoder();
@@ -744,6 +745,7 @@ const fakePolicyPanel = () => {
     root: { querySelector: (selector) => selector === "[data-policy-roundtrip]" ? panel : undefined },
     status,
     fields,
+    steps,
     sampleButton
   };
 };
@@ -943,11 +945,21 @@ test("a browser without Ed25519 WebCrypto is labelled unsupported, not as a reje
   Object.defineProperty(unsupported, "verificationStage", { value: "signature", enumerable: false });
   const controller = bootstrapPolicyRoundTrip(ui.root, {
     fetchJSON: async () => ({ bytes: encoder.encode("{}") }),
-    verifyVector: async () => { throw unsupported; }
+    verifyVector: async () => { throw unsupported; },
+    probeSignatureSupport: async () => true
   });
   await controller.loadPublishedExample();
-  assert.equal(ui.status.dataset.state, "rejected");
-  assert.equal(ui.status.querySelector("span").textContent, "Unsupported");
+  // Neutral, not the red rejection: the browser judged nothing.
+  assert.equal(ui.status.dataset.state, "unsupported");
+  assert.equal(ui.status.querySelector("span").textContent, "Cannot verify here");
+  assert.equal(ui.status.querySelector("strong").textContent, ED25519_UNSUPPORTED_MESSAGE);
+  assert.match(ED25519_UNSUPPORTED_MESSAGE, /Safari 17, Firefox 129, or Chrome or Edge 137/);
+  // The envelope parsed before the signature step; it no longer reads "Awaiting signed bytes".
+  assert.equal(ui.steps.envelope.dataset.state, "verified");
+  assert.equal(ui.steps.envelope.small.textContent, "Signed envelope parsed");
+  assert.equal(ui.steps.signature.dataset.state, "unsupported");
+  assert.equal(ui.steps.signature.small.textContent, "This browser cannot check Ed25519");
+  assert.equal(ui.steps.policy.dataset.state, "idle");
 
   const invalid = new Error("Ed25519 signature verification failed");
   Object.defineProperty(invalid, "verificationStage", { value: "signature", enumerable: false });
@@ -957,6 +969,24 @@ test("a browser without Ed25519 WebCrypto is labelled unsupported, not as a reje
   });
   await rejected.loadPublishedExample();
   assert.equal(ui.status.querySelector("span").textContent, "Rejected", "a bad signature is still a rejection");
+  assert.equal(ui.status.dataset.state, "rejected");
+  assert.equal(ui.steps.envelope.dataset.state, "verified");
+  assert.equal(ui.steps.signature.dataset.state, "rejected");
   controller.cancel();
   rejected.cancel();
+});
+
+test("the Ed25519 probe only changes the idle wording and never disables inspection", async () => {
+  const ui = fakePolicyPanel();
+  const controller = bootstrapPolicyRoundTrip(ui.root, { probeSignatureSupport: async () => false });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(ui.status.dataset.state, "idle");
+  assert.equal(ui.status.querySelector("strong").textContent, ED25519_UNSUPPORTED_MESSAGE);
+  assert.equal(ui.sampleButton.disabled, false);
+  controller.cancel();
+
+  // The real probe imports the trusted key only; Node has Ed25519, a stub without it does not.
+  assert.equal(await probeEd25519Support(), true);
+  assert.equal(await probeEd25519Support({ subtle: { importKey: async () => { throw new DOMException("no", "NotSupportedError"); } } }), false);
+  assert.equal(await probeEd25519Support(null), false);
 });

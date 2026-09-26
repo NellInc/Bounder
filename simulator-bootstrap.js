@@ -1,7 +1,22 @@
 // Browser entry for the simulator page. It chooses the WebGL or the accessible evidence
 // view and owns the embedded-height report; it never grants authority on any path.
 const stage = document.querySelector(".simulator-stage");
+// Proof for ui/workbench.js that this entry ran; without it the page load ends in the
+// explicit unavailable state rather than waiting on "Evidence loading" for ever.
+stage.dataset.bootstrap = "started";
 const forceAccessibleFallback = new URLSearchParams(window.location.search).get("webgl") === "off";
+// The stage notice is hidden until the scene is known to be slow or unavailable.
+const stageNotice = stage.querySelector(".webgl-fallback:not(.noscript-fallback)");
+const SLOW_START_MS = 20_000;
+const BROWSER_TOO_OLD_MESSAGE = "This browser cannot run the 3D scene (it needs Safari 16.4, Firefox 108, Chrome 89 or later). Every recorded decision remains available.";
+
+// True when the failure is this browser lacking import maps, which the 3D view needs. Chrome
+// 89-95 support import maps without HTMLScriptElement.supports, so without that API only an
+// unresolved bare "three" specifier counts; any other failure keeps the generic wording.
+const importMapsUnsupported = (error, scriptElement = globalThis.HTMLScriptElement) => {
+  if (typeof scriptElement?.supports === "function") return !scriptElement.supports("importmap");
+  return error instanceof TypeError && /["“]three["”]/.test(String(error.message));
+};
 let embeddedHeightObserver;
 
 // Measure the content, not the frame. Inside an iframe the root element's scrollHeight is
@@ -63,13 +78,46 @@ const showBootstrapUnavailable = () => {
     control.disabled = true;
     if (control.hasAttribute("aria-pressed")) control.setAttribute("aria-pressed", "false");
   }
-  const notice = stage.querySelector(".webgl-fallback:not(.noscript-fallback)");
-  if (notice) {
+  // The notice and its reload button replace the text view: nothing loaded that it could describe.
+  const explanation = stage.querySelector(".scene-explanation");
+  if (explanation) explanation.hidden = true;
+  stage.classList.remove("is-explaining", "is-slow");
+  const textView = root.querySelector("[data-explanation]");
+  if (textView) {
+    textView.disabled = true;
+    textView.setAttribute("aria-pressed", "false");
+  }
+  if (stageNotice) {
     const reload = document.createElement("button");
     reload.type = "button";
     reload.textContent = "Reload the simulator";
     reload.addEventListener("click", () => window.location.reload());
-    notice.replaceChildren("The simulator could not load. Reload the page to try again.", reload);
+    stageNotice.replaceChildren("The simulator could not load. Reload the page to try again.", reload);
+  }
+};
+
+// A request that never completes never rejects, so after a long wait the stage says the scene
+// is still loading and offers a reload. It starts nothing else: a late module may already own
+// a renderer. The notice clears as soon as the import settles either way.
+const withSlowStartNotice = async (load) => {
+  const defaultNotice = stageNotice ? [...stageNotice.childNodes] : [];
+  const timer = window.setTimeout(() => {
+    if (!stageNotice) return;
+    const reload = document.createElement("button");
+    reload.type = "button";
+    reload.textContent = "Reload the simulator";
+    reload.addEventListener("click", () => window.location.reload());
+    stageNotice.replaceChildren("The 3D scene is still loading. On a slow connection this can take a while.", reload);
+    stage.classList.add("is-slow");
+  }, SLOW_START_MS);
+  try {
+    return await load();
+  } finally {
+    window.clearTimeout(timer);
+    if (stage.classList.contains("is-slow")) {
+      stage.classList.remove("is-slow");
+      stageNotice?.replaceChildren(...defaultNotice);
+    }
   }
 };
 
@@ -103,10 +151,15 @@ if (forceAccessibleFallback) {
   await startAccessibleFallback();
 } else {
   try {
-    await import("./simulator.js");
+    await withSlowStartNotice(() => import("./simulator.js"));
     if (stage.dataset.webgl !== "runtime-error") stage.dataset.webgl = "ready";
   } catch (error) {
     console.warn("Bounder simulator is using its accessible evidence view", error);
+    // Set before the view changes, so the text view can say the browser is the cause.
+    if (importMapsUnsupported(error)) {
+      stage.dataset.webglReason = "browser";
+      stageNotice?.replaceChildren(BROWSER_TOO_OLD_MESSAGE);
+    }
     await startAccessibleFallback();
   }
 }

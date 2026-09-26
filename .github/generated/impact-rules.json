@@ -150,7 +150,8 @@
         "ui/workbench.js",
         "simulator-bootstrap.js",
         "ui/**",
-        "tests/ui-presentation.test.js"
+        "tests/ui-presentation.test.js",
+        "tests/simulator-presentation.test.js"
       ],
       "commands": [
         "unit_coverage",
@@ -180,7 +181,9 @@
         "robots.txt",
         "CNAME",
         "LICENSE",
-        "NOTICE"
+        "NOTICE",
+        "scripts/check-live.mjs",
+        "tests/check-live.test.js"
       ],
       "commands": [
         "unit_coverage",

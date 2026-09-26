@@ -219,6 +219,54 @@ test("simulator loads recorded evidence and responds to keyboard navigation", as
   expect(errors).toEqual([]);
 });
 
+test("a vertical touch swipe over the scene scrolls the page without tilting the camera", async ({ browser }) => {
+  test.setTimeout(90_000);
+  const context = await browser.newContext({ viewport: { width: 412, height: 839 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  try {
+    await page.goto("/simulator.html?audit=1");
+    const stage = page.locator(".simulator-stage");
+    await expect(stage).toHaveAttribute("data-fleet-ready", "true", { timeout: 20_000 });
+    await stage.evaluate((element) => element.scrollIntoView({ block: "start" }));
+    await expect(stage).toHaveAttribute("data-camera-polar", /\d/);
+    const cdp = await context.newCDPSession(page);
+    const touch = (type, points) => cdp.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: points.map(([x, y], id) => ({ x, y, id, radiusX: 5, radiusY: 5, force: 1 }))
+    });
+    const read = () => stage.evaluate((element) => ({ polar: Number(element.dataset.cameraPolar), azimuth: Number(element.dataset.cameraAzimuth), scrollY: window.scrollY }));
+    const box = await page.locator(".simulator-stage canvas").boundingBox();
+    const before = await read();
+    // Steps of 5 px or less make the browser deliver pointermoves through its touch slop.
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height * 0.8;
+    await touch("touchStart", [[x, y]]);
+    for (let index = 1; index <= 30; index += 1) await touch("touchMove", [[x, y - index * 5]]);
+    await touch("touchEnd", []);
+    await expect.poll(async () => (await read()).scrollY).toBeGreaterThan(before.scrollY);
+    await page.waitForTimeout(1000);
+    const after = await read();
+    expect(Math.abs(after.polar - before.polar)).toBeLessThan(1);
+    // A deliberate horizontal one-finger drag still orbits. The swipe above scrolled the stage
+    // partly out of view, so bring it back before touching its centre.
+    // An instant scroll, repeated until any fling from the swipe has settled.
+    await expect.poll(async () => {
+      await stage.evaluate((element) => element.scrollIntoView({ block: "start", behavior: "instant" }));
+      await page.waitForTimeout(250);
+      return Math.round((await page.locator(".simulator-stage canvas").boundingBox()).y);
+    }).toBeGreaterThanOrEqual(-1);
+    const box2 = await page.locator(".simulator-stage canvas").boundingBox();
+    const hx = box2.x + box2.width * 0.3;
+    const hy = box2.y + box2.height / 2;
+    await touch("touchStart", [[hx, hy]]);
+    for (let index = 1; index <= 20; index += 1) await touch("touchMove", [[hx + index * 5, hy]]);
+    await touch("touchEnd", []);
+    await expect.poll(async () => Math.abs((await read()).azimuth - after.azimuth)).toBeGreaterThan(5);
+  } finally {
+    await context.close();
+  }
+});
+
 test("guided tour traverses all six proofs and restores focus when finished", async ({ page }) => {
   test.setTimeout(90_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -234,7 +282,7 @@ test("guided tour traverses all six proofs and restores focus when finished", as
     ["signed-baseline", "Inspect the recorded baseline", "allowed"],
     ["fleet-projection", "Project one rule across the fleet", "allowed"],
     ["civilian-protection", "Protect civilians at the final boundary", "civilian_proximity"],
-    ["friendly-separation", "Keep clear of friendly teams", "friendly_force_proximity"],
+    ["friendly-separation", "Keep clear of the operator’s own teams", "friendly_force_proximity"],
     ["evidence-only-roe", "Keep high-consequence evidence non-authoritative", "surrender_protected"],
     ["rollback-proof", "Reject a coherent older snapshot", "ready"]
   ];
@@ -270,6 +318,20 @@ test("receipt failure pauses the simulator without granting authority", async ({
   await expect(page.locator(".decision-code")).toHaveText("fixture_unavailable");
   await expect(page.locator(".adapter-output")).toHaveText("No command authority");
   await expect(page.getByRole("button", { name: "Play simulation" })).toBeDisabled();
+  // Nothing was evaluated: no receipt cell keeps its loading text and no rule takes the pass style.
+  await expect(page.locator("[data-receipt]").filter({ hasText: "Loading" })).toHaveCount(0);
+  await expect(page.locator(".rule-stack li.is-pass")).toHaveCount(0);
+});
+
+test("receipt failure in the 3D view resolves every receipt cell and rule to unavailable", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.route("**/data/bounder-receipts.v1.json", (route) => route.abort("failed"));
+  await page.goto("/simulator.html");
+  await expect(page.locator(".simulator-stage")).toHaveAttribute("data-receipts-ready", "false");
+  await expect(page.locator(".decision-code")).toHaveText("fixture_unavailable");
+  await expect(page.locator("[data-receipt]").filter({ hasText: "Loading" })).toHaveCount(0);
+  await expect(page.locator(".rule-stack li.is-pass")).toHaveCount(0);
+  await expect(page.locator(".rule-stack li.is-unavailable")).toHaveCount(14);
 });
 
 test("receipt readiness cannot be inferred from faster Fleet loading", async ({ page }) => {
@@ -310,13 +372,15 @@ test("malformed Fleet evidence is isolated from valid local receipt controls", a
   await expect(stage).toHaveAttribute("data-fleet-ready", "false");
   await expect(page.getByRole("button", { name: "Fleet view" })).toBeDisabled();
   await page.locator(".scenario-more > summary").click();
-  await expect(page.getByRole("button", { name: "Friendly separation" })).toBeEnabled();
-  await page.getByRole("button", { name: "Friendly separation" }).click();
+  await expect(page.getByRole("button", { name: "Team separation" })).toBeEnabled();
+  await page.getByRole("button", { name: "Team separation" }).click();
   await expect(page.locator(".decision-code")).toHaveText("friendly_force_proximity");
   await expect(page.locator("[data-fleet-source]")).toContainText("Fleet evidence unavailable");
   await expect(page.locator(".fleet-metrics")).not.toContainText("Loading");
   await page.locator("#fault-replay > summary").click();
   await expect(page.locator("#fault-replay [data-resilience-unavailable]")).toBeVisible();
+  // The note keeps its download link: the recorded file is the remaining route to the timelines.
+  await expect(page.locator("#fault-replay [data-resilience-unavailable] a[href='data/bounder-fleet-evidence.v1.json']")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -364,7 +428,10 @@ test("an import failure after renderer setup still starts the accessible evidenc
   const stage = page.locator(".simulator-stage");
   await expect(stage).toHaveAttribute("data-webgl", "unavailable");
   await expect(stage).toHaveAttribute("data-receipts-ready", "true");
-  await expect(page.locator(".webgl-fallback")).toBeVisible();
+  // The text view stands in for the missing scene and says why; camera controls are withdrawn.
+  await expect(page.getByRole("button", { name: "Text view", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".scene-renderer-note")).toHaveText("The 3D view is unavailable in this browser, so the text view is shown.");
+  await expect(page.getByRole("button", { name: "Overview", exact: true })).toBeHidden();
   await expect(page.getByRole("button", { name: "Civilian buffer" })).toBeEnabled();
   expect(errors).toEqual([]);
 });
@@ -432,6 +499,80 @@ test("when no evidence view can load, the page fails closed and offers only a re
   await expect(page.getByRole("button", { name: "Reload the simulator" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Civilian buffer" })).toBeDisabled();
   await expect(page.locator(".fleet-metrics")).not.toContainText("Loading");
+  // The notice replaces the text view: nothing loaded that it could describe.
+  await expect(page.locator(".scene-explanation")).toBeHidden();
+  await expect(page.locator(".scene-toolbar")).toBeHidden();
+});
+
+test("if the simulator entry itself never loads, the page still fails closed once loaded", async ({ page }) => {
+  await page.route("**/simulator-bootstrap.js", (route) => route.abort("failed"));
+  await page.goto("/simulator.html");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-webgl", "fallback-error");
+  await expect(stage).toHaveAttribute("data-fail-closed", "true");
+  await expect(page.locator(".decision-code")).toHaveText("bootstrap_unavailable");
+  await expect(page.locator(".adapter-output")).toHaveText("No command authority");
+  await expect(page.getByRole("button", { name: "Reload the simulator" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Civilian buffer" })).toBeDisabled();
+});
+
+test("while the 3D module loads the stage claims no failure, and a long stall offers a reload", async ({ page }) => {
+  await page.clock.install();
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  await page.route("**/simulator.js", async (route) => { await held; await route.continue(); });
+  await page.goto("/simulator.html");
+  const stage = page.locator(".simulator-stage");
+  const notice = page.locator(".webgl-fallback").first();
+  await expect(page.locator(".decision-outcome")).toHaveText("Pending");
+  await expect(notice).toBeHidden();
+  // The policy panel does not wait for the 3D graph: the bootstrap loads first.
+  await expect(page.locator("[data-policy-status] span")).toHaveText("Ready");
+  await page.clock.fastForward(21_000);
+  await expect(stage).toHaveClass(/\bis-slow\b/);
+  await expect(notice).toContainText("The 3D scene is still loading.");
+  await expect(page.getByRole("button", { name: "Reload the simulator" })).toBeVisible();
+  release();
+  await expect(stage).toHaveAttribute("data-webgl", "ready", { timeout: 20_000 });
+  await expect(stage).not.toHaveClass(/\bis-slow\b/);
+  await expect(notice).toBeHidden();
+});
+
+test("a browser without import maps is told why the 3D scene cannot run", async ({ page }) => {
+  await page.addInitScript(() => {
+    const supports = HTMLScriptElement.supports?.bind(HTMLScriptElement);
+    HTMLScriptElement.supports = (type) => (type === "importmap" ? false : Boolean(supports?.(type)));
+  });
+  await page.route("**/simulator.html", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.text())
+      .replace('<script type="importmap">', '<script type="text/plain">')
+      .replace(/<link rel="modulepreload"[^>]*>/g, "");
+    await route.fulfill({ response, body });
+  });
+  await page.goto("/simulator.html");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-webgl", "unavailable");
+  await expect(stage).toHaveAttribute("data-webgl-reason", "browser");
+  await expect(stage).toHaveAttribute("data-receipts-ready", "true");
+  await expect(page.locator(".scene-renderer-note")).toContainText("it needs Safari 16.4, Firefox 108, Chrome 89 or later");
+});
+
+test("a browser without Ed25519 sees a neutral 'cannot verify here', never a rejection", async ({ page }) => {
+  await page.addInitScript(() => {
+    const importKey = crypto.subtle.importKey.bind(crypto.subtle);
+    crypto.subtle.importKey = (format, key, algorithm, ...rest) => (algorithm?.name === "Ed25519"
+      ? Promise.reject(new DOMException("Ed25519 is not supported", "NotSupportedError"))
+      : importKey(format, key, algorithm, ...rest));
+  });
+  await page.goto("/simulator.html#contract-inspector");
+  const status = page.locator("[data-policy-status]");
+  await expect(status.locator("strong")).toContainText("Safari 17, Firefox 129, or Chrome or Edge 137");
+  await page.getByRole("button", { name: "Verify published example" }).click();
+  await expect(status).toHaveAttribute("data-state", "unsupported");
+  await expect(status.locator("span")).toHaveText("Cannot verify here");
+  await expect(page.locator('[data-policy-step="envelope"]')).toHaveAttribute("data-state", "verified");
+  await expect(page.locator('[data-policy-step="signature"]')).toHaveAttribute("data-state", "unsupported");
 });
 
 test("the accessible evidence view renders recorded Fleet evidence and explains the absent fault replay", async ({ page }) => {
@@ -598,10 +739,14 @@ test("resilience transport controls and the scrubber move the console through re
   await expect(currentCode).toHaveText("signed_receipt");
   await expect(scrubber).toHaveValue("2100");
   await expect(currentEvent).toHaveCount(1);
+  await expect(scrubber).toHaveAttribute("aria-valuetext", "2.10 seconds, audit");
+  await expect(currentEvent).toHaveAttribute("aria-current", "step");
 
   // Reset returns the console to its pre-run state without granting authority.
   await action("reset").click();
   await expect(scrubber).toHaveValue("0");
+  // A screen reader hears the reset time, not the last event's.
+  await expect(scrubber).toHaveAttribute("aria-valuetext", "0.00 seconds, ready");
   await expect(eventTime).toHaveText("0.00 s");
   await expect(transport).toHaveText("Ready");
   await expect(page.locator(".decision-code")).toHaveText("ready");
@@ -748,13 +893,14 @@ test("accessible evidence honours scenario deep links and remains usable without
   const stage = page.locator(".simulator-stage");
   await expect(stage).toHaveAttribute("data-webgl", "unavailable");
   await expect(stage).toHaveAttribute("data-receipts-ready", "true");
-  await expect(page.locator(".webgl-fallback")).toBeVisible();
+  await expect(page.locator(".scene-explanation")).toBeVisible();
+  await expect(page.locator(".scene-explanation")).toContainText("Hold outside friendly separation");
   await expect(page.locator("[data-receipt='evidence']")).toHaveText("gold · mettle.creed.space · 30s old");
   await expect(page.locator("body")).not.toContainText("undefined");
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
   await expect(page.locator(".decision-code")).toHaveText("friendly_force_proximity");
-  await expect(page.getByRole("button", { name: "Friendly separation" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Team separation" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Cleared route" }).click();
   await expect(page.locator(".decision-code")).toHaveText("allowed");
   expect(errors).toEqual([]);
@@ -870,4 +1016,17 @@ test("primary and footer navigation are consistent across pages", async ({ page 
     const footer = (await page.locator("nav.secondary-nav a").allInnerTexts()).map((s) => s.replace("↗", "").trim().toLowerCase());
     expect(footer, `${path} footer nav diverges`).toEqual(expectedFooter);
   }
+});
+
+test("with no verified live proof, the home page shows the labelled recorded run instead of empty cells", async ({ page }) => {
+  // The test server is not bounder.io, so the verifier reports the preview state.
+  await page.goto("/");
+  const continuity = page.locator("[data-continuity]");
+  await expect(continuity).toHaveAttribute("data-state", "unavailable");
+  await expect(page.locator(".continuity-metrics-live")).toBeHidden();
+  const recorded = page.locator(".continuity-recorded");
+  await expect(recorded).toBeVisible();
+  await expect(recorded).toContainText("Recorded run · not live");
+  await expect(recorded).toContainText("13 allow / 87 hold");
+  await expect(page.locator("[data-continuity-note]")).toHaveText(/^Live verification runs only on bounder\.io\./);
 });

@@ -53,6 +53,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Display headings share their lines out evenly, and running text avoids a lone last word.
+   Browsers without text-wrap keep their ordinary greedy wrapping. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p,
+li,
+dd,
+summary {
+  text-wrap: pretty;
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -262,6 +277,11 @@ a[target="_blank"]::after {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+/* The <picture> only chooses a format; it must not become a grid item of the hero. */
+.hero > picture {
+  display: contents;
 }
 
 .hero-image {
@@ -643,6 +663,11 @@ a[target="_blank"]::after {
   text-transform: uppercase;
 }
 
+/* Inset from the wedge's blunt edge so the label sits inside the shape, not on its border. */
+.wedge-start {
+  padding-left: 0.9rem;
+}
+
 .wedge-end {
   color: rgba(255, 255, 255, 0.75);
 }
@@ -732,20 +757,23 @@ a[target="_blank"]::after {
   font-size: 0.9rem;
 }
 
-.applications {
-  border-top: 1px solid var(--line);
+/* The principle grid and the application list each close with their own rule, so these
+   sections draw none at the top: one rule between sections, never a doubled pair. That
+   rule already marks the boundary, so the following light section needs less lead-in. */
+.principles + .applications,
+.applications + .continuity {
+  padding-top: clamp(3.5rem, 7vw, 6rem);
 }
 
 .continuity {
   position: relative;
-  border-top: 1px solid var(--line);
 }
 
 .continuity::before {
   position: absolute;
   /* Sits just below the status pill (section padding + the pill's own height) so the
      rings frame it as a beacon instead of cutting through its border. */
-  top: calc(clamp(5rem, 10vw, 9rem) + 3.5rem);
+  top: calc(clamp(3.5rem, 7vw, 6rem) + 3.5rem);
   right: 0;
   width: clamp(9rem, 20vw, 17rem);
   height: clamp(9rem, 20vw, 17rem);
@@ -754,6 +782,11 @@ a[target="_blank"]::after {
   box-shadow: inset 0 0 0 2.8rem var(--paper), inset 0 0 0 calc(2.8rem + 1px) rgba(17, 19, 15, 0.12);
   content: "";
   pointer-events: none;
+}
+
+/* The rings frame the status pill as a live beacon; with no live proof there is no beacon. */
+.continuity[data-state="unavailable"]::before {
+  display: none;
 }
 
 .continuity-heading {
@@ -848,10 +881,66 @@ a[target="_blank"]::after {
 
 @media (scripting: none) {
   .continuity .continuity-state,
-  .continuity .continuity-metrics,
+  .continuity .continuity-metrics-live,
   .continuity [data-continuity-note] {
     display: none;
   }
+
+  .continuity .continuity-recorded {
+    display: block;
+  }
+
+  .continuity::before {
+    display: none;
+  }
+}
+
+/* When no live proof is verified, the live cells would hold only placeholders, so the
+   recorded run takes their place. It is static, labelled "not live" and drawn in a
+   quieter register (dashed rules, muted figures) so it can never pass for live proof. */
+.continuity-recorded {
+  display: none;
+}
+
+.continuity[data-state="unavailable"] .continuity-metrics-live {
+  display: none;
+}
+
+.continuity[data-state="unavailable"] .continuity-recorded {
+  display: block;
+}
+
+.continuity-recorded-caption {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  margin: 0 0 0.9rem;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.continuity-recorded-caption::before {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  content: "";
+}
+
+.continuity-metrics.continuity-metrics-recorded {
+  border-top: 1px dashed var(--ink-soft);
+  border-bottom: 1px dashed var(--ink-soft);
+}
+
+.continuity .continuity-metrics.continuity-metrics-recorded dd {
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 1.8vw, 1.6rem);
+  font-weight: 600;
 }
 
 .continuity-summary {
@@ -965,15 +1054,35 @@ a[target="_blank"]::after {
   border: 1px solid var(--line-light);
 }
 
+/* Replaces the frame when the embedded simulator cannot load (site.js). */
+.home-simulator-unavailable {
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border: 1px solid var(--line-light);
+}
+
+.home-simulator-unavailable p {
+  max-width: 58ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1.05rem;
+}
+
+.home-simulator-unavailable .home-simulator-unavailable-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.75rem;
+  margin-top: 1.5rem;
+}
+
 .guardian-pattern {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.82fr);
   gap: clamp(2rem, 6vw, 6rem);
   align-items: end;
-  margin: 3rem 0 4.5rem;
+  /* No bottom rule: the application list below opens with its own. */
+  margin: 3rem 0 2rem;
   padding: 2.4rem 0;
   border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
 }
 
 .guardian-pattern-lines {
@@ -1126,6 +1235,12 @@ a[target="_blank"]::after {
   grid-column: 1 / -1;
   padding-top: 1.2rem;
   border-top: 1px solid var(--line-light);
+}
+
+/* Keeps "image credits ↗" whole, so the arrow never starts a line on its own. */
+.copyright a,
+.nowrap {
+  white-space: nowrap;
 }
 
 .interior-page {
@@ -1308,6 +1423,24 @@ a[target="_blank"]::after {
   color: var(--ink);
   background: var(--signal);
   border-color: var(--ink);
+}
+
+/* The hosted route is a fallback, so it reads as secondary beside the main action. */
+.button-quiet {
+  color: var(--ink);
+  background: transparent;
+  border-color: var(--ink);
+}
+
+.button-quiet:hover {
+  background: var(--paper);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .form-notice {
@@ -1495,36 +1628,87 @@ a[target="_blank"]::after {
   }
 }
 
+@property --nav-fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes nav-fade-start {
+  0% { --nav-fade-start: 0px; }
+  12%, 100% { --nav-fade-start: 2.5rem; }
+}
+
 @media (max-width: 680px) {
-  /* Two rows on every page: the wordmark, then the links wrapping left-aligned beneath
-     it. A two-column grid beside the wordmark overran a 320px viewport. */
+  /* Two rows on every page: the wordmark, then the links in one row beneath it. Five links
+     do not fit a phone's width, so the row scrolls sideways and fades at its trailing edge
+     rather than wrapping into a ragged second line. */
   .site-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0.2rem;
     padding: 1.1rem 0 0.25rem;
   }
 
   .header-nav {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0 1.1rem;
+    /* Room past the last link so it can scroll clear of the fade. */
+    padding-right: 2.5rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
     text-align: left;
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2.5rem), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2.5rem), transparent 100%);
+  }
+
+  /* Once the row is scrolled, its leading edge fades too, so a clipped link never ends in a
+     hard cut. Gated on scroll timelines: without one, a durationless animation would sit on
+     its last frame and fade the first link permanently. Others keep the trailing fade only. */
+  @supports (animation-timeline: scroll()) {
+    .header-nav {
+      mask-image: linear-gradient(90deg, transparent 0, #000 var(--nav-fade-start), #000 calc(100% - 2.5rem), transparent 100%);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--nav-fade-start), #000 calc(100% - 2.5rem), transparent 100%);
+      animation: nav-fade-start linear both;
+      animation-timeline: scroll(self inline);
+    }
+  }
+
+  .header-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .header-nav a {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: flex-start;
     min-height: 44px;
   }
 
+  /* Inside the 44px target, clear of the header's bottom rule, and not clipped by the
+     scrolling row. The focus ring is drawn inside for the same reason. */
+  .header-nav a::after {
+    bottom: 0.55rem;
+  }
+
+  .header-nav a:focus-visible {
+    outline-offset: -3px;
+  }
+
+  /* Where supported, the row opens scrolled to the current page's link. */
+  .header-nav [aria-current="page"] {
+    scroll-initial-target: nearest;
+  }
+
   /* The home header overlays the photograph, so the hero reserves the header's measured
-     height (two link rows) instead of centring the headline underneath it. */
+     height (wordmark and one link row) instead of centring the headline underneath it. */
   body:not(.interior-page) .hero {
     height: auto;
     min-height: max(640px, 100svh);
-    padding-top: 8.5rem;
+    padding-top: 6rem;
   }
 
   body:not(.interior-page) .hero-content {
@@ -1622,6 +1806,11 @@ a[target="_blank"]::after {
   .principle-grid article:nth-child(2) {
     padding: 1.5rem 0 2rem;
     border-bottom-color: var(--line);
+  }
+
+  /* The grid's own bottom rule closes the stack; a second one here would double it. */
+  .principle-grid article:last-child {
+    border-bottom: 0;
   }
 
   .principle-grid h3 {
@@ -1767,15 +1956,29 @@ a[target="_blank"]::after {
     padding: 2rem 0;
   }
 
+  /* Headings sit inside wrappers, so the wrappers must hold on to what follows them too. */
   h2,
-  h3 {
+  h3,
+  .section-label,
+  .section-heading,
+  .continuity-heading,
+  .home-simulator-heading {
     break-after: avoid;
+    break-inside: avoid;
   }
 
   article,
   li,
-  .continuity-metrics div {
+  .continuity-metrics div,
+  .guardian-pattern,
+  .continuity-figures,
+  .continuity-proof {
     break-inside: avoid;
+  }
+
+  /* The call to action is a link to an interactive page; in print it is noise. */
+  .home-simulator-heading .text-link {
+    display: none;
   }
 
   main a[href^="http"]::after {

@@ -248,6 +248,16 @@ test("sitemap entries cover the indexable pages and agree with the dates those p
     "sitemap.xml no longer lists exactly the indexable root pages"
   );
 
+  // The sitemaps.org 0.9 schema declares <url> as a sequence: loc, lastmod?, changefreq?, priority?.
+  const schemaOrder = ["loc", "lastmod", "changefreq", "priority"];
+  for (const [, body] of sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+    const children = [...body.matchAll(/<([a-z]+)>/g)].map(([, name]) => name);
+    assert.ok(children.every((name) => schemaOrder.includes(name)), `unexpected sitemap element in: ${children.join(", ")}`);
+    const positions = children.map((name) => schemaOrder.indexOf(name));
+    assert.deepEqual(positions, [...positions].sort((a, b) => a - b), `sitemap <url> children are out of schema order: ${children.join(", ")}`);
+    assert.equal(new Set(children).size, children.length, `sitemap <url> repeats an element: ${children.join(", ")}`);
+  }
+
   for (const { loc, lastmod } of entries) {
     const path = indexable.get(loc);
     assert.match(lastmod, /^\d{4}-\d{2}-\d{2}$/, `${loc} has a non-ISO lastmod: ${lastmod}`);
@@ -385,5 +395,52 @@ test("the browser breakpoint sweep renders a width inside every declared max-wid
   for (let index = 1; index < edges.length; index += 1) {
     const [low, high] = [edges[index - 1] + 1, edges[index]];
     assert.ok(widths.some((width) => width >= low && width <= high), `no browser width renders the ${low}-${high}px band`);
+  }
+});
+
+/* The home page's offline state shows the recorded 100-Guardian run in place of live figures.
+   Those cells are static markup, so they are derived here from the published recording: a
+   re-recorded run that changes any figure fails until the page says the same thing. */
+test("the recorded-run figures on the home page match the published recording", async () => {
+  const home = await readSiteFile("index.html");
+  const pilot = JSON.parse(await readSiteFile("data/bounder-staging-pilot.v1.json"));
+  const block = home.match(/<div class="continuity-recorded" data-continuity-recorded>([\s\S]*?)<\/dl>\s*<\/div>/)?.[1];
+  assert.ok(block, "the recorded-run block is missing from index.html");
+  assert.match(block, /Recorded run · not live/, "the recorded figures must say they are not live");
+  const cells = [...block.matchAll(/<dt>([^<]+)<\/dt><dd>([\s\S]*?)<\/dd>/g)]
+    .map(([, label, value]) => [label, value.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ")]);
+  const generated = new Date(pilot.generated_at);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const passed = pilot.devices.filter((device) => device.expected_code === device.receipt.code).length;
+  assert.deepEqual(cells, [
+    ["Guardians", String(pilot.summary.devices)],
+    ["Platform classes", String(Object.keys(pilot.summary.platform_counts).length)],
+    ["Expected outcomes", `${passed} of ${pilot.devices.length}`],
+    ["Local decisions", `${pilot.summary.allowed} allow / ${pilot.summary.blocked} hold`],
+    ["Recorded", `${generated.getUTCDate()} ${months[generated.getUTCMonth()]} ${generated.getUTCFullYear()}`]
+  ]);
+  assert.match(block, new RegExp(`<time datetime="${pilot.generated_at}">`));
+  // The lede must not promise a verified proof in states where nothing is verified.
+  const summary = home.match(/<p class="continuity-summary"[^>]*>([\s\S]*?)<\/p>/)[1];
+  assert.doesNotMatch(summary, /proof below is checked in your browser/);
+  assert.match(summary, /When the live feed is reachable/);
+});
+
+test("the licence notice keeps the Bounder name and marks out of the Apache-2.0 grant", async () => {
+  // LICENSE grants copyright in every tracked file, and the wordmark traces a commercial face;
+  // NOTICE is where the carve-out travels with redistributed copies.
+  const notice = await readSiteFile("NOTICE");
+  assert.match(notice, /^The Bounder name, wordmark and mark are not licensed under Apache-2\.0\.$/m);
+  const brandSource = await readSiteFile("design/brand-source/README.md");
+  assert.match(brandSource, /Avenir Next Heavy/);
+  assert.match(brandSource, /BOUNDER_WORDMARK_FONT/);
+});
+
+/* One name for one object: the recorded receipt is "recorded interlock receipt (Go engine)"
+   everywhere a visitor reads it, never the bare "Go receipt" that reads like go/no-go. */
+test("visitor-facing copy names the recorded receipt one way, without bare 'Go receipt' jargon", async () => {
+  for (const path of ["simulator.html", "simulator-fallback.js", "simulator/controller.js", "ui/policy-panel.js", "index.html"]) {
+    const source = await readSiteFile(path);
+    assert.doesNotMatch(source, /\bGo (?:interlock )?receipt\b/, `${path} still says "Go receipt"`);
   }
 });

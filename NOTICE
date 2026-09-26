@@ -1,2 +1,14 @@
 Bounder
 Copyright 2026 Nell Watson, Inc.
+
+The Bounder name, wordmark and mark are not licensed under Apache-2.0.
+
+This product includes third-party material under its own licence:
+
+- Three.js 0.180.0, copyright 2010-2025 three.js authors, under the MIT License
+  (vendor/three/LICENSE).
+- Open Sans, copyright 2020 The Open Sans Project Authors, under the SIL Open Font
+  License 1.1, as a Modified Version: instanced at width 75, limited to weights
+  600-800 and subset to Latin (assets/fonts/OFL.txt).
+- A photograph by Goh Rhy Yan under the Unsplash Licence, and derivatives of it
+  (images/CREDITS.md).

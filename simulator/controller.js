@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/OrbitControls.js";
-import { PROTECTION_BOUNDARIES, ROUTE_STOPS, WORLD_BOUNDS } from "../simulator-world.js";
+import { BUILDING_SPECS, PROTECTION_BOUNDARIES, ROUTE_STOPS, WORLD_BOUNDS } from "../simulator-world.js";
 import { createTownScene } from "./scene.js";
 import { renderFleetRows } from "../ui/fleet-view.js";
 import { asSentence } from "../ui/text.js";
+import { glossAdapterOutput, glossReason, outcomeHeadline, stageBadge } from "../ui/receipt-copy.js";
 import { loadPilotEvidence } from "../staging-feed.js";
 import { SIMULATOR_SCENARIOS, validateReceiptBundle } from "../runtime/receipts/contracts.js";
 import {
@@ -58,6 +59,14 @@ const initialParameters = new URLSearchParams(window.location.search);
 
 const RESILIENCE_RECEIPT_ENGINE = "Creed Space Fleet + Bounder Guardian";
 
+// The stage badge speaks in plain words; recorded codes are shown once, in the receipt panel.
+// The badge's code element keeps the current code for tooling but is not displayed.
+statusCode.hidden = true;
+const showDecisionCode = (code, visible = true) => {
+  decisionCode.textContent = code;
+  decisionCode.hidden = !visible;
+};
+
 const css = getComputedStyle(document.documentElement);
 const cssColour = (name) => css.getPropertyValue(name).trim();
 const colours = {
@@ -72,9 +81,39 @@ const colours = {
   humanitarian: getComputedStyle(document.querySelector(".simulator-page")).getPropertyValue("--humanitarian").trim()
 };
 
+// Choose the starting render quality once. A constrained touch device is known from the page
+// alone, before the renderer exists; a software rasteriser (SwiftShader, llvmpipe: what a
+// browser uses when it blocklists the GPU) is read from the renderer's own context, because a
+// separate probe context costs as much as the renderer itself on exactly those machines, and
+// failIfMajorPerformanceCaveat is not honoured everywhere. Either starts in Low power; visitors
+// can still opt back up through the Detail control. deviceMemory is absent on Safari and
+// Firefox, so it is never the only signal.
+const constrainedDevice = (() => {
+  const coarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
+  const { deviceMemory, hardwareConcurrency } = navigator;
+  return coarsePointer && (
+    (typeof deviceMemory === "number" && deviceMemory <= 4) ||
+    (typeof hardwareConcurrency === "number" && hardwareConcurrency <= 4) ||
+    Math.min(window.innerWidth, window.innerHeight) < 500
+  );
+})();
+const softwareRenderer = (gl) => {
+  try {
+    const debug = gl.getExtension("WEBGL_debug_renderer_info");
+    const name = String(gl.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? "");
+    return /swiftshader|llvmpipe|softpipe|software|basic render driver/i.test(name);
+  } catch {
+    return false;
+  }
+};
+
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: constrainedDevice ? "low-power" : "default"
+  });
   stage.classList.add("is-ready");
 } catch (error) {
   console.warn("Bounder simulator could not initialize WebGL", error);
@@ -110,11 +149,47 @@ controls.maxPolarAngle = Math.PI * 0.44;
 controls.enableZoom = false;
 // OrbitControls sets touch-action:none in its constructor, which traps page scrolling on touch
 // devices because the canvas spans the full width of the embedded stage. Give vertical panning
-// back to the browser: a one-finger vertical swipe scrolls the page (OrbitControls ends the
-// gesture through its own pointercancel handler), horizontal drag still orbits, and two fingers
-// still dolly and tilt.
+// back to the browser: a one-finger vertical swipe scrolls the page, horizontal drag still
+// orbits, and two fingers still dolly and tilt.
 canvas.style.touchAction = "pan-y";
 controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
+// The browser takes a vertical swipe only after its touch slop, so OrbitControls has already
+// turned the first pointermoves into tilt, and damping would play the rest out after the
+// browser's pointercancel. When the browser takes a one-finger gesture, restore the view from
+// the moment the finger went down, including any preset glide the touch interrupted. A gesture
+// that ends in pointerup (a deliberate drag) or gains a second finger is left alone.
+const activeTouches = new Set();
+let touchSnapshot;
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.pointerType !== "touch") {
+    touchSnapshot = undefined;
+    return;
+  }
+  activeTouches.add(event.pointerId);
+  // Capture phase, so the snapshot precedes OrbitControls' own "start" (which ends a glide).
+  touchSnapshot = activeTouches.size === 1
+    ? { position: camera.position.clone(), target: controls.target.clone(), tween: cameraTween }
+    : undefined;
+}, { capture: true });
+canvas.addEventListener("pointerup", (event) => {
+  activeTouches.delete(event.pointerId);
+  if (activeTouches.size === 0) touchSnapshot = undefined;
+});
+// Registered after OrbitControls, so it runs after the controls have released the pointer.
+canvas.addEventListener("pointercancel", (event) => {
+  activeTouches.delete(event.pointerId);
+  const snapshot = touchSnapshot;
+  touchSnapshot = undefined;
+  if (event.pointerType !== "touch" || !snapshot || activeTouches.size > 0) return;
+  // _sphericalDelta is private to the pinned vendor copy (tests/simulator-presentation.test.js
+  // guards its presence): clearing it stops damping from replaying the tilt.
+  controls._sphericalDelta?.set(0, 0, 0);
+  camera.position.copy(snapshot.position);
+  controls.target.copy(snapshot.target);
+  cameraTween = snapshot.tween;
+  controls.update();
+  scheduleAnimation();
+});
 
 const navigationCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE"]);
 const pressedNavigationKeys = new Set();
@@ -257,6 +332,7 @@ const {
   ambientClouds,
   curves,
   drone,
+  droneTether,
   bounderEnvelope,
   fleetDrones,
   rotors,
@@ -266,13 +342,13 @@ const {
 const scenarioPresentation = Object.freeze({
   safe: { stop: ROUTE_STOPS.safe, initial: "All reviewed constraints currently pass." },
   civilian: { stop: ROUTE_STOPS.civilian, initial: "The route is approaching an active civilian-protection buffer." },
-  friendly: { stop: ROUTE_STOPS.friendly, initial: "Authenticated friendly presence is inside the planned route corridor." },
+  friendly: { stop: ROUTE_STOPS.friendly, initial: "One of the operator’s own teams, at an authenticated position, is inside the planned route corridor." },
   protected: { stop: ROUTE_STOPS.protected, initial: "The route is approaching a declared protected-site boundary." },
   humanitarian: { stop: ROUTE_STOPS.humanitarian, initial: "The route is approaching an active humanitarian movement corridor." },
   surrender: { stop: ROUTE_STOPS.surrender, initial: "A surrender indication is being checked. It can only keep the requested action inhibited." },
   incapacitated: { stop: ROUTE_STOPS.incapacitated, initial: "An incapacitated-person indication is being checked. It can only keep the requested action inhibited." },
-  identification: { stop: ROUTE_STOPS.identification, initial: "Positive identification has not yet been confirmed." },
-  proportionality: { stop: ROUTE_STOPS.proportionality, initial: "The signed proportionality condition has not yet been satisfied." },
+  identification: { stop: ROUTE_STOPS.identification, initial: "The identity check has not yet been confirmed." },
+  proportionality: { stop: ROUTE_STOPS.proportionality, initial: "The signed consequence check has not yet been satisfied." },
   human_authorization: { stop: ROUTE_STOPS.human_authorization, initial: "Current human authorisation has not yet been confirmed." },
   altitude: { stop: ROUTE_STOPS.altitude, initial: "Local altitude is being compared with the signed flight ceiling." },
   weather: { stop: ROUTE_STOPS.weather, initial: "Wind observations are approaching the permitted envelope." },
@@ -310,16 +386,16 @@ const operatorTourSteps = Object.freeze([
     id: "friendly-separation",
     scenario: "friendly",
     fleet: true,
-    title: "Keep clear of friendly teams",
-    summary: "Authenticated friendly presence inside the signed separation distance stops the requested state change locally.",
-    proof: "The friendly-force rule changes to HOLD and the adapter keeps its safe state."
+    title: "Keep clear of the operator’s own teams",
+    summary: "An authenticated team inside the signed separation distance stops the requested state change locally.",
+    proof: "The team-separation rule changes to HOLD and the adapter keeps its safe state."
   },
   {
     id: "evidence-only-roe",
     scenario: "surrender",
     fleet: true,
     title: "Keep high-consequence evidence non-authoritative",
-    summary: "Surrender, incapacitation, identification, proportionality and human authorisation are modelled as evidence-only holds. None of them can become permission to act.",
+    summary: "Surrender, incapacitation, an unconfirmed identity, an unresolved consequence check and missing human authorisation are modelled as evidence-only holds. None of them can become permission to act.",
     proof: "The receipt keeps the requested action inhibited: command_authorized and command_sent are both false."
   },
   {
@@ -406,6 +482,15 @@ const clearResilienceTransport = () => {
   return resilienceTransportGeneration;
 };
 
+// Recorded codes break only after an underscore, so a narrow timeline never splits a word.
+// The element's text stays exactly the recorded code.
+const appendBreakableCode = (element, value) => {
+  String(value).split(/(?<=_)/).forEach((part, index) => {
+    if (index) element.append(document.createElement("wbr"));
+    element.append(part);
+  });
+};
+
 const renderResilienceTimeline = () => {
   if (!selectedResilience) return;
   const fragment = document.createDocumentFragment();
@@ -422,7 +507,7 @@ const renderResilienceTimeline = () => {
     const label = document.createElement("b");
     label.textContent = event.kind;
     const code = document.createElement("code");
-    code.textContent = event.code;
+    appendBreakableCode(code, event.code);
     item.title = event.message;
     item.append(time, label, code);
     fragment.append(item);
@@ -470,6 +555,8 @@ const applyResilienceEvent = (event) => {
   resilienceScrubber.setAttribute("aria-valuetext", `${(event.at_ms / 1000).toFixed(2)} seconds, ${event.kind}`);
   resilienceFields.time.textContent = `${(event.at_ms / 1000).toFixed(2)} s`;
   resilienceFields.transport.textContent = event.kind === "audit" ? "Evidence recorded" : asSentence(event.message);
+  // A fault or hold message must not take the success colour.
+  resilienceFields.transport.dataset.status = event.status;
   renderResilienceTimeline();
   renderContinuityProof(index);
   markAffectedGuardians(event.device_id || selectedResilience.affected_device);
@@ -483,6 +570,8 @@ const applyResilienceEvent = (event) => {
   receiptFields.evidence.textContent = selectedResilience.proof;
   receiptFields.evaluated.textContent = `t + ${(event.at_ms / 1000).toFixed(2)} seconds`;
   receiptFields.hash.textContent = "See signed Fleet evidence bundle";
+  receiptFields.reason.textContent = event.message;
+  receiptFields.adapter.textContent = selectedResilience.safe_response;
   // The scene mirrors the recorded timeline exactly: the hold colour applies from the decision
   // event onward and is removed again when the timeline is scrubbed back before it.
   const decisionIndex = selectedResilience.events.findIndex((candidate) => candidate.kind === "decision");
@@ -511,7 +600,7 @@ const applyResilienceEvent = (event) => {
     adapterOutput.textContent = "Safe state retained";
   }
   statusCode.textContent = event.code;
-  decisionCode.textContent = event.code;
+  showDecisionCode(event.code);
   reasonElement.textContent = asSentence(event.message);
   scheduleAnimation();
 };
@@ -521,8 +610,11 @@ const resetResilience = () => {
   delete stage.dataset.resilienceFallback;
   resilienceCursor = -1;
   resilienceScrubber.value = "0";
+  // A reset must not leave the last event's time for a screen reader to announce.
+  resilienceScrubber.setAttribute("aria-valuetext", "0.00 seconds, ready");
   resilienceFields.time.textContent = "0.00 s";
   resilienceFields.transport.textContent = "Ready";
+  delete resilienceFields.transport.dataset.status;
   markAffectedGuardians("");
   renderResilienceTimeline();
   renderContinuityProof(-1);
@@ -530,7 +622,8 @@ const resetResilience = () => {
     const first = selectedResilience.events[0];
     setEnvelopeHeld(false);
     statusCode.textContent = first.code;
-    decisionCode.textContent = "ready";
+    // "Ready" already says what the placeholder code would repeat.
+    showDecisionCode("ready", false);
     phaseElement.textContent = "Fault laboratory ready";
     outcomeElement.textContent = "Ready";
     delete outcomeElement.dataset.outcome;
@@ -546,6 +639,8 @@ const resetResilience = () => {
     receiptFields.evidence.textContent = selectedResilience.proof;
     receiptFields.evaluated.textContent = "Ready to stream";
     receiptFields.hash.textContent = "See signed Fleet evidence bundle";
+    receiptFields.reason.textContent = selectedResilience.fault;
+    receiptFields.adapter.textContent = selectedResilience.safe_response;
     setRuleState(resilienceRule[selectedResilience.id], false);
   }
   scheduleAnimation();
@@ -670,7 +765,7 @@ const selectResilienceScenario = (id) => {
   root.querySelector("#fault-replay").open = true;
   clearResilienceTransport();
   resilienceMode = false;
-  selectScenario(resilienceRoute[id]);
+  selectScenario(resilienceRoute[id], { revealButton: false });
   resilienceMode = true;
   setPlaying(false);
   playButton.disabled = true;
@@ -778,12 +873,17 @@ const setRuleState = (failedRule, triggered) => {
     const isTarget = item.dataset.rule === failedRule;
     item.classList.toggle("is-failed", isTarget && triggered);
     item.classList.toggle("is-monitoring", isTarget && !triggered);
-    item.querySelector("strong").textContent = isTarget ? (triggered ? "HOLD" : "CHECK") : "PASS";
+    item.classList.toggle("is-pass", !isTarget);
+    item.classList.remove("is-unavailable");
+    item.querySelector("strong").textContent = isTarget ? (triggered ? "HOLD" : "CHECK") : "CLEAR";
   }
 };
 
 const renderReceiptMetadata = (receipt) => {
   receiptSource.textContent = receipt.decision_source === receiptBundle.engine ? "Recorded interlock receipt (Go engine)" : "Recorded adapter receipt after Go engine verification";
+  // The recorded producer text, verbatim; the panel above shows its plain-English reading.
+  receiptFields.reason.textContent = receipt.reason;
+  receiptFields.adapter.textContent = receipt.adapter.output;
   receiptFields.engine.textContent = receipt.decision_source;
   receiptFields.signature.textContent = receipt.signature_verified ? "Recorded as verified by Go engine" : "Recorded verification failed";
   receiptFields.policy.textContent = receipt.policy_id;
@@ -791,7 +891,11 @@ const renderReceiptMetadata = (receipt) => {
   receiptFields.subject.textContent = receipt.subject;
   receiptFields.sequence.textContent = String(receipt.sequence);
   receiptFields.evidence.textContent = `${receipt.evidence.tier} · ${receipt.evidence.auditor} · ${receipt.evidence.age_seconds}s old`;
-  receiptFields.evaluated.textContent = receipt.evaluated_at;
+  // The recorded timestamp, unchanged, marked up as a machine-readable time.
+  const evaluatedTime = document.createElement("time");
+  evaluatedTime.dateTime = receipt.evaluated_at;
+  evaluatedTime.textContent = receipt.evaluated_at;
+  receiptFields.evaluated.replaceChildren(evaluatedTime);
   receiptFields.hash.textContent = receipt.policy_hash;
 };
 
@@ -802,19 +906,21 @@ const setDecision = (receipt, presentation, triggered) => {
     statusCode.textContent = "evaluating";
     outcomeElement.textContent = "Monitoring";
     delete outcomeElement.dataset.outcome;
-    decisionCode.textContent = "evaluating";
+    showDecisionCode("evaluating");
     reasonElement.textContent = presentation.initial;
     adapterOutput.textContent = "No state change yet";
     setRuleState(receipt.rule, false);
     return;
   }
-  phaseElement.textContent = receipt.allowed ? "Bounder permits" : "Bounder holds";
+  // The stage names the outcome in plain words; the recorded code appears once, in the receipt.
+  phaseElement.textContent = stageBadge(receipt);
   statusCode.textContent = receipt.code;
-  outcomeElement.textContent = receipt.allowed ? "Request allowed" : "Request denied";
+  outcomeElement.textContent = outcomeHeadline(receipt.allowed);
   outcomeElement.dataset.outcome = receipt.allowed ? "allowed" : "held";
-  decisionCode.textContent = receipt.code;
-  reasonElement.textContent = asSentence(receipt.reason);
-  adapterOutput.textContent = receipt.adapter.output;
+  // "Request allowed" already says what the code "allowed" would repeat.
+  showDecisionCode(receipt.code, !receipt.allowed);
+  reasonElement.textContent = asSentence(glossReason(receipt.reason));
+  adapterOutput.textContent = glossAdapterOutput(receipt.adapter.output);
   setRuleState(receipt.rule, !receipt.allowed);
 };
 
@@ -853,11 +959,12 @@ const setEnvelopeHeld = (held) => {
 };
 
 // Lighting grades. Weather shows wind with clear air (the receipt records 8 km visibility);
-// the operating window is a dusk grade outside the authorised time window.
+// the operating window is dusk outside the authorised time window: a low, warm western sun
+// with long shadows, a cooler sky fill, lit windows and street lamps, not a uniform darkening.
 const atmospheres = Object.freeze({
-  clear: { background: "#b9d7df", fogNear: 28, fogFar: 62, sun: 3.1, sunColour: "#fff1cf", hemisphere: 2.15, sky: "#e9f7ff", groundLight: "#5b6749", clouds: "#f7fbfa", cloudOpacity: 0.88, fairClouds: true, lamps: 1.1, windowGlow: "#49747e", windowGlowIntensity: 0.18 },
-  weather: { background: "#a6b5b9", fogNear: 26, fogFar: 62, sun: 1.8, sunColour: "#f4f1e8", hemisphere: 1.75, sky: "#d7e1e4", groundLight: "#56614a", clouds: "#f7fbfa", cloudOpacity: 0.88, fairClouds: false, lamps: 1.1, windowGlow: "#49747e", windowGlowIntensity: 0.18 },
-  window: { background: "#4d5a78", fogNear: 26, fogFar: 62, sun: 0.9, sunColour: "#ffc796", hemisphere: 1.15, sky: "#a3b0cf", groundLight: "#3e4539", clouds: "#8c96ae", cloudOpacity: 0.75, fairClouds: true, lamps: 2.8, windowGlow: "#f2c46b", windowGlowIntensity: 0.75 }
+  clear: { background: "#b9d7df", fogNear: 28, fogFar: 62, sun: 3.1, sunColour: "#fff1cf", sunPosition: [-10, 18, 12], hemisphere: 2.15, sky: "#e9f7ff", groundLight: "#5b6749", clouds: "#f7fbfa", cloudOpacity: 0.88, fairClouds: true, lamps: 1.1, windowGlow: "#49747e", windowGlowIntensity: 0.18 },
+  weather: { background: "#a6b5b9", fogNear: 26, fogFar: 62, sun: 1.8, sunColour: "#f4f1e8", sunPosition: [-10, 18, 12], hemisphere: 1.75, sky: "#d7e1e4", groundLight: "#56614a", clouds: "#f7fbfa", cloudOpacity: 0.88, fairClouds: false, lamps: 1.1, windowGlow: "#49747e", windowGlowIntensity: 0.18 },
+  window: { background: "#a3a2c6", fogNear: 26, fogFar: 64, sun: 3.4, sunColour: "#ffb57a", sunPosition: [-15, 10, 14], hemisphere: 2.0, sky: "#b7b3e2", groundLight: "#7a6450", clouds: "#e9b7a4", cloudOpacity: 0.85, fairClouds: true, lamps: 3.2, windowGlow: "#ffc46b", windowGlowIntensity: 0.95 }
 });
 const applyAtmosphere = (name) => {
   const grade = atmospheres[name] ?? atmospheres.clear;
@@ -868,6 +975,7 @@ const applyAtmosphere = (name) => {
   scene.fog.far = grade.fogFar;
   sun.intensity = grade.sun;
   sun.color.set(grade.sunColour);
+  sun.position.set(...grade.sunPosition);
   hemisphere.intensity = grade.hemisphere;
   hemisphere.color.set(grade.sky);
   hemisphere.groundColor.set(grade.groundLight);
@@ -882,9 +990,9 @@ const applyAtmosphere = (name) => {
 // Camera framing. Every scenario except the town-wide cleared route frames its hold point and
 // its subject; the Overview button always returns to the whole town.
 const OVERVIEW_POSE = Object.freeze({ position: new THREE.Vector3(17, 16, 21), target: new THREE.Vector3(0, 0.8, 0) });
-// A steep south-east view (about 60 degrees down) sees over the rooftops to both roads.
+// A steep south-east view (about 60 degrees down) sees over the rooftops to both roads. The
+// stage overlays are handled by the projection (see updateViewOffset), not by moving the aim.
 const FRAMING_OFFSET = new THREE.Vector3(5, 17, 8);
-const FRAMING_BIAS = new THREE.Vector3(-1.2, 0, -1.8);
 const scenarioSubject = (name) => {
   const boundary = PROTECTION_BOUNDARIES[name];
   if (boundary) return new THREE.Vector3(boundary.x, 0.8, boundary.z);
@@ -896,21 +1004,51 @@ const scenarioPose = (name) => {
   const hold = curves[name].getPointAt(scenarioPresentation[name].stop);
   const subject = scenarioSubject(name);
   const target = subject ? hold.clone().setY(2.6).lerp(subject.clone().setY(2.6), 0.5) : hold.clone().setY(3);
-  // Aim slightly north-west of the subject so it sits below and right of the status overlay,
-  // which covers the stage's top-left corner on narrow screens.
-  target.add(FRAMING_BIAS);
-  target.x = THREE.MathUtils.clamp(target.x, -WORLD_BOUNDS.width / 2, WORLD_BOUNDS.width / 2);
-  target.z = THREE.MathUtils.clamp(target.z, -WORLD_BOUNDS.depth / 2, WORLD_BOUNDS.depth / 2);
+  // Holds at the edge of town are framed from slightly inside it, so the town, not the empty
+  // countryside, fills the view around them.
+  target.x = THREE.MathUtils.clamp(target.x, -WORLD_BOUNDS.width / 2 + 6, WORLD_BOUNDS.width / 2 - 6);
+  target.z = THREE.MathUtils.clamp(target.z, -WORLD_BOUNDS.depth / 2 + 5, WORLD_BOUNDS.depth / 2 - 5);
   return { position: target.clone().add(FRAMING_OFFSET), target };
 };
 
 let cameraTween;
 const CAMERA_TWEEN_MS = 650;
+// "Focus on drone" frames the drone closely and keeps it framed while it flies. Every other
+// view keeps the wider orbit limit, restored once a move has landed so a glide is never clamped.
+const DEFAULT_MIN_DISTANCE = controls.minDistance;
+const FOCUS_MIN_DISTANCE = 4;
+const FOCUS_OFFSET = new THREE.Vector3(3.5, 2.5, 4.5);
+let followDrone = false;
+const droneAnchor = new THREE.Vector3();
+const followedAnchor = new THREE.Vector3();
+const followDelta = new THREE.Vector3();
+const settleMinDistance = () => {
+  controls.minDistance = followDrone ? FOCUS_MIN_DISTANCE : DEFAULT_MIN_DISTANCE;
+};
+const setFollowDrone = (enabled) => {
+  followDrone = enabled;
+  followedAnchor.copy(droneAnchor);
+};
+// Moves the camera by however far the drone's route position moved since the last frame.
+const followDroneStep = () => {
+  followDelta.copy(droneAnchor).sub(followedAnchor);
+  followedAnchor.copy(droneAnchor);
+  if (!followDrone || followDelta.lengthSq() === 0) return;
+  if (cameraTween) {
+    cameraTween.toPosition.add(followDelta);
+    cameraTween.toTarget.add(followDelta);
+  } else {
+    camera.position.add(followDelta);
+    controls.target.add(followDelta);
+  }
+};
 const moveCamera = (position, target, { animate = true } = {}) => {
+  controls.minDistance = FOCUS_MIN_DISTANCE;
   if (!animate || reduceMotion || !rendererOperational) {
     cameraTween = undefined;
     controls.target.copy(target);
     camera.position.copy(position);
+    settleMinDistance();
     controls.update();
     scheduleAnimation();
     return;
@@ -931,11 +1069,14 @@ const stepCameraTween = (time) => {
   const eased = linear < 0.5 ? 2 * linear * linear : 1 - ((-2 * linear + 2) ** 2) / 2;
   camera.position.lerpVectors(cameraTween.fromPosition, cameraTween.toPosition, eased);
   controls.target.lerpVectors(cameraTween.fromTarget, cameraTween.toTarget, eased);
-  if (linear >= 1) cameraTween = undefined;
+  if (linear >= 1) {
+    cameraTween = undefined;
+    settleMinDistance();
+  }
   return true;
 };
 
-const selectScenario = (name, { camera: cameraMove = "animate" } = {}) => {
+const selectScenario = (name, { camera: cameraMove = "animate", revealButton = true } = {}) => {
   const receipt = receiptsByScenario.get(name);
   if (!receipt) return;
   selectedScenario = name;
@@ -959,10 +1100,13 @@ const selectScenario = (name, { camera: cameraMove = "animate" } = {}) => {
   drone.position.copy(curves[name].getPointAt(progress));
   setEnvelopeHeld(false);
   setDecision(receipt, scenarioPresentation[name], true);
+  // A visitor's own choice or a shared link opens "More scenarios" so the pressed button shows;
+  // the tour and fault replay do not, so the stage they describe stays where it was.
   const selected = root.querySelector(`[data-scenario="${name}"]`);
   const group = selected?.closest("details");
-  if (group) group.open = true;
+  if (group && revealButton) group.open = true;
   if (cameraMove !== "none") {
+    setFollowDrone(false);
     const pose = scenarioPose(name);
     moveCamera(pose.position, pose.target, { animate: cameraMove === "animate" });
     stage.dataset.cameraView = name === "safe" ? "overview" : "scenario";
@@ -973,9 +1117,35 @@ const selectScenario = (name, { camera: cameraMove = "animate" } = {}) => {
   scheduleAnimation();
 };
 
+// The scene draws a handful of illustrative Guardians; the legend says how many of the recorded
+// fleet that is, so the drawing is never read as the whole fleet.
+const fleetLegend = (() => {
+  const legend = stage.querySelector(".stage-legend");
+  if (!legend) return undefined;
+  const entry = document.createElement("span");
+  entry.className = "legend-fleet";
+  const swatch = document.createElement("i");
+  swatch.style.background = "#dfe6dc";
+  entry.append(swatch, document.createTextNode(""));
+  entry.style.display = "none";
+  const explore = legend.querySelector(".legend-explore");
+  if (explore) explore.before(entry);
+  else legend.append(entry);
+  return entry;
+})();
+const syncFleetLegend = () => {
+  if (!fleetLegend) return;
+  fleetLegend.style.display = fleetMode ? "" : "none";
+  const recorded = fleetEvidence?.summary?.devices;
+  fleetLegend.lastChild.textContent = Number.isInteger(recorded)
+    ? `Guardians: ${fleetDrones.length} of ${recorded} drawn`
+    : "Illustrative Guardians";
+};
+
 const setFleetMode = (enabled) => {
   if (!fleetEvidence) return;
   fleetMode = enabled;
+  syncFleetLegend();
   if (enabled) root.querySelector("#fleet-evidence").open = true;
   // A toggle keeps one name; aria-pressed alone carries whether the Fleet view is on.
   fleetButton.setAttribute("aria-pressed", String(fleetMode));
@@ -1013,7 +1183,7 @@ const showOperatorTourStep = (index) => {
     selectedResilience = undefined;
     markAffectedGuardians("");
     playButton.disabled = false;
-    selectScenario(step.scenario);
+    selectScenario(step.scenario, { revealButton: false });
   }
   setFleetMode(step.fleet);
   tourFields.position.textContent = `Step ${operatorTourIndex + 1} of ${operatorTourSteps.length}`;
@@ -1029,6 +1199,23 @@ const showOperatorTourStep = (index) => {
   syncOperatorTourURL(step);
 };
 
+// Where to scroll so the tour card sits at the top and the stage it describes follows below,
+// as far as that is possible without pushing the tour's own controls off screen.
+const tourScrollTarget = () => {
+  const base = operatorTour.getBoundingClientRect().top + window.scrollY - 16;
+  const stageOverflow = stage.getBoundingClientRect().bottom + window.scrollY - (base + window.innerHeight) + 12;
+  const actions = operatorTour.querySelector(".operator-tour-actions") ?? operatorTour;
+  const actionsRoom = actions.getBoundingClientRect().top + window.scrollY - base - 12;
+  return Math.max(0, base + Math.max(0, Math.min(stageOverflow, actionsRoom)));
+};
+
+// Stepping through the tour keeps the stage for the new step on screen with the tour controls.
+const keepTourStageInView = () => {
+  const stageBox = stage.getBoundingClientRect();
+  if (stageBox.top >= 0 && stageBox.bottom <= window.innerHeight) return;
+  window.scrollTo({ top: tourScrollTarget(), behavior: reduceMotion ? "instant" : "smooth" });
+};
+
 const revealOperatorTour = ({ onlyIfUntouched = false } = {}) => {
   if (initialParameters.get("embed") === "1") return;
   const focusUntouched = !document.activeElement || document.activeElement === document.body || document.activeElement === root;
@@ -1036,10 +1223,10 @@ const revealOperatorTour = ({ onlyIfUntouched = false } = {}) => {
   // the top, or still at the workbench anchor the link itself targeted.
   const atLandingAnchor = window.location.hash === `#${root.id}` && Math.abs(root.getBoundingClientRect().top) < 80;
   if (onlyIfUntouched && (!focusUntouched || (window.scrollY > 40 && !atLandingAnchor))) return;
-  const top = operatorTour.getBoundingClientRect().top + window.scrollY - 16;
   const bottomVisible = operatorTour.getBoundingClientRect().bottom <= window.innerHeight;
-  if (onlyIfUntouched || operatorTour.getBoundingClientRect().top < 0 || !bottomVisible) {
-    window.scrollTo({ top: Math.max(0, top), behavior: reduceMotion ? "instant" : "smooth" });
+  const stageVisible = stage.getBoundingClientRect().bottom <= window.innerHeight;
+  if (onlyIfUntouched || operatorTour.getBoundingClientRect().top < 0 || !bottomVisible || !stageVisible) {
+    window.scrollTo({ top: tourScrollTarget(), behavior: reduceMotion ? "instant" : "smooth" });
   }
   const title = tourFields.title;
   if (title) {
@@ -1092,9 +1279,15 @@ const leaveOperatorTour = () => {
   if (!operatorTour.hidden) closeOperatorTour({ restoreFocus: false });
 };
 
-const trailingPoint = new THREE.Vector3();
-const trailingTangent = new THREE.Vector3();
+const formationForward = new THREE.Vector3();
 const lateral = new THREE.Vector3();
+// Formation geometry in scene units. A scaled Guardian spans about 1.6 units across its rotor
+// guards, so 2.2 units between rows and 3.4 between wingmen leave clear air between every pair.
+const FLEET_ROW_SPACING = 2.2;
+const FLEET_LATERAL_SPACING = 1.7;
+const FLEET_ROW_RISE = 0.45;
+// A Guardian hangs about 0.3 units below its centre; keep that clear of the highest roof.
+const FLEET_ROOF_CLEARANCE = Math.max(...BUILDING_SPECS.map(({ visibleBounds }) => visibleBounds.maxY)) + 0.5;
 // The model's nose is local +x, so its yaw turns +x onto the horizontal direction of travel.
 const headingFor = (tangent) => Math.atan2(-tangent.z, tangent.x);
 
@@ -1107,38 +1300,40 @@ const update = (delta, elapsed) => {
   const point = curve.getPointAt(progress);
   const tangent = curve.getTangentAt(Math.min(progress, 1));
   drone.position.copy(point);
+  droneAnchor.copy(point);
   if (playing && !reduceMotion) drone.position.y += Math.sin(elapsed * 0.004) * 0.045;
   drone.rotation.y = headingFor(tangent);
   // Holding against the recorded wind, the drone pitches its nose into the headwind.
   const windPitch = selectedScenario === "weather" ? -0.14 : 0;
   drone.rotation.z = windPitch;
 
-  // Fleet Guardians fly an echelon behind the lead drone, spaced by distance rather than by
-  // route fraction, and extend back along the approach when the lead is near the route start.
-  const routeLength = curve.getLength();
-  const leadDistance = progress * routeLength;
+  // The plumb line runs from the ground mark up to the underside of the lead drone.
+  droneTether.visible = true;
+  droneTether.position.set(point.x, 0.09, point.z);
+  droneTether.userData.line.scale.y = Math.max(0.1, point.y - 0.4);
+  droneTether.userData.line.position.y = droneTether.userData.line.scale.y / 2;
+
+  // Fleet Guardians hold a rigid V behind the lead in its heading frame. Each row flies in its
+  // own altitude band above the tallest roof, and rows are spaced wider than a Guardian, so no
+  // two drones, and no drone and roof, can meet whatever the route does.
+  formationForward.set(tangent.x, 0, tangent.z);
+  if (formationForward.lengthSq() < 1e-6) formationForward.set(1, 0, 0);
+  formationForward.normalize();
+  lateral.set(-formationForward.z, 0, formationForward.x);
+  const formationHeading = headingFor(formationForward);
+  const formationBase = Math.max(point.y, FLEET_ROOF_CLEARANCE);
   for (let index = 0; index < fleetDrones.length; index += 1) {
     const guardian = fleetDrones[index];
     guardian.visible = fleetMode;
     if (!fleetMode) continue;
     const row = Math.floor(index / 2) + 1;
     const side = index % 2 === 0 ? -1 : 1;
-    const distance = leadDistance - row * 2.1;
-    if (distance >= 0) {
-      const u = Math.min(1, distance / routeLength);
-      trailingPoint.copy(curve.getPointAt(u));
-      trailingTangent.copy(curve.getTangentAt(u));
-    } else {
-      trailingTangent.copy(curve.getTangentAt(0));
-      trailingPoint.copy(curve.getPointAt(0)).addScaledVector(trailingTangent, distance);
-    }
-    trailingTangent.y = 0;
-    if (trailingTangent.lengthSq() < 1e-6) trailingTangent.set(1, 0, 0);
-    trailingTangent.normalize();
-    lateral.set(-trailingTangent.z, 0, trailingTangent.x);
-    guardian.position.copy(trailingPoint).addScaledVector(lateral, side * row * 1.25);
+    guardian.position.copy(point)
+      .addScaledVector(formationForward, -row * FLEET_ROW_SPACING)
+      .addScaledVector(lateral, side * row * FLEET_LATERAL_SPACING);
+    guardian.position.y = formationBase + FLEET_ROW_RISE * row;
     if (playing && !reduceMotion) guardian.position.y += Math.sin(elapsed * 0.003 + index) * 0.04;
-    guardian.rotation.y = headingFor(trailingTangent);
+    guardian.rotation.y = formationHeading;
     guardian.rotation.z = windPitch;
   }
   if (playing && !reduceMotion) for (const rotor of rotors) rotor.rotation.y += delta * 22;
@@ -1187,15 +1382,46 @@ const layoutWorldLabels = (stageHeight) => {
   for (const sprite of worldLabels) sprite.scale.set(scaleY * sprite.userData.aspect, scaleY, 1);
 };
 
+// The status badge (top) and legend (bottom) sit over the scene. Shift the projection so the
+// camera's aim lands in the middle of the band they leave clear, at every stage size, instead
+// of under an overlay. Presentation only: the camera pose itself is unchanged.
+const stageStatus = stage.querySelector(".stage-status");
+const stageLegend = stage.querySelector(".stage-legend");
+const overlayVisible = (element) => Boolean(element && element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
+const updateViewOffset = (width, height) => {
+  const stageTop = stage.getBoundingClientRect().top;
+  const clearTop = overlayVisible(stageStatus) ? Math.max(0, stageStatus.getBoundingClientRect().bottom - stageTop) : 0;
+  const clearBottom = overlayVisible(stageLegend) ? Math.min(height, stageLegend.getBoundingClientRect().top - stageTop) : height;
+  const shift = Math.round(height / 2 - (clearTop + clearBottom) / 2);
+  if (!shift || clearBottom - clearTop < height * 0.4) camera.clearViewOffset();
+  else camera.setViewOffset(width, height, 0, shift, width, height);
+  stage.dataset.viewOffset = String(shift);
+};
+
 const resize = () => {
   if (!rendererOperational) return;
   const width = stage.clientWidth;
   const height = stage.clientHeight;
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
+  updateViewOffset(width, height);
   camera.updateProjectionMatrix();
   layoutWorldLabels(height);
   scheduleAnimation();
+};
+
+// Verification instrumentation, only with the explicit ?audit=1 opt-in: the last frame's draw
+// calls (shadow pass included) and triangles, and the camera angles.
+const sceneAuditRequested = initialParameters.get("audit") === "1";
+if (sceneAuditRequested) renderer.info.autoReset = false;
+const auditOffset = new THREE.Vector3();
+const recordAuditFrame = () => {
+  stage.dataset.drawCalls = String(renderer.info.render.calls);
+  stage.dataset.triangles = String(renderer.info.render.triangles);
+  auditOffset.copy(camera.position).sub(controls.target);
+  stage.dataset.cameraPolar = THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(auditOffset.y / auditOffset.length(), -1, 1))).toFixed(2);
+  stage.dataset.cameraAzimuth = THREE.MathUtils.radToDeg(Math.atan2(auditOffset.x, auditOffset.z)).toFixed(2);
+  stage.dataset.cameraDistance = auditOffset.length().toFixed(2);
 };
 
 const animate = (time) => {
@@ -1215,11 +1441,16 @@ const animate = (time) => {
   lastTime = time;
   try {
     update(delta, time);
+    followDroneStep();
     updateCameraNavigation(delta);
     const tweening = stepCameraTween(time);
     const cameraChanged = controls.update();
+    // three.js resets renderer.info after its shadow pass; under audit, reset it here instead so
+    // the recorded count includes the shadow-caster draws.
+    if (sceneAuditRequested) renderer.info.reset();
     renderer.render(scene, camera);
     stage.dataset.renderFrames = String(Number(stage.dataset.renderFrames ?? 0) + 1);
+    if (sceneAuditRequested) recordAuditFrame();
     if ((playing && !reduceMotion) || pressedNavigationKeys.size || cameraChanged || tweening) scheduleAnimation();
     else if (animationFrame === undefined) stage.dataset.animationState = "idle";
   } catch (error) {
@@ -1304,7 +1535,7 @@ const handleWebGLRuntimeFailure = ({ terminal = false } = {}) => {
   statusCode.textContent = "renderer_unavailable";
   outcomeElement.textContent = "Unavailable";
   delete outcomeElement.dataset.outcome;
-  decisionCode.textContent = "renderer_unavailable";
+  showDecisionCode("renderer_unavailable");
   reasonElement.textContent = terminal
     ? "The 3D renderer stopped. Bounder retained no command authority."
     : "The rendering context was lost. Bounder retained no command authority.";
@@ -1401,10 +1632,16 @@ operatorTour.addEventListener("keydown", (event) => {
   event.preventDefault();
   closeOperatorTour();
 });
-tourActions.previous.addEventListener("click", () => showOperatorTourStep(operatorTourIndex - 1));
+tourActions.previous.addEventListener("click", () => {
+  showOperatorTourStep(operatorTourIndex - 1);
+  keepTourStageInView();
+});
 tourActions.next.addEventListener("click", () => {
   if (operatorTourIndex === operatorTourSteps.length - 1) closeOperatorTour();
-  else showOperatorTourStep(operatorTourIndex + 1);
+  else {
+    showOperatorTourStep(operatorTourIndex + 1);
+    keepTourStageInView();
+  }
 });
 tourActions.close.addEventListener("click", closeOperatorTour);
 resilienceActions.run.addEventListener("click", runResilience);
@@ -1449,7 +1686,8 @@ canvas.addEventListener("webglcontextrestored", () => {
   // Wait for three.js's own restore handler, registered first, to rebuild its GL state.
   window.setTimeout(recoverRenderer, 0);
 });
-new ResizeObserver(resize).observe(stage);
+const stageResizeObserver = new ResizeObserver(resize);
+for (const element of [stage, stageStatus, stageLegend]) if (element) stageResizeObserver.observe(element);
 
 // Scenario buttons only change the receipt panel and the scene state, so they stay usable for
 // recorded receipts while the renderer is lost.
@@ -1470,7 +1708,9 @@ const setResilienceControlsEnabled = (enabled) => {
 
 const setRulesUnavailable = () => {
   for (const item of root.querySelectorAll(".rule-stack li")) {
-    item.classList.remove("is-failed", "is-monitoring");
+    // Neutral, never the pass colour: nothing was evaluated.
+    item.classList.remove("is-failed", "is-monitoring", "is-pass");
+    item.classList.add("is-unavailable");
     item.querySelector("strong").textContent = "UNAVAILABLE";
   }
 };
@@ -1485,11 +1725,12 @@ const showReceiptLoadFailure = () => {
   stage.dataset.receiptsReady = "false";
   stage.dataset.failClosed = "true";
   receiptSource.textContent = "Receipt fixture unavailable";
+  for (const field of Object.values(receiptFields)) field.textContent = "Unavailable";
   phaseElement.textContent = "Simulation paused";
   statusCode.textContent = "fixture_unavailable";
   outcomeElement.textContent = "Unavailable";
-  decisionCode.textContent = "fixture_unavailable";
-  reasonElement.textContent = "The Go interlock receipt bundle could not be loaded or validated. The simulation remains paused.";
+  showDecisionCode("fixture_unavailable");
+  reasonElement.textContent = "The recorded interlock receipt bundle could not be loaded or validated. The simulation remains paused.";
   adapterOutput.textContent = "No command authority";
   setRulesUnavailable();
 };
@@ -1508,17 +1749,18 @@ const showFleetLoadFailure = () => {
   }
   // Fault replay needs the Fleet evidence; say so instead of opening onto an empty panel.
   const faultReplay = root.querySelector("#fault-replay");
+  // The page's own note already covers a failed load and carries the download link to the
+  // recorded timelines, the visitor's remaining route to them; only unhide it. Write copy only
+  // into a note this controller had to create itself.
   let note = faultReplay?.querySelector("[data-resilience-unavailable]");
   if (faultReplay && !note) {
     note = document.createElement("p");
     note.className = "evidence-unavailable";
     note.dataset.resilienceUnavailable = "";
+    note.textContent = "Fault replay is unavailable because the recorded Fleet evidence could not be loaded. Scenario receipts remain available above.";
     faultReplay.append(note);
   }
-  if (note) {
-    note.textContent = "Fault replay is unavailable because the recorded Fleet evidence could not be loaded. Scenario receipts remain available above.";
-    note.hidden = false;
-  }
+  if (note) note.hidden = false;
 };
 
 const showBootstrapFailure = () => {
@@ -1526,7 +1768,7 @@ const showBootstrapFailure = () => {
   showFleetLoadFailure();
   receiptSource.textContent = "Simulator initialisation unavailable";
   statusCode.textContent = "bootstrap_unavailable";
-  decisionCode.textContent = "bootstrap_unavailable";
+  showDecisionCode("bootstrap_unavailable");
   reasonElement.textContent = "The simulation could not initialise and remains paused.";
 };
 
@@ -1565,6 +1807,7 @@ const bootstrap = async () => {
       console.warn("Bounder receipt bundle failed closed", receiptResult.error);
       showRoute(curves.safe);
       drone.position.copy(curves.safe.getPointAt(0));
+      syncBoundaryLegend("");
       showReceiptLoadFailure();
     }
 
@@ -1629,10 +1872,11 @@ document.fonts?.ready.then(() => {
 const viewButtons = [...root.querySelectorAll('[data-camera]')];
 const setCameraView = (view) => {
   if (!rendererOperational) return;
+  setFollowDrone(view === 'focus');
   if (view === 'top') {
     moveCamera(new THREE.Vector3(0, 31, .1), new THREE.Vector3(0, 0, 0));
   } else if (view === 'focus') {
-    moveCamera(drone.position.clone().add(new THREE.Vector3(9, 8, 11)), drone.position.clone());
+    moveCamera(droneAnchor.clone().add(FOCUS_OFFSET), droneAnchor.clone());
   } else {
     moveCamera(OVERVIEW_POSE.position, OVERVIEW_POSE.target);
   }
@@ -1649,13 +1893,25 @@ qualityControl.addEventListener('change', () => {
   renderer.setPixelRatio(low ? 1 : Math.min(window.devicePixelRatio, 1.5));
   // Toggling only shadowMap.enabled leaves compiled shaders sampling a stale shadow map.
   // Changing the sun's castShadow changes the lights state, which recompiles every lit material
-  // with or without shadows.
+  // with or without shadows; marking every material for update makes that explicit.
   renderer.shadowMap.enabled = !low;
   sun.castShadow = !low;
   renderer.shadowMap.needsUpdate = true;
+  scene.traverse((object) => {
+    for (const material of [object.material].flat()) if (material) material.needsUpdate = true;
+  });
   stage.dataset.renderQuality = low ? 'low' : 'standard';
   resize();
 });
+// Apply the starting quality through the same handler a visitor's choice uses.
+const startingQualityReason = softwareRenderer(renderer.getContext()) ? 'software-renderer' : constrainedDevice ? 'constrained-device' : '';
+if (startingQualityReason) {
+  stage.dataset.renderQualityReason = startingQualityReason;
+  qualityControl.value = 'low';
+  qualityControl.dispatchEvent(new Event('change'));
+} else {
+  stage.dataset.renderQuality = 'standard';
+}
 root.querySelector('#fault-replay').addEventListener('toggle', (event) => {
   if (!rendererOperational || !fleetEvidence || !receiptsByScenario.size) return;
   if (event.target.open && !resilienceMode) {

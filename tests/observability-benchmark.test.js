@@ -8,6 +8,7 @@ import {
   runBenchmarkCli,
   runObservabilityBenchmark
 } from "../scripts/benchmark-observability.mjs";
+import { aggregateFleetSnapshot } from "../runtime/observability/guardian-fleet-state.js";
 
 test("reference observability benchmark reports bounded payloads and one-pass aggregation without overclaiming", async () => {
   const cpuTicks = [100, 125];
@@ -52,6 +53,17 @@ test("benchmark enforces count and byte or time failures and its CLI emits stabl
   });
   assert.equal(failed.passed, false);
   assert.match(failed.failures[0], /aggregation_cpu_ms/);
+  // An aggregation that drops Guardians is faster and must still fail: speed of a wrong answer is
+  // not observability performance.
+  for (const aggregator of [
+    (input) => ({ ...aggregateFleetSnapshot(input), observed_guardians: 0 }),
+    (input) => aggregateFleetSnapshot({ ...input, heartbeats: input.heartbeats.slice(1) }),
+    () => undefined
+  ]) {
+    const wrong = await runObservabilityBenchmark({ guardianCount: 50, warmupRuns: 0, measuredRuns: 1, aggregator });
+    assert.equal(wrong.passed, false);
+    assert.match(wrong.failures.join("\n"), /aggregation result is incorrect/);
+  }
   const messages = [];
   const result = await runBenchmarkCli([], { log: (message) => messages.push(message) }, {
     guardianCount: 1_000,

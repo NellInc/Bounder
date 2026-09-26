@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-P4bXYSAMYMBLNXLUWjrfTxlWMkNbsbx+kFcrLpT/sDc='; connect-src 'self' https://bounder-fleet-continuity-staging.onrender.com; frame-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-wXl2mfr2gkiEcqcqH9Ptf2hLCVHniQiPPo79NZ+VDXY='; connect-src 'self' https://bounder-fleet-continuity-staging.onrender.com; frame-src 'self'">
   <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -36,13 +36,17 @@
   <meta name="twitter:image" content="https://www.bounder.io/images/og-card.jpg">
   <meta name="twitter:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
 
-  <link rel="preload" as="image" href="images/hero-drone-dusk.jpg" fetchpriority="high">
   <link rel="stylesheet" href="styles.css">
   <script>
   /* Reveal bootstrap is inline on purpose. It gates content visibility, so it must share
      the lifetime of the document: a network-fetched file that 404s or throws would leave
      every [data-reveal] block stuck at opacity 0. Inline runs before first paint, so the
-     hidden state is applied without a flash of unstyled content. */
+     hidden state is applied without a flash of unstyled content.
+
+     The observers start when parsing finishes (readyState "interactive"), which comes
+     before deferred and module scripts run. DOMContentLoaded waits for those scripts, so a
+     slow or stalled one would otherwise keep everything below the hero hidden. A failsafe
+     reveals everything if the observers have not started within three seconds. */
   (function () {
     var root = document.documentElement;
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -55,7 +59,13 @@
       for (var i = 0; i < targets.length; i++) targets[i].classList.add("is-revealed");
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    var failsafe = setTimeout(revealAll, 3000);
+    var started = false;
+
+    function start() {
+      if (started || document.readyState === "loading") return;
+      started = true;
+      clearTimeout(failsafe);
       var targets = document.querySelectorAll("[data-reveal]");
 
       try {
@@ -90,7 +100,10 @@
       } catch (error) {
         revealAll();
       }
-    });
+    }
+
+    document.addEventListener("readystatechange", start);
+    start();
   })();
   </script>
   <script type="application/ld+json">
@@ -227,7 +240,11 @@
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
-      <img class="hero-image" src="images/hero-drone-dusk.jpg" alt="A quadcopter hovering at dusk above a city skyline, its status light lit" fetchpriority="high" width="2400" height="1800">
+      <picture>
+        <source type="image/avif" srcset="images/hero-drone-dusk.avif">
+        <source type="image/webp" srcset="images/hero-drone-dusk.webp">
+        <img class="hero-image" src="images/hero-drone-dusk.jpg" alt="A quadcopter hovering at dusk above a city skyline, its status light lit" fetchpriority="high" width="2400" height="1800">
+      </picture>
       <div class="hero-scrim"></div>
       <div class="hero-grid" aria-hidden="true"></div>
 
@@ -439,23 +456,38 @@
       <div class="continuity-heading" data-reveal>
         <div>
           <p class="continuity-kicker">Creed Space Fleet staging</p>
-          <h2 id="continuity-title">One policy. A hundred Guardians.</h2>
+          <h2 id="continuity-title">One policy. A&nbsp;hundred Guardians.</h2>
         </div>
         <span class="continuity-state" data-continuity-state role="status" aria-live="polite">Verifying live proof</span>
       </div>
-      <p class="continuity-summary" data-reveal>One hundred software Guardians across six platform classes — aerial, ground, marine, warehouse, inspection, and fixed machinery — each independently fetch policy, verify checkpoints and make protective decisions locally. The signed aggregate proof below is checked in your browser. No Guardian trusts another’s word for it.</p>
-      <dl class="continuity-metrics" data-reveal>
-        <div><dt>Guardians</dt><dd data-continuity-devices>Checking</dd></div>
-        <div><dt>Policies verified</dt><dd data-continuity-policies>Checking</dd></div>
-        <div><dt>Checkpoints</dt><dd data-continuity-checkpoints>Checking</dd></div>
-        <div><dt>Local decisions</dt><dd data-continuity-decisions>Checking</dd></div>
-        <div><dt>Proof issued</dt><dd data-continuity-updated>Checking</dd></div>
-      </dl>
+      <p class="continuity-summary" data-reveal>One hundred software Guardians across six platform classes — aerial, ground, marine, warehouse, inspection, and fixed machinery — each independently fetch policy, verify checkpoints and make protective decisions locally. When the live feed is reachable, this page verifies its signed aggregate proof in your browser; when it is not, the recorded run stands in, labelled as such. No Guardian trusts another’s word for it.</p>
+      <div class="continuity-figures" data-reveal>
+        <dl class="continuity-metrics continuity-metrics-live">
+          <div><dt>Guardians</dt><dd data-continuity-devices>Checking</dd></div>
+          <div><dt>Policies verified</dt><dd data-continuity-policies>Checking</dd></div>
+          <div><dt>Checkpoints</dt><dd data-continuity-checkpoints>Checking</dd></div>
+          <div><dt>Local decisions</dt><dd data-continuity-decisions>Checking</dd></div>
+          <div><dt>Proof issued</dt><dd><time data-continuity-updated>Checking</time></dd></div>
+        </dl>
+        <!-- Shown only when no live proof is verified (and without scripting). Static, recorded
+             figures from data/bounder-staging-pilot.v1.json, pinned by tests/site-quality.test.js;
+             never styled or announced as live. -->
+        <div class="continuity-recorded" data-continuity-recorded>
+          <p class="continuity-recorded-caption">Recorded run · not live</p>
+          <dl class="continuity-metrics continuity-metrics-recorded">
+            <div><dt>Guardians</dt><dd>100</dd></div>
+            <div><dt>Platform classes</dt><dd>6</dd></div>
+            <div><dt>Expected outcomes</dt><dd>100 of 100</dd></div>
+            <div><dt>Local decisions</dt><dd>13&nbsp;allow / 87&nbsp;hold</dd></div>
+            <div><dt>Recorded</dt><dd><time datetime="2026-07-13T12:06:00Z">13 Jul 2026</time></dd></div>
+          </dl>
+        </div>
+      </div>
       <div class="continuity-proof" data-reveal>
         <p data-continuity-note>Checking the live feed’s signature and freshness.</p>
-        <noscript><p class="continuity-noscript">Live verification runs in your browser and needs JavaScript, so no live figures are shown. The recorded 100-Guardian run is linked alongside as JSON.</p></noscript>
+        <noscript><p class="continuity-noscript">Live verification runs in your browser and needs JavaScript, so no live figures are shown. The figures above are from the recorded <span class="nowrap">100-Guardian</span> run.</p></noscript>
         <div class="continuity-links">
-          <a href="https://bounder-fleet-continuity-staging.onrender.com/evidence.json" target="_blank" rel="noopener noreferrer">Inspect signed payload <span aria-hidden="true">↗</span></a>
+          <a href="https://bounder-fleet-continuity-staging.onrender.com/evidence.json" target="_blank" rel="noopener noreferrer" title="The raw envelope: an Ed25519 signature over a base64-encoded JSON payload">Signed envelope, base64 JSON <span aria-hidden="true">↗</span></a>
           <a href="simulator.html#fleet-evidence">Browse the recorded 100-Guardian run</a>
           <a href="data/bounder-staging-pilot.v1.json">Recorded run as JSON</a>
         </div>
@@ -466,7 +498,7 @@
       <div class="home-simulator-heading" data-reveal>
         <div>
           <h2 id="simulator-preview-title">Watch the boundary hold.</h2>
-          <p>Explore how Bounder holds a machine back: outside civilian buffers, protected sites and humanitarian corridors, clear of friendly teams, and whenever a person may be surrendering or incapacitated. Unconfirmed identification, proportionality or human authorisation keeps a high-consequence request on hold, and in this simulation an intercept request is always denied. One Creed Space policy governs the whole simulated fleet.</p>
+          <p>Explore how Bounder holds a machine back: outside civilian buffers, protected sites and humanitarian corridors, away from the operator’s own teams, and whenever a person may be surrendering or incapacitated. An unconfirmed identity, an unresolved consequence check or missing human authorisation keeps a high-consequence request on hold. One Creed Space policy governs the whole simulated fleet.</p>
         </div>
         <a class="text-link" href="simulator.html?tour=1#scenario-lab">Take the six-step tour <span aria-hidden="true">→</span></a>
       </div>
@@ -506,7 +538,7 @@
       <a href="contact.html">Contact</a>
       <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <p class="copyright">© Nell Watson, Inc. Code and text under Apache-2.0; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
+    <p class="copyright">© Nell Watson, Inc. Code and text under <span class="nowrap">Apache-2.0</span>, except the Bounder name and marks; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
   </footer>
   <script src="site.js" defer></script>
   <script type="module" src="continuity-evidence.js"></script>

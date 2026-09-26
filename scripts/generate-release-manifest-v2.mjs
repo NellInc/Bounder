@@ -8,7 +8,8 @@ import { promisify } from "node:util";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
-import { canonicalPublicPaths, inspectPublicTree } from "./build-site.mjs";
+import { OS_METADATA_NAMES, canonicalPublicPaths, inspectPublicTree } from "./build-site.mjs";
+import { PRODUCER_DEFAULT_REF } from "./verify-producer-derivation.mjs";
 import { COMPLETE_VERIFICATION_CLAIMS, DEFAULT_VERIFICATION_PHASES, PRODUCER_VERIFICATION_CLAIMS } from "./verify.mjs";
 
 export const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -24,7 +25,8 @@ export const HISTORICAL_MANIFEST_SHA256 = Object.freeze({
   "release/bounder-reference-v1.1.2.manifest.json": "4cf34684204304f4d034f81111c27be86e84ffadceace544d73763e499aa553b",
   "release/bounder-reference-v1.2.0.manifest.json": "75e8162ea9af1c9b700191004cc1ec05ea99d6546b49eb54a667f73b7e87b599",
   "release/bounder-reference-v1.2.1.manifest.json": "cc04c1f52dc06374f401058b6807169745c0a5185f1cc2374155c9389ff7510a",
-  "release/bounder-reference-v1.2.2.manifest.json": "33e42452818d60c3350c93c117132cadeb1345a0503311ea039afb8cbd0c6f02"
+  "release/bounder-reference-v1.2.2.manifest.json": "33e42452818d60c3350c93c117132cadeb1345a0503311ea039afb8cbd0c6f02",
+  "release/bounder-reference-v1.2.4.manifest.json": "9ed697436d1e37fb30098bb500295b439ce58bb7ff8fdb35b4457bbd15372e5a"
 });
 
 const execFileAsync = promisify(execFile);
@@ -120,6 +122,12 @@ export function assertStatementMatchesInventory(statement, files) {
       throw new Error(`producer statement and publisher inventory disagree on ${record.path}`);
     }
   }
+  // Every shared contract and every published data/ output the producer derived must itself be
+  // sealed. Otherwise the manifest would attest to producer bytes it does not pin. Producer-only
+  // outputs (for example producer/...) are not published and are exempt.
+  for (const record of [...(statement.contracts || []), ...(statement.outputs || []).filter(({ path }) => path.startsWith("data/"))]) {
+    if (!byPath.has(record.path)) throw new Error(`producer statement names ${record.path}, which is absent from the publisher inventory`);
+  }
 }
 
 export async function assertPublisherCommit(root, commit, files) {
@@ -138,6 +146,25 @@ export async function assertPublisherCommit(root, commit, files) {
     if (committed.byteLength !== file.bytes || hash(committed) !== file.sha256) {
       throw new Error(`publisher source differs from commit ${commit}: ${file.path}`);
     }
+  }
+}
+
+// The inventory is read from the working tree, and assertPublisherCommit proves each file found
+// there matches the commit. The reverse direction matters too: a tracked public file deleted
+// locally would be left out of the seal while deploy-pages still publishes it from the commit.
+export async function assertCommitInventoryComplete(root, commit, publicPaths, files) {
+  const listing = await git(root, ["ls-tree", "-r", "-z", "--full-tree", "--name-only", commit, "--", ...publicPaths]);
+  const sealed = new Set(files.map(({ path }) => path));
+  const missing = listing.split("\0")
+    .filter(Boolean)
+    .filter((path) => {
+      const name = path.slice(path.lastIndexOf("/") + 1);
+      return !OS_METADATA_NAMES.includes(name) && !name.startsWith("._");
+    })
+    .filter((path) => !sealed.has(path))
+    .sort(compareInventoryPaths);
+  if (missing.length) {
+    throw new Error(`public files tracked in commit ${commit} are missing from the working tree: ${missing.join(", ")}; restore them before sealing`);
   }
 }
 
@@ -167,9 +194,15 @@ export async function buildManifestV2({
   const statement = producerReceipt.value.producer_statement;
   if (!statement || statement.version !== "bounder-evidence-provenance/v1") throw new Error("producer receipt has no complete evidence statement");
   if (producerReceipt.value.producer.commit !== statement.producer_source.commit) throw new Error("producer receipt commit disagreement");
+  // The manifest records discovery_ref "master" for the producer (the v2 schema fixes it), so the
+  // seal refuses a producer commit that the derivation run did not see on that branch.
+  if (producerReceipt.value.producer.default_ref_contains_commit !== true) {
+    throw new Error(`producer commit ${statement.producer_source.commit} is not recorded as reachable from origin/${PRODUCER_DEFAULT_REF}, so the manifest's discovery_ref would be false; merge it into the producer's ${PRODUCER_DEFAULT_REF} branch, fetch, and re-run npm run verify:producer before sealing`);
+  }
 
   const files = publicEntries.filter(({ type }) => type === "file").map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })).sort((left, right) => compareInventoryPaths(left.path, right.path));
   await assertPublisherCommit(root, publisherCommit, files);
+  await assertCommitInventoryComplete(root, publisherCommit, publicPaths, files);
   if (verificationReceipt.value.candidate?.publisher_commit !== publisherCommit || verificationReceipt.value.candidate?.dirty !== false) {
     throw new Error("publisher verification receipt is not for the clean source commit");
   }
@@ -194,7 +227,7 @@ export async function buildManifestV2({
       role: "decision_producer",
       repository: statement.producer_source.repository,
       commit: statement.producer_source.commit,
-      discovery_ref: "master",
+      discovery_ref: PRODUCER_DEFAULT_REF,
       generator: `${statement.generator.entrypoint}@${statement.generator.version}`,
       inputs: statement.inputs,
       contracts: statement.contracts,

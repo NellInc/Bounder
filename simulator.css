@@ -1,20 +1,46 @@
+/* Simulator page. Each selector has one authoritative rule; breakpoints follow at the end of the
+   file in descending order, then container, hover, motion and scripting conditions. */
+
+/* One content grid for the whole page: header, hero, workbench, context and footer share
+   the 1440px measure, so their left edges line up at every width. */
 .simulator-page {
+  --caution: #efc178;
   --friendly: #3f91c9;
   --civilian: #d69223;
   --protected: #b83d26;
   --humanitarian: #4eb5a0;
   --route: #69a63c;
+  --content: 1440px;
+  --focus-ring: var(--ink);
+  color-scheme: light;
 }
 
-/* One content grid for the whole page: header, hero, workbench, context and footer share
-   the 1440px measure, so their left edges line up at every width. */
-.simulator-page {
-  --content: 1440px;
+/* Header: the dark bar keeps the canonical mark and marks the current page. */
+.simulator-page .site-header {
+  --focus-ring: var(--signal);
+  width: 100%;
+  padding: 1.4rem max(1.5rem, calc((100vw - var(--content)) / 2));
+  color: var(--paper-bright);
+  background: var(--ink);
+  border: 0;
+}
+
+.simulator-page .header-nav a::after {
+  background: var(--signal);
+}
+
+.simulator-page .header-nav [aria-current="page"] {
+  color: var(--signal);
+}
+
+.simulator-page .header-nav [aria-current="page"]::after {
+  transform: scaleX(1);
 }
 
 /* The page leads with the simulator: a compact hero names the page and hands straight
    over to the workbench instead of repeating the home page's full-height statement. */
 .simulator-page .hero {
+  --focus-ring: var(--signal);
   height: auto;
   min-height: 0;
 }
@@ -40,46 +66,44 @@
   margin-top: 1.8rem;
 }
 
+/* Workbench: the scene and its recorded consequence share one light reading surface. */
+.simulator-workbench {
+  --focus-ring: var(--ink);
+  padding: 1rem max(1.5rem, calc((100vw - var(--content)) / 2)) 3rem;
+  color: var(--ink);
+  background: var(--paper);
+}
+
 /* The skip link and hero CTA land here programmatically; the section is not a control. */
 .simulator-workbench:focus {
   outline: none;
 }
 
-.simulator-workbench {
-  --focus-ring: var(--signal);
-  padding: clamp(2.5rem, 5vw, 5rem) max(1.5rem, calc((100vw - var(--content)) / 2));
-  color: white;
-  background: var(--ink);
-}
-
-.simulator-workbench .section-label {
-  color: var(--signal);
-}
-
 .workbench-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 3rem;
-  align-items: end;
+  gap: 1rem;
+  align-items: center;
 }
 
 .workbench-heading h2 {
-  margin: 0.7rem 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(2.5rem, 5vw, 5rem);
-  line-height: 0.95;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  line-height: 1.4;
 }
 
 .workbench-summary {
   max-width: 680px;
-  margin: 1.1rem 0 0;
-  color: rgba(255, 255, 255, 0.64);
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
   font-size: 1rem;
 }
 
 .workbench-actions {
   display: flex;
-  gap: 0.7rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   align-items: center;
 }
 
@@ -87,11 +111,11 @@
 .scenario-button {
   color: inherit;
   background: transparent;
-  border: 1px solid var(--line-light);
+  border: 1px solid var(--line);
   border-radius: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   cursor: pointer;
 }
 
@@ -101,8 +125,7 @@
   font-size: 0.8rem;
 }
 
-.sim-control[aria-pressed="true"],
-.scenario-button[aria-pressed="true"] {
+.sim-control[aria-pressed="true"] {
   color: var(--ink);
   background: var(--signal);
   border-color: var(--signal);
@@ -121,19 +144,27 @@
 
 .sim-control:disabled,
 .scenario-button:disabled {
-  color: rgba(255, 255, 255, 0.35);
+  color: #60665a;
   background: transparent;
-  border-color: var(--line-light);
+  border-color: var(--line);
   cursor: not-allowed;
 }
 
+/* The selected scenario stays marked even while the controls are disabled. */
+.scenario-button[aria-pressed="true"] {
+  color: var(--signal);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/* Guided tour */
 .operator-tour {
   --focus-ring: var(--ink);
   display: grid;
   grid-template-columns: minmax(110px, 0.22fr) minmax(0, 1fr) auto;
   gap: clamp(1.25rem, 3vw, 3rem);
   align-items: center;
-  margin: 2.2rem 0 0;
+  margin: 1rem 0 0;
   padding: 2rem;
   color: var(--ink);
   background: #d9eeaa;
@@ -179,6 +210,12 @@
   font-family: var(--font-display);
   font-size: clamp(1.55rem, 2.5vw, 2.45rem);
   line-height: 1;
+}
+
+/* Opening the tour moves focus to its heading so the step is read out; the heading is not a
+   control, so it takes no focus ring. */
+.operator-tour-copy h3:focus {
+  outline: none;
 }
 
 .operator-tour-copy > p {
@@ -247,31 +284,574 @@
   cursor: not-allowed;
 }
 
+/* Scenario choice */
 .scenario-controls {
   margin: 1rem 0 0.5rem;
 }
 
+.scenario-quick {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .scenario-button {
-  min-height: 72px;
-  padding: 0.8rem;
-  font-size: 0.78rem;
+  min-height: 52px;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
   text-align: center;
 }
 
-.fleet-control-panel {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(430px, 1.2fr);
-  gap: 1.1rem 2rem;
-  margin: 0 0 1rem;
-  padding: 1.25rem;
-  border: 1px solid var(--line-light);
-  background: #20241e;
-  transition: border-color 180ms ease, background 180ms ease;
+.scenario-more summary {
+  padding: 0.75rem 0;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
-.fleet-control-panel.is-active {
-  border-color: var(--signal);
-  background: #252b20;
+.scenario-more fieldset {
+  margin: 0;
+  padding: 0.75rem 0;
+  border: 0;
+}
+
+.scenario-more legend {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.scenario-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Scene and receipt */
+.simulator-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.35fr) minmax(280px, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.scene-column {
+  min-width: 0;
+}
+
+/* The legend is sized by the stage, not the viewport (see the container queries below), so it
+   never wraps over the drone. */
+.simulator-stage {
+  container: stage / inline-size;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: #c5d9dc;
+  border: 0;
+}
+
+.simulator-stage canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  cursor: grab;
+}
+
+.simulator-stage canvas:active {
+  cursor: grabbing;
+}
+
+/* The scene can be any colour, including a pale sky that swallows a lime ring, so the
+   focus ring sits outside the canvas: ink against the page, with a signal inner band. */
+.simulator-stage canvas:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+@supports selector(:has(*)) {
+  .simulator-stage canvas:focus-visible {
+    outline: none;
+  }
+
+  .simulator-stage:has(canvas:focus-visible) {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px var(--signal);
+  }
+}
+
+.stage-status {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: center;
+  max-width: calc(100% - 2rem);
+  padding: 0.65rem 0.85rem;
+  color: white;
+  background: rgba(17, 19, 15, 0.82);
+  border: 1px solid var(--line-light);
+  font-size: 0.85rem;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.status-phase {
+  font-weight: 700;
+}
+
+.stage-status code {
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.stage-legend {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  padding: 0.6rem 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(17, 19, 15, 0.78);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.stage-legend span {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.stage-legend kbd {
+  padding: 0.08rem 0.25rem;
+  color: var(--ink);
+  background: var(--signal);
+  border: 0;
+  border-radius: 2px;
+  box-shadow: none;
+  font: inherit;
+  font-weight: 800;
+}
+
+.stage-legend i {
+  display: block;
+  width: 18px;
+  height: 3px;
+}
+
+.legend-route { background: var(--route); }
+.legend-boundary { background: var(--safety); }
+.legend-bounder { background: var(--signal); }
+
+/* The keyboard hint needs a wide stage; the selector outranks `.stage-legend span`. */
+.stage-legend .legend-explore {
+  display: none;
+  padding-left: 0.8rem;
+  color: white;
+  border-left: 1px solid var(--line-light);
+}
+
+.webgl-fallback {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(80%, 440px);
+  margin: 0;
+  color: var(--ink);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.noscript-fallback a {
+  color: var(--ink);
+}
+
+/* While the scene loads the stage says nothing: the status chip already reads "Evidence
+   loading". The notice appears only once the scene is known to be slow or unavailable. */
+.simulator-stage:not(.is-unavailable):not(.is-slow) .webgl-fallback:not(.noscript-fallback),
+.simulator-stage.is-ready .webgl-fallback,
+.simulator-stage.is-explaining .webgl-fallback {
+  display: none;
+}
+
+.simulator-stage.is-unavailable canvas,
+.simulator-stage:not(.is-ready) .stage-legend {
+  display: none;
+}
+
+/* A stage notice sits below the status chip and never under it; on a small stage the frame
+   grows to fit the message and its reload button. No canvas is drawn in these states. */
+.simulator-stage.is-unavailable:not(.is-explaining),
+.simulator-stage.is-slow:not(.is-ready) {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  justify-items: center;
+  padding: 1rem 1rem 1.75rem;
+  overflow: visible;
+}
+
+.simulator-stage.is-unavailable:not(.is-explaining) .stage-status,
+.simulator-stage.is-slow:not(.is-ready) .stage-status {
+  position: static;
+  justify-self: start;
+}
+
+.simulator-stage.is-unavailable .webgl-fallback,
+.simulator-stage.is-slow .webgl-fallback {
+  position: static;
+  width: min(100%, 440px);
+  transform: none;
+}
+
+/* Bootstrap failure: the stage names the problem and offers the one recovery that works. */
+.webgl-fallback button {
+  display: block;
+  min-height: 44px;
+  margin: 1rem auto 0;
+  padding: 0.6rem 1.1rem;
+  color: var(--signal);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  font: 700 0.85rem/1.2 var(--font-sans);
+  cursor: pointer;
+}
+
+/* Text view. It takes its content's height rather than the scene's fixed frame, so it is
+   never a nested scroller that cuts text off at the stage edge. */
+.scene-explanation {
+  position: absolute;
+  inset: 0;
+  padding: clamp(1.2rem, 4vw, 3rem);
+  overflow: auto;
+  color: var(--ink);
+  background: white;
+}
+
+.scene-explanation[hidden] {
+  display: none;
+}
+
+.scene-explanation .section-label {
+  color: var(--ink-soft);
+}
+
+.scene-explanation h3 {
+  font: 700 clamp(1.4rem, 3vw, 2.3rem)/1.15 var(--font-display);
+}
+
+.scene-explanation p {
+  max-width: 60ch;
+}
+
+.scene-renderer-note {
+  font-weight: 600;
+}
+
+.simulator-stage.is-explaining {
+  aspect-ratio: auto;
+}
+
+.simulator-stage.is-explaining .scene-explanation {
+  position: static;
+  overflow: visible;
+}
+
+.simulator-stage.is-explaining canvas,
+.simulator-stage.is-explaining .stage-legend,
+.simulator-stage.is-explaining .stage-status {
+  visibility: hidden;
+}
+
+.scene-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  padding-top: 0.75rem;
+}
+
+.scene-toolbar button,
+.scene-toolbar select {
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.scene-toolbar button[aria-pressed="true"] {
+  color: var(--signal);
+  background: var(--ink);
+}
+
+.scene-toolbar button:disabled {
+  color: #60665a;
+  cursor: not-allowed;
+}
+
+.scene-toolbar label {
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+
+.scene-caption {
+  margin: 0.6rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* Without a renderer the text view stands in for the scene: camera controls, the detail
+   setting and the caption about scene lines no longer apply. When no evidence view loaded
+   there is nothing for the text view to show either. A lost context the browser may restore
+   keeps its controls in place, disabled, so they do not vanish and reappear. */
+.simulator-stage.is-unavailable:not([data-webgl="context-lost"]) ~ .scene-toolbar [data-camera],
+.simulator-stage.is-unavailable:not([data-webgl="context-lost"]) ~ .scene-toolbar label,
+.simulator-stage.is-unavailable:not([data-webgl="context-lost"]) ~ .scene-caption,
+.simulator-stage[data-webgl="fallback-error"] ~ .scene-toolbar {
+  display: none;
+}
+
+/* Decision receipt */
+.decision-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+  padding-left: 2rem;
+  border: 0;
+  border-left: 1px solid var(--line);
+}
+
+.decision-panel .section-label {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.receipt-source {
+  display: block;
+  margin-top: 0.65rem;
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.decision-outcome {
+  display: block;
+  margin: 1.5rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.1vw, 3rem);
+  line-height: 1.05;
+}
+
+.decision-outcome[data-outcome="held"] {
+  color: #9b3020;
+}
+
+.decision-outcome[data-outcome="allowed"] {
+  color: #356419;
+}
+
+.decision-code {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.decision-reason {
+  margin: 1rem 0 0;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.actuation-state {
+  padding: 1.5rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.actuation-state > span {
+  display: block;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.actuation-state strong {
+  display: block;
+  margin-top: 0.8rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.receipt-details {
+  color: var(--ink-soft);
+}
+
+.receipt-details summary {
+  min-height: 52px;
+  padding: 1rem;
+  color: var(--ink);
+  background: var(--signal);
+  font: 700 0.85rem/1.5 var(--font-sans);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.rule-stack {
+  margin: 1rem 0 0;
+  padding: 0;
+  border-right: 1px solid var(--line-light);
+  list-style: none;
+}
+
+.rule-stack li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.83rem;
+}
+
+/* Only an evaluated pass takes the pass colour; loading and unavailable rows stay neutral.
+   The held rule is the most prominent row. */
+.rule-stack strong {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.rule-stack li.is-pass strong {
+  color: #356419;
+}
+
+.rule-stack li.is-failed {
+  color: var(--ink);
+  background: rgba(155, 48, 32, 0.08);
+  font-weight: 600;
+}
+
+.rule-stack li.is-failed strong {
+  color: #9b3020;
+}
+
+.rule-stack li.is-monitoring strong {
+  color: #745208;
+}
+
+.receipt-details dl {
+  margin: 0;
+  padding: 0 1.6rem;
+}
+
+.receipt-details dl > div {
+  display: grid;
+  grid-template-columns: 5.4rem minmax(0, 1fr);
+  gap: 0.8rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--line-light);
+  border-bottom: 1px solid var(--line);
+}
+
+.receipt-details dt,
+.receipt-details dd {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.receipt-details dt {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.receipt-details p {
+  margin: 0;
+  padding: 1rem 1.6rem 1.4rem;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.receipt-details a {
+  color: var(--ink);
+}
+
+/* Evidence tools: dark disclosures under the workbench. */
+.evidence-tools {
+  --focus-ring: var(--signal);
+  margin-top: 2rem;
+  color: white;
+  background: var(--ink);
+  color-scheme: dark;
+}
+
+.evidence-disclosure {
+  padding: 0 clamp(1rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line-light);
+  scroll-margin-top: 1rem;
+}
+
+.evidence-disclosure > summary {
+  padding: 1.5rem 0;
+  cursor: pointer;
+}
+
+.evidence-disclosure > summary strong {
+  margin-right: 1rem;
+  font-size: 1.2rem;
+}
+
+.evidence-disclosure > summary span {
+  color: #b8c1b0;
+  font-size: 0.9rem;
+}
+
+.evidence-disclosure > section {
+  margin: 0 0 1.5rem;
+  padding: 1rem clamp(1rem, 3vw, 1.5rem);
+  border: 0;
+}
+
+/* Fault replay needs the renderer and the Fleet evidence. Until the laboratory is shown,
+   the disclosure explains why it is empty instead of opening onto nothing. */
+.evidence-unavailable {
+  max-width: 72ch;
+  margin: 0 0 1.5rem;
+  color: #b8c1b0;
+  font-size: 0.875rem;
+}
+
+.evidence-unavailable a {
+  color: var(--signal);
+}
+
+.resilience-lab:not([hidden]) + .evidence-unavailable {
+  display: none;
 }
 
 .fleet-kicker {
@@ -284,6 +864,37 @@
   letter-spacing: 0.04em;
 }
 
+/* Evidence file links are a list of separate targets, not prose: each gets its own
+   comfortably tappable row height and a gap instead of a middle-dot separator. */
+.evidence-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+  align-items: center;
+}
+
+.evidence-links a {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  min-height: 32px;
+  text-underline-offset: 0.2em;
+}
+
+/* Fleet evidence */
+.fleet-control-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(430px, 1.2fr);
+  gap: 1.1rem 2rem;
+  background: #20241e;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.fleet-control-panel.is-active {
+  background: #252b20;
+  border-color: var(--signal);
+}
+
 .fleet-control-panel > div:first-child strong {
   display: block;
   max-width: 390px;
@@ -294,8 +905,8 @@
 
 .fleet-source {
   display: inline-flex;
-  align-items: center;
   gap: 0.4rem;
+  align-items: center;
   margin-top: 0.75rem;
   padding: 0.34rem 0.55rem;
   color: rgba(255, 255, 255, 0.68);
@@ -306,12 +917,12 @@
 }
 
 .fleet-source::before {
-  content: "";
   width: 0.42rem;
   height: 0.42rem;
   flex: 0 0 auto;
-  border-radius: 50%;
   background: rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  content: "";
 }
 
 .fleet-source[data-source="live"]::before {
@@ -356,53 +967,134 @@
   font-family: var(--font-mono);
   font-size: 0.75rem;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.fleet-filters {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.fleet-filters label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.fleet-filters input,
+.fleet-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.6rem;
+  color: white;
+  background: var(--ink);
+  border: 1px solid #7a8272;
+  font: inherit;
+}
+
+.fleet-reset {
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  color: white;
+  background: transparent;
+  border: 1px solid #7a8272;
+  font: inherit;
+  cursor: pointer;
+}
+
+.fleet-reset:disabled {
+  color: #aab3a1;
+  border-color: var(--line-light);
+  cursor: default;
+}
+
+[data-fleet-count],
+.fleet-reading-note {
+  grid-column: 1 / -1;
+  max-width: 70ch;
+  margin: 0;
+  color: #b8c1b0;
+  font-size: 0.85rem;
 }
 
 .fleet-nodes {
+  display: block;
   grid-column: 1 / -1;
+  max-height: 32rem;
+  overflow-y: auto;
+  border-top: 1px solid var(--line-light);
+  scrollbar-gutter: stable;
+  scroll-padding-block: 0.75rem;
 }
 
 .fleet-node {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.12rem 0.38rem;
-  align-items: center;
+  display: block;
   min-width: 0;
-  padding: 0.48rem;
-  border: 1px solid var(--line-light);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-light);
   font-family: var(--font-mono);
 }
 
-.fleet-node i {
-  grid-row: 1 / 3;
-  width: 0.42rem;
-  height: 0.42rem;
-  border-radius: 50%;
-  background: var(--signal);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 12%, transparent);
+.fleet-node[hidden] {
+  display: none;
 }
 
-.fleet-node.is-held i {
-  background: var(--safety);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--safety) 14%, transparent);
+.fleet-node.is-affected {
+  background: rgba(184, 61, 38, 0.12);
+  border-color: var(--safety);
 }
 
-.fleet-node b,
-.fleet-node small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.fleet-node summary {
+  padding: 1rem 0.75rem;
+  cursor: pointer;
 }
 
-.fleet-node b {
-  font-size: 0.7rem;
+.fleet-node summary:focus-visible {
+  outline-offset: -4px;
+}
+
+.fleet-node summary b,
+.fleet-node summary small {
+  display: inline;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.fleet-node summary b {
+  margin-right: 1rem;
+  color: white;
+  font-size: 0.9rem;
   text-transform: uppercase;
 }
 
-.fleet-node small {
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.65rem;
+.fleet-node summary small {
+  color: #c6cebf;
+  font-size: 0.85rem;
+}
+
+.fleet-node.is-held summary small {
+  color: var(--caution);
+}
+
+.fleet-node pre {
+  margin: 0.5rem 1rem 1rem;
+  color: #c6cebf;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.fleet-node .fleet-device-reason {
+  margin: 0.5rem 1rem 1rem;
+  line-height: 1.6;
 }
 
 .fleet-contract-links {
@@ -417,33 +1109,8 @@
   color: var(--signal);
 }
 
-/* Evidence file links are a list of separate targets, not prose: each gets its own
-   comfortably tappable row height and a gap instead of a middle-dot separator. */
-.evidence-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 1.25rem;
-  align-items: center;
-}
-
-.evidence-links a {
-  display: inline-flex;
-  gap: 0.3rem;
-  align-items: center;
-  min-height: 32px;
-  text-underline-offset: 0.2em;
-}
-
-@media (pointer: coarse) {
-  .evidence-links a {
-    min-height: 44px;
-  }
-}
-
+/* Contract inspector */
 .policy-roundtrip {
-  margin: 0 0 1rem;
-  padding: 1.25rem;
-  border: 1px solid var(--line-light);
   background: #181b17;
 }
 
@@ -558,6 +1225,12 @@
   border-left-color: var(--safety);
 }
 
+/* A browser that cannot run the check has judged nothing: neutral, dashed, never the rejection red. */
+.policy-roundtrip-status[data-state="unsupported"] {
+  border-left-style: dashed;
+  border-left-color: var(--caution);
+}
+
 .policy-roundtrip-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -599,10 +1272,12 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--safety) 14%, transparent);
 }
 
-/* Evidence that could not be fetched is neither verified nor rejected. */
-.policy-roundtrip-steps li[data-state="unavailable"] i {
+/* Evidence that could not be fetched, or a check this browser cannot run, is neither
+   verified nor rejected. */
+.policy-roundtrip-steps li[data-state="unavailable"] i,
+.policy-roundtrip-steps li[data-state="unsupported"] i {
   border-style: dashed;
-  border-color: #efc178;
+  border-color: var(--caution);
 }
 
 .policy-roundtrip-steps strong,
@@ -671,10 +1346,8 @@
   color: var(--signal);
 }
 
+/* Fault replay */
 .resilience-lab {
-  margin: 0 0 1rem;
-  padding: 1.25rem;
-  border: 1px solid var(--line-light);
   background: #181b17;
 }
 
@@ -774,10 +1447,7 @@
   display: grid;
   grid-template-columns: minmax(250px, 0.72fr) minmax(500px, 1.45fr);
   margin-top: 1rem;
-  border-top: 1px solid var(--line-light);
-  border-right: 1px solid var(--line-light);
-  border-bottom: 1px solid var(--line-light);
-  border-left: 1px solid var(--line-light);
+  border: 1px solid var(--line-light);
 }
 
 .resilience-detail {
@@ -812,12 +1482,17 @@
   margin: 0;
 }
 
+/* The label column fits "Safe response" on one line; on a phone each label sits above its value. */
 .resilience-detail dl div {
   display: grid;
-  grid-template-columns: 5rem minmax(0, 1fr);
+  grid-template-columns: 6.75rem minmax(0, 1fr);
   gap: 0.7rem;
   padding: 0.48rem 0;
   border-top: 1px solid var(--line-light);
+}
+
+.resilience-detail dt {
+  white-space: nowrap;
 }
 
 .resilience-detail dd {
@@ -954,6 +1629,12 @@
   font-size: 0.7rem;
 }
 
+/* A fault or hold message is not a success: it takes the caution colour. */
+.resilience-transport > span[data-status="fault"],
+.resilience-transport > span[data-status="held"] {
+  color: var(--caution);
+}
+
 .resilience-scrubber {
   display: grid;
   gap: 0.5rem;
@@ -1004,7 +1685,8 @@
   border-color: var(--safety);
 }
 
-/* Event labels and codes wrap rather than truncate: a clipped code is lost evidence. */
+/* Event labels and codes wrap rather than truncate: a clipped code is lost evidence. Codes
+   carry break points after each underscore; breaking anywhere is only the last resort. */
 .resilience-event time,
 .resilience-event b,
 .resilience-event code {
@@ -1029,350 +1711,7 @@
   font-size: 0.7rem;
 }
 
-.fleet-node.is-affected {
-  border-color: var(--safety);
-  background: rgba(184, 61, 38, 0.12);
-}
-
-.simulator-stage {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  background: #171a15;
-  border: 1px solid var(--line-light);
-  border-bottom: 0;
-}
-
-.simulator-stage::after {
-  position: absolute;
-  inset: 0;
-  box-shadow: inset 0 0 80px rgba(17, 19, 15, 0.14);
-  content: "";
-  pointer-events: none;
-}
-
-.simulator-stage canvas {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  cursor: grab;
-}
-
-.simulator-stage canvas:active {
-  cursor: grabbing;
-}
-
-/* The scene can be any colour, including a pale sky that swallows a lime ring, so the
-   focus ring sits outside the canvas: ink against the page, with a signal inner band. */
-.simulator-stage canvas:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: -3px;
-}
-
-@supports selector(:has(*)) {
-  .simulator-stage canvas:focus-visible {
-    outline: none;
-  }
-
-  .simulator-stage:has(canvas:focus-visible) {
-    outline: 3px solid var(--ink);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 3px var(--signal);
-  }
-}
-
-.stage-status {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-  padding: 0.65rem 0.85rem;
-  color: white;
-  background: rgba(17, 19, 15, 0.82);
-  border: 1px solid var(--line-light);
-  pointer-events: none;
-  backdrop-filter: blur(10px);
-}
-
-.status-phase {
-  font-weight: 700;
-}
-
-.stage-status code,
-.decision-code {
-  color: var(--signal);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-}
-
-.stage-legend {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 0.6rem 0.8rem;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(17, 19, 15, 0.78);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  pointer-events: none;
-  backdrop-filter: blur(10px);
-}
-
-.stage-legend span {
-  display: inline-flex;
-  gap: 0.45rem;
-  align-items: center;
-}
-
-.stage-legend kbd {
-  padding: 0.08rem 0.25rem;
-  color: var(--ink);
-  background: var(--signal);
-  border: 0;
-  border-radius: 2px;
-  box-shadow: none;
-  font: inherit;
-  font-weight: 800;
-}
-
-.stage-legend i {
-  display: block;
-  width: 18px;
-  height: 3px;
-}
-
-.legend-route { background: var(--route); }
-.legend-boundary { background: var(--safety); }
-.legend-bounder { background: var(--signal); }
-
-.legend-explore {
-  padding-left: 0.8rem;
-  border-left: 1px solid var(--line-light);
-  color: white;
-}
-
-.webgl-fallback {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  width: min(80%, 440px);
-  margin: 0;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  transform: translate(-50%, -50%);
-}
-
-.simulator-stage.is-ready .webgl-fallback {
-  display: none;
-}
-
-.simulator-stage.is-unavailable canvas,
-.simulator-stage.is-unavailable .stage-legend {
-  display: none;
-}
-
-.simulator-stage.is-unavailable .webgl-fallback {
-  color: white;
-}
-
-@media (max-width: 960px) {
-  .policy-roundtrip-heading {
-    grid-template-columns: 1fr;
-  }
-
-  .policy-roundtrip-actions {
-    flex-wrap: wrap;
-  }
-
-  .policy-roundtrip-steps,
-  .policy-roundtrip-fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .policy-roundtrip-actions,
-  .policy-roundtrip-actions button,
-  .policy-file-control {
-    width: 100%;
-  }
-
-  .policy-roundtrip-status,
-  .policy-roundtrip-steps,
-  .policy-roundtrip-fields {
-    grid-template-columns: 1fr;
-  }
-}
-
-.decision-panel {
-  min-width: 0;
-}
-
-.decision-header {
-  grid-area: header;
-  padding: 1.6rem;
-  border-right: 1px solid var(--line-light);
-}
-
-.receipt-source {
-  display: block;
-  margin-top: 0.65rem;
-  color: rgba(255, 255, 255, 0.52);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.02em;
-}
-
-.decision-outcome {
-  display: block;
-  margin: 1.2rem 0 0.35rem;
-  font-family: var(--font-display);
-  font-size: 2.15rem;
-  line-height: 1;
-}
-
-.decision-reason {
-  min-height: 4.5rem;
-  margin: 1rem 0 0;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.88rem;
-}
-
-.rule-stack {
-  grid-area: rules;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0;
-  padding: 0;
-  border-right: 1px solid var(--line-light);
-  list-style: none;
-}
-
-.rule-stack li {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1rem;
-  padding: 0.9rem 1.6rem;
-  border-right: 1px solid var(--line-light);
-  border-bottom: 1px solid var(--line-light);
-  color: rgba(255, 255, 255, 0.66);
-  font-size: 0.83rem;
-}
-
-.rule-stack li:nth-child(even) {
-  border-right: 0;
-}
-
-.rule-stack li:nth-last-child(-n + 2) {
-  border-bottom: 0;
-}
-
-.rule-stack strong {
-  color: var(--signal);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-}
-
-.rule-stack li.is-failed {
-  color: white;
-  background: rgba(184, 61, 38, 0.22);
-}
-
-.rule-stack li.is-failed strong {
-  color: #ff9f8d;
-}
-
-.rule-stack li.is-monitoring strong {
-  color: white;
-}
-
-.actuation-state {
-  grid-area: actuation;
-  margin-top: 0;
-  padding: 1.5rem 1.6rem;
-  border-bottom: 1px solid var(--line-light);
-}
-
-.actuation-state span {
-  display: block;
-  color: rgba(255, 255, 255, 0.52);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.actuation-state strong {
-  display: block;
-  margin-top: 0.45rem;
-  font-size: 0.9rem;
-}
-
-.receipt-details {
-  grid-area: receipt;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.receipt-details summary {
-  padding: 1rem 1.6rem;
-  color: white;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-}
-
-.receipt-details dl {
-  display: grid;
-  gap: 0;
-  margin: 0;
-  padding: 0 1.6rem;
-}
-
-.receipt-details dl > div {
-  display: grid;
-  grid-template-columns: 5.4rem minmax(0, 1fr);
-  gap: 0.8rem;
-  padding: 0.55rem 0;
-  border-top: 1px solid var(--line-light);
-}
-
-.receipt-details dt,
-.receipt-details dd {
-  margin: 0;
-  font-size: 0.75rem;
-}
-
-.receipt-details dt {
-  color: rgba(255, 255, 255, 0.55);
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-}
-
-.receipt-details dd {
-  overflow-wrap: anywhere;
-}
-
-.receipt-details p {
-  margin: 0;
-  padding: 1rem 1.6rem 1.4rem;
-  font-size: 0.75rem;
-}
-
-.receipt-details a {
-  color: var(--signal);
-}
-
+/* Why Bounder */
 .rules-context {
   padding-top: clamp(5rem, 10vw, 10rem);
   padding-bottom: clamp(5rem, 10vw, 10rem);
@@ -1390,8 +1729,15 @@
   border-right: 1px solid var(--line);
 }
 
-.rules-context-grid article:first-child { padding-left: 0; }
-.rules-context-grid article:last-child { padding-right: 0; border-right: 0; }
+.rules-context-grid article:first-child {
+  padding-left: 0;
+}
+
+.rules-context-grid article:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
 .rules-context-grid span {
   color: var(--safety);
   font-family: var(--font-mono);
@@ -1400,47 +1746,18 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.rules-context-grid h3 { margin: 2rem 0 0.7rem; }
-.rules-context-grid p { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
 
-@media (max-width: 1050px) {
-  .fleet-control-panel { grid-template-columns: 1fr; }
-  .operator-tour { grid-template-columns: 100px 1fr; }
-  .operator-tour-actions { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
-  .operator-tour-actions button:last-child { grid-column: auto; border-top: 0; border-left: 1px solid color-mix(in srgb, var(--ink) 42%, transparent); }
-  .resilience-scenarios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .resilience-scenario:nth-child(odd) { border-left: 1px solid var(--line-light); }
-  .resilience-scenario:nth-child(n + 3) { border-top: 0; }
-  .resilience-console { grid-template-columns: 1fr; }
-  .resilience-detail { border-right: 0; border-bottom: 1px solid var(--line-light); }
-  .decision-header,
-  .rule-stack { border-right: 0; border-bottom: 1px solid var(--line-light); }
-  .decision-reason { min-height: 0; }
-  .actuation-state { margin-top: 0; }
+.rules-context-grid h3 {
+  margin: 2rem 0 0.7rem;
 }
 
-@media (max-width: 680px) {
-  .workbench-heading { grid-template-columns: 1fr; gap: 1.5rem; align-items: flex-start; }
-  .workbench-actions { width: 100%; flex-wrap: wrap; align-items: stretch; }
-  .workbench-actions .sim-control { flex: 1; }
-  .operator-tour { grid-template-columns: 1fr; padding: 1.25rem; }
-  .operator-tour-actions { grid-column: 1; grid-template-columns: 1fr 1fr; min-width: 0; }
-  .operator-tour-actions button:last-child { grid-column: 1 / -1; border-top: 1px solid color-mix(in srgb, var(--ink) 42%, transparent); border-left: 0; }
-  .fleet-metrics { grid-template-columns: 1fr 1fr; }
-  .resilience-heading { display: grid; gap: 1rem; }
-  .resilience-download { justify-self: start; }
-  .resilience-scenarios { grid-template-columns: 1fr 1fr; }
-  .resilience-events { grid-template-columns: 1fr 1fr; }
-  .resilience-transport > span { width: 100%; margin-left: 0; }
-  .simulator-stage { aspect-ratio: 4 / 3; }
-  .stage-legend { right: auto; left: 1rem; flex-direction: column; gap: 0.4rem; }
-  .rules-context-grid { grid-template-columns: 1fr; }
-  .rules-context-grid article,
-  .rules-context-grid article:first-child,
-  .rules-context-grid article:last-child { padding: 1.8rem 0; border-right: 0; border-bottom: 1px solid var(--line); }
-  .rules-context-grid article:last-child { border-bottom: 0; }
+.rules-context-grid p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
+/* Home-page embed: only the workbench, inset evenly on both sides. */
 .simulator-embed body {
   --focus-ring: var(--signal);
   background: var(--ink);
@@ -1454,11 +1771,11 @@
 }
 
 .simulator-embed .simulator-workbench {
-  padding: 0 0 0 1rem;
+  padding: 0 1rem;
 }
 
 .simulator-embed .evidence-tools {
-  margin-left: -1rem;
+  margin-inline: -1rem;
 }
 
 .simulator-embed .workbench-heading {
@@ -1474,192 +1791,137 @@
   margin-top: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .simulator-stage canvas { cursor: default; }
-}
-
-/* Boundary workspace: the scene and its recorded consequence share one reading surface. */
-.simulator-page { color-scheme: light; --focus-ring: var(--ink); }
-.simulator-workbench { --focus-ring: var(--ink); color: var(--ink); background: var(--paper); padding: 1.5rem max(1.5rem, calc((100vw - var(--content)) / 2)) 3rem; }
-.workbench-heading { gap: 1rem; align-items: center; }
-.workbench-heading h2 { margin: 0; font-family: var(--font-sans); font-size: 1.15rem; line-height: 1.4; }
-.workbench-summary { color: var(--ink-soft); margin: .35rem 0 0; }
-.workbench-actions { flex-wrap: wrap; gap: .5rem; }
-.sim-control, .scenario-button { font-family: var(--font-sans); border-color: var(--line); letter-spacing: 0; }
-.sim-control:disabled, .scenario-button:disabled { color: #60665a; border-color: var(--line); }
-.scenario-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.scenario-button { min-height: 52px; padding: .85rem 1rem; font-size: .9rem; }
-.scenario-button[aria-pressed="true"] { color: var(--signal); background: var(--ink); border-color: var(--ink); }
-.scenario-more summary { padding: .75rem 0; cursor: pointer; font-size: .85rem; }
-.scenario-more fieldset { border: 0; padding: .75rem 0; margin: 0; }
-.scenario-more legend { font-size: .85rem; font-weight: 700; }
-.scenario-group { display: flex; flex-wrap: wrap; gap: .5rem; }
-.simulator-grid { display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(280px, 1fr); gap: 2rem; align-items: start; }
-.scene-column { min-width: 0; }
-.simulator-stage { aspect-ratio: 3 / 2; border: 0; background: #c5d9dc; }
-.simulator-stage::after { box-shadow: none; }
-.stage-status { max-width: calc(100% - 2rem); font-size: .85rem; flex-wrap: wrap; gap: .35rem .75rem; }
-.stage-legend { left: 1rem; right: 1rem; font-size: .7rem; gap: .4rem 1rem; }
-.legend-explore { display: none; }
-.scene-toolbar { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; padding-top: .75rem; }
-.scene-toolbar button, .scene-toolbar select { font: inherit; font-size: .8rem; min-height: 44px; padding: .55rem .7rem; color: var(--ink); background: transparent; border: 1px solid var(--line); cursor: pointer; }
-.scene-toolbar button[aria-pressed="true"] { background: var(--ink); color: var(--signal); }
-.scene-toolbar button:disabled { cursor: not-allowed; color: #60665a; }
-.scene-toolbar label { font-size: .8rem; margin-left: auto; }
-.scene-caption { font-size: .8rem; line-height: 1.5; color: var(--ink-soft); margin: .6rem 0 0; }
-.scene-explanation { position: absolute; inset: 0; padding: clamp(1.2rem, 4vw, 3rem); background: white; color: var(--ink); overflow: auto; }
-.scene-explanation .section-label { color: var(--ink-soft); }
-.scene-explanation h3 { font: 700 clamp(1.4rem, 3vw, 2.3rem)/1.15 var(--font-display); }
-.scene-explanation p { max-width: 60ch; }
-.scene-explanation[hidden] { display: none; }
-.simulator-stage.is-explaining canvas, .simulator-stage.is-explaining .stage-legend, .simulator-stage.is-explaining .stage-status { visibility: hidden; }
-.decision-panel { display: flex; flex-direction: column; gap: 1.5rem; border: 0; border-left: 1px solid var(--line); padding-left: 2rem; }
-.decision-header { border: 0; padding: 0; }
-.decision-panel .section-label { color: var(--ink-soft); font-size: .75rem; }
-.receipt-source { color: var(--ink-soft); font-family: var(--font-sans); font-size: .8rem; }
-.decision-outcome { font-size: clamp(2rem, 3.1vw, 3rem); margin-top: 1.5rem; line-height: 1.05; }
-.decision-code { color: var(--ink-soft); overflow-wrap: anywhere; }
-.decision-reason { color: var(--ink-soft); min-height: 0; font-size: 1rem; line-height: 1.65; margin-top: 1rem; }
-.actuation-state { border: 0; border-top: 1px solid var(--line); padding: 1.5rem 0 0; }
-.actuation-state > span { color: var(--ink-soft); }
-.actuation-state strong { font-size: 1rem; line-height: 1.6; margin-top: .8rem; }
-.receipt-details { border: 0; padding: 0; }
-.receipt-details summary { padding: 1rem; background: var(--signal); color: var(--ink); font: 700 .85rem/1.5 var(--font-sans); min-height: 52px; }
-.receipt-details dl { display: block; }
-.receipt-details dl > div { padding: .7rem 0; border-bottom: 1px solid var(--line); }
-.receipt-details dt, .receipt-details dd, .receipt-details p { color: var(--ink-soft); overflow-wrap: anywhere; }
-.receipt-details a { color: var(--ink); }
-.rule-stack { display: block; margin-top: 1rem; }
-.rule-stack li, .rule-stack li:nth-child(even), .rule-stack li:nth-last-child(-n+2) { border: 0; border-bottom: 1px solid var(--line); padding: .7rem 0; color: var(--ink-soft); gap: 1rem; }
-.rule-stack strong { color: #356419; }
-.rule-stack li.is-failed { background: transparent; }
-.rule-stack li.is-failed strong { color: #9b3020; }
-.rule-stack li.is-monitoring strong { color: #745208; }
-.evidence-nav { display: flex; gap: 1.5rem; flex-wrap: wrap; padding: .75rem 0 1.5rem; font-weight: 600; }
-.evidence-tools { color-scheme: dark; --focus-ring: var(--signal); color: white; background: var(--ink); }
-.evidence-disclosure { padding: 0 clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--line-light); scroll-margin-top: 1rem; }
-.evidence-disclosure > summary { cursor: pointer; padding: 1.5rem 0; }
-.evidence-disclosure > summary strong { font-size: 1.2rem; margin-right: 1rem; }
-.evidence-disclosure > summary span { color: #b8c1b0; font-size: .9rem; }
-.evidence-disclosure > section { margin: 0 0 1.5rem; border: 0; padding: 1rem 0; }
-.fleet-filters { grid-column: 1 / -1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; }
-.fleet-filters label { display: grid; gap: .4rem; font-size: .85rem; }
-.fleet-filters input, .fleet-filters select { min-width: 0; width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #7a8272; background: var(--ink); color: white; font: inherit; }
-[data-fleet-count], .fleet-reading-note { grid-column: 1 / -1; margin: 0; font-size: .85rem; color: #b8c1b0; }
-.fleet-nodes { display: block; max-height: 32rem; overflow-y: auto; border-top: 1px solid var(--line-light); }
-.fleet-node { display: block; border: 0; border-bottom: 1px solid var(--line-light); padding: 0; min-width: 0; }
-.fleet-node[hidden] { display: none; }
-.fleet-node summary { padding: 1rem .75rem; cursor: pointer; }
-.fleet-node summary b { display: inline; font-size: .9rem; color: white; margin-right: 1rem; }
-.fleet-node summary small { display: inline; color: #c6cebf; font-size: .85rem; }
-.fleet-node b, .fleet-node small { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
-.fleet-node pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .75rem; color: #c6cebf; margin: .5rem 1rem 1rem; }
-.fleet-node .fleet-device-reason { margin: .5rem 1rem 1rem; line-height: 1.6; }
-.fleet-node.is-held summary small { color: #efc178; }
-.fleet-metrics dd { overflow-wrap: anywhere; white-space: normal; }
-.operator-tour { margin-top: 1rem; }
-.simulator-embed .workbench-heading { gap: 1rem; }
+/* Breakpoints */
 @media (max-width: 1050px) {
+  .workbench-heading { grid-template-columns: 1fr; }
+  .operator-tour { grid-template-columns: 100px 1fr; }
+  .operator-tour-actions { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
+  .operator-tour-actions button:last-child { grid-column: auto; border-top: 0; border-left: 1px solid color-mix(in srgb, var(--ink) 42%, transparent); }
   .simulator-grid { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 1.2rem; }
   .decision-panel { padding-left: 1.2rem; }
-  .workbench-heading { grid-template-columns: 1fr; }
-}
-@media (max-width: 760px) {
-  .simulator-grid { grid-template-columns: minmax(0, 1fr); }
-  .decision-panel { padding: 1.3rem 0 0; border-left: 0; border-top: 1px solid var(--line); gap: 1rem; }
-  .decision-outcome { margin-top: .8rem; }
-  .scene-toolbar label { margin-left: 0; }
-  .fleet-filters { grid-template-columns: 1fr; }
-  .scenario-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .evidence-disclosure > summary span { display: block; padding-top: .3rem; }
-}
-@media (max-width: 420px) {
-  .simulator-workbench { padding-left: 1rem; padding-right: 1rem; }
-  .sim-control { padding: .65rem .7rem; }
-  .scenario-button { font-size: .85rem; padding: .65rem; }
-  .stage-legend { display: none; }
-}
-
-/* Fallback copy shares the light scene surface and must remain legible. */
-.simulator-stage.is-unavailable .webgl-fallback,
-.noscript-fallback { color: var(--ink); }
-.noscript-fallback a { color: var(--ink); }
-@media (scripting: none) {
-  /* Without scripting nothing is loading and no scene control can act: say so once. */
-  .webgl-fallback:not(.noscript-fallback),
-  .stage-status,
-  .stage-legend,
-  .scene-toolbar { display: none; }
-}
-
-/* Matched-viewport polish: preserve the canonical mark and keep the scene controls in view. */
-.simulator-page .site-header { width: 100%; padding: 1.4rem max(1.5rem, calc((100vw - var(--content)) / 2)); background: var(--ink); color: var(--paper-bright); border: 0; }
-.simulator-page .header-nav a::after { background: var(--signal); }
-.simulator-workbench { padding-top: 1rem; }
-.simulator-stage { aspect-ratio: 16 / 9; }
-.decision-outcome[data-outcome="held"] { color: #9b3020; }
-.decision-outcome[data-outcome="allowed"] { color: #356419; }
-@media (max-width: 760px) {
-  .simulator-stage { aspect-ratio: 4 / 3; }
-}
-
-.simulator-stage.is-explaining .webgl-fallback { display: none; }
-
-/* Finish the page hero and keep secondary inspection comfortable at every width. */
-.simulator-page .hero, .simulator-page .site-header { --focus-ring: var(--signal); }
-.simulator-page .header-nav [aria-current="page"] { color: var(--signal); }
-.simulator-page .header-nav [aria-current="page"]::after { transform: scaleX(1); }
-.evidence-nav a { display: inline-flex; align-items: center; min-height: 44px; text-underline-offset: .25em; }
-.fleet-filters { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto; align-items: end; }
-.fleet-reset { min-height: 44px; padding: .6rem .9rem; border: 1px solid #7a8272; background: transparent; color: white; font: inherit; cursor: pointer; }
-.fleet-reset:disabled { color: #aab3a1; border-color: var(--line-light); cursor: default; }
-.fleet-nodes { scrollbar-gutter: stable; scroll-padding-block: .75rem; }
-.fleet-node summary:focus-visible { outline-offset: -4px; }
-@media (hover: hover) {
-  .fleet-node summary:hover { background: rgba(201, 255, 87, .06); }
-  .fleet-reset:not(:disabled):hover { color: var(--signal); border-color: var(--signal); }
-}
-@media (max-width: 1050px) {
+  .rule-stack { border-right: 0; border-bottom: 1px solid var(--line-light); }
+  .fleet-control-panel { grid-template-columns: 1fr; }
   .fleet-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fleet-filters label:first-child { grid-column: 1 / -1; }
   .fleet-reset { grid-column: 1 / -1; justify-self: start; }
+  .resilience-scenarios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resilience-scenario:nth-child(odd) { border-left: 1px solid var(--line-light); }
+  .resilience-scenario:nth-child(n + 3) { border-top: 0; }
+  .resilience-console { grid-template-columns: 1fr; }
+  .resilience-detail { border-right: 0; border-bottom: 1px solid var(--line-light); }
 }
+
+@media (max-width: 960px) {
+  .policy-roundtrip-heading { grid-template-columns: 1fr; }
+  .policy-roundtrip-actions { flex-wrap: wrap; }
+  .policy-roundtrip-steps,
+  .policy-roundtrip-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Once the heading stacks, the eyebrow needs its own space above the display headline. */
+@media (max-width: 900px) {
+  .rules-context .section-heading > .section-label { margin-bottom: 0.9rem; }
+}
+
+@media (max-width: 760px) {
+  .simulator-grid { grid-template-columns: minmax(0, 1fr); }
+  .simulator-stage { aspect-ratio: 4 / 3; }
+  .scene-toolbar label { margin-left: 0; }
+  .decision-panel { gap: 1rem; padding: 1.3rem 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  .decision-outcome { margin-top: 0.8rem; }
+  .scenario-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .evidence-disclosure > summary span { display: block; padding-top: 0.3rem; }
+}
+
 @media (max-width: 680px) {
-  .simulator-page .site-header { flex-direction: column; gap: .75rem; padding: 1rem 1.5rem .5rem; }
-  .simulator-page .header-nav { display: flex; flex-wrap: wrap; gap: 0 1.1rem; text-align: left; }
+  .simulator-page .site-header { flex-direction: column; gap: 0.2rem; padding: 1rem 1.5rem 0.25rem; }
+  /* The one-row scrolling nav comes from styles.css; only the spacing differs here. */
+  .simulator-page .header-nav { gap: 0 1.1rem; }
   .simulator-page .header-nav a { justify-content: flex-start; }
   .simulator-page .hero-content { margin-top: 0; padding-block: 3rem; }
+  .workbench-actions { width: 100%; align-items: stretch; }
+  .workbench-actions .sim-control { flex: 1; }
+  /* A compact card, so a phone shows the step, its controls and the stage it describes together. */
+  .operator-tour { grid-template-columns: 1fr; gap: 0.75rem; padding: 1rem; }
+  .operator-tour-progress span { margin-bottom: 0.4rem; }
+  .operator-tour-copy .fleet-kicker { display: none; }
+  .operator-tour-copy > p { margin-top: 0.45rem; line-height: 1.45; }
+  .operator-tour-feedback { margin-top: 0.45rem; }
+  .operator-tour-actions { grid-column: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); min-width: 0; }
+  .operator-tour-actions button { padding: 0.6rem 0.35rem; }
+  .operator-tour-actions button:last-child { grid-column: auto; border-top: 0; border-left: 1px solid color-mix(in srgb, var(--ink) 42%, transparent); }
+  .fleet-metrics { grid-template-columns: 1fr 1fr; }
+  .resilience-heading { display: grid; gap: 1rem; }
+  .resilience-download { justify-self: start; }
+  .resilience-scenarios { grid-template-columns: 1fr 1fr; }
+  .resilience-events { grid-template-columns: 1fr 1fr; }
+  .resilience-transport > span { width: 100%; margin-left: 0; }
+  .rules-context-grid { grid-template-columns: 1fr; }
+  .rules-context-grid article,
+  .rules-context-grid article:first-child,
+  .rules-context-grid article:last-child { padding: 1.8rem 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .rules-context-grid article:last-child { border-bottom: 0; }
 }
+
+@media (max-width: 560px) {
+  .policy-roundtrip-actions,
+  .policy-roundtrip-actions button,
+  .policy-file-control { width: 100%; }
+  .policy-roundtrip-status,
+  .policy-roundtrip-steps,
+  .policy-roundtrip-fields { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+  .sim-control { padding: 0.65rem 0.7rem; }
+  .scenario-button { padding: 0.65rem; font-size: 0.85rem; }
+  .resilience-detail dl div { grid-template-columns: minmax(0, 1fr); gap: 0.2rem; }
+  /* One event per row, so each recorded code stays whole on a phone. */
+  .resilience-events { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 360px) {
   .fleet-filters { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Fault replay needs the renderer and the Fleet evidence. Until the laboratory is shown,
-   the disclosure explains why it is empty instead of opening onto nothing. */
-.evidence-unavailable {
-  max-width: 72ch;
-  margin: 0 0 1.5rem;
-  color: #b8c1b0;
-  font-size: 0.875rem;
+/* Stage-sized legend: the keyboard hint on a wide stage, one compact row on a narrow one, and
+   on the narrowest the caption below the scene carries the key. */
+@container stage (min-width: 880px) {
+  .stage-legend .legend-explore { display: inline-flex; }
 }
 
-.evidence-unavailable a {
-  color: var(--signal);
+@container stage (max-width: 700px) {
+  .stage-legend { right: auto; bottom: 0.5rem; left: 0.5rem; flex-wrap: nowrap; gap: 0.75rem; padding: 0.35rem 0.55rem; font-size: 0.65rem; }
+  .stage-legend span { gap: 0.35rem; white-space: nowrap; }
+  .stage-legend i { width: 12px; }
 }
 
-.resilience-lab:not([hidden]) + .evidence-unavailable {
-  display: none;
+@container stage (max-width: 419px) {
+  .stage-legend { display: none; }
 }
 
-/* Bootstrap failure: the stage names the problem and offers the one recovery that works. */
-.webgl-fallback button {
-  display: block;
-  min-height: 44px;
-  margin: 1rem auto 0;
-  padding: 0.6rem 1.1rem;
-  color: var(--signal);
-  background: var(--ink);
-  border: 1px solid var(--ink);
-  font: 700 0.85rem/1.2 var(--font-sans);
-  cursor: pointer;
+@media (hover: hover) {
+  .fleet-node summary:hover { background: rgba(201, 255, 87, 0.06); }
+  .fleet-reset:not(:disabled):hover { color: var(--signal); border-color: var(--signal); }
+}
+
+@media (pointer: coarse) {
+  .evidence-links a { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simulator-stage canvas { cursor: default; }
+}
+
+@media (scripting: none) {
+  /* Without scripting nothing is loading and no scene control can act: the noscript note is
+     the one explanation. */
+  .webgl-fallback:not(.noscript-fallback),
+  .stage-status,
+  .stage-legend,
+  .scene-toolbar,
+  .receipt-source,
+  .decision-outcome,
+  .decision-code,
+  .decision-reason { display: none; }
 }

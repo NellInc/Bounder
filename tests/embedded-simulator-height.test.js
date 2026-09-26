@@ -9,15 +9,35 @@ const contentWindow = {
   postMessage: (data, targetOrigin) => heightRequests.push({ data, targetOrigin })
 };
 const frameListeners = {};
+// What the frame's own document holds once it loads: the simulator's stage, or an error page.
+let frameDocument = { querySelector: (selector) => (selector === ".simulator-stage" ? {} : null) };
+let replacement = null;
 const iframe = {
   style: { height: "980px" },
   contentWindow,
-  addEventListener: (type, listener) => { frameListeners[type] = listener; }
+  get contentDocument() {
+    if (frameDocument instanceof Error) throw frameDocument;
+    return frameDocument;
+  },
+  addEventListener: (type, listener) => { frameListeners[type] = listener; },
+  replaceWith: (node) => { replacement = node; }
 };
 let post;
 
+class FakeNode {
+  constructor(tag) {
+    this.tag = tag;
+    this.children = [];
+    this.attributes = {};
+    this.textContent = "";
+  }
+  setAttribute(name, value) { this.attributes[name] = value; }
+  append(...nodes) { this.children.push(...nodes); }
+}
+
 globalThis.document = {
-  querySelector: (selector) => (selector === "[data-bounder-simulator]" ? iframe : undefined)
+  querySelector: (selector) => (selector === "[data-bounder-simulator]" ? iframe : undefined),
+  createElement: (tag) => new FakeNode(tag)
 };
 globalThis.window = {
   innerHeight: 700,
@@ -88,4 +108,36 @@ test("untrusted, mistyped or non-finite messages leave the iframe untouched", ()
   assert.equal(iframe.style.height, "980px");
   send(undefined);
   assert.equal(iframe.style.height, "980px");
+});
+
+test("a loaded frame without the simulator's stage is replaced by links to the simulator and recorded evidence", () => {
+  const requestsBefore = heightRequests.length;
+  frameDocument = { querySelector: () => null };
+  frameListeners.load();
+  assert.equal(heightRequests.length, requestsBefore, "an unusable frame is not asked for its height");
+  assert.ok(replacement, "the frame must be replaced");
+  assert.equal(replacement.className, "home-simulator-unavailable");
+  assert.equal(replacement.attributes.role, "status");
+  const links = replacement.children[1].children;
+  assert.deepEqual(links.map((link) => link.href), ["simulator.html", "data/bounder-receipts.v1.json"]);
+});
+
+test("an opaque error page (cross-origin contentDocument) is treated as a failed load", () => {
+  replacement = null;
+  frameDocument = new DOMException("Blocked a frame from accessing a cross-origin frame.", "SecurityError");
+  frameListeners.load();
+  assert.ok(replacement);
+  replacement = null;
+  frameDocument = null;
+  frameListeners.load();
+  assert.ok(replacement, "a null contentDocument is also a failed load");
+});
+
+test("a frame that loads the simulator is kept and asked for its height", () => {
+  replacement = null;
+  frameDocument = { querySelector: (selector) => (selector === ".simulator-stage" ? {} : null) };
+  const requestsBefore = heightRequests.length;
+  frameListeners.load();
+  assert.equal(replacement, null);
+  assert.equal(heightRequests.length, requestsBefore + 1);
 });

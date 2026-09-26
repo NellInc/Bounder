@@ -19,7 +19,8 @@ test("the homepage positions Bounder within the Guardian and Creed Space Fleet a
 
 test("simulator exposes focused WASD and altitude navigation", () => {
   assert.match(simulatorHtml, /tabindex="0"/);
-  assert.match(simulatorHtml, /aria-keyshortcuts="W A S D Q E \+ -"/);
+  // Zoom keys stay in the navigation help: a bare "+" token is the combination delimiter.
+  assert.match(simulatorHtml, /aria-keyshortcuts="W A S D Q E"/);
   assert.match(simulatorHtml, /Use Q to descend and E to climb/);
   assert.match(simulatorHtml, /Use plus and minus to zoom/);
 });
@@ -156,4 +157,84 @@ test("guided operator tour deep-links to six evidence-backed proofs", () => {
   assert.match(simulatorHtml, /data-tour-action="previous"/);
   assert.match(simulatorHtml, /data-tour-action="next"/);
   assert.match(simulatorStyles, /\.operator-tour/);
+});
+
+// Simulator shell: restraint copy, valid controls, start-up order and fail-closed states.
+const { showFleetUnavailable } = await import("../ui/fleet-view.js");
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+const [html, css, bootstrap, workbench, fallback] = await Promise.all([
+  read("simulator.html"), read("simulator.css"), read("simulator-bootstrap.js"), read("ui/workbench.js"), read("simulator-fallback.js")
+]);
+const visibleText = (markup) => markup
+  .replace(/<script\b[\s\S]*?<\/script>/g, " ")
+  .replace(/<[^>]+>/g, " ")
+  .replace(/\s+/g, " ");
+
+test("site-owned simulator copy uses restraint language, not targeting vocabulary", () => {
+  const text = visibleText(html);
+  for (const phrase of [/targeting/i, /positive identification/i, /proportionality/i, /friendly/i, /intercept request/i]) {
+    assert.doesNotMatch(text, phrase);
+  }
+  for (const label of ["Team separation", "Identity check", "Consequence check", "Surrender signalled"]) assert.match(text, new RegExp(label));
+  // Producer scenario ids and rule keys are unchanged.
+  for (const id of ["friendly", "identification", "proportionality", "surrender"]) assert.match(html, new RegExp(`data-scenario="${id}"`));
+  // A rule that only holds never reads PASS, which would look like an authorisation.
+  assert.doesNotMatch(fallback, /"PASS"/);
+});
+
+test("the accessible view states a receipt load failure in plain words, never the raw error", () => {
+  assert.doesNotMatch(fallback, /failClosed\([^)]*error\.message/);
+  assert.match(fallback, /failClosed\("The recorded interlock receipt bundle could not be loaded or validated\. The simulation remains paused\."\)/);
+});
+
+test("both receipt views mark the recorded evaluation time as a machine-readable time, text unchanged", async () => {
+  const controller = await read("simulator/controller.js");
+  for (const source of [controller, fallback]) {
+    assert.match(source, /evaluatedTime\.dateTime = receipt\.evaluated_at;\s+evaluatedTime\.textContent = receipt\.evaluated_at;\s+receiptFields\.evaluated\.replaceChildren\(evaluatedTime\);/);
+  }
+});
+
+test("the scrubber is a valid labelled range and the canvas shortcuts carry no bare plus token", () => {
+  assert.match(html, /<label for="resilience-time">Event time<\/label> <output for="resilience-time"/);
+  assert.match(html, /<input id="resilience-time" type="range"[^>]*aria-valuetext="0\.00 seconds, ready"/);
+  assert.doesNotMatch(html, /<label class="resilience-scrubber">/);
+  assert.match(html, /aria-keyshortcuts="W A S D Q E"/);
+});
+
+test("the bootstrap loads first and stays free of imports so it can always fail closed", () => {
+  const order = [...html.matchAll(/<script type="module" src="([^"]+)"><\/script>/g)].map(([, src]) => src);
+  assert.deepEqual(order, ["simulator-bootstrap.js", "ui/policy-roundtrip-panel.js", "ui/workbench.js"]);
+  assert.doesNotMatch(bootstrap, /^\s*(import|export)\b/m);
+  assert.match(bootstrap, /stage\.dataset\.bootstrap = "started";/);
+  assert.match(bootstrap, /SLOW_START_MS = 20_000/);
+  assert.match(bootstrap, /HTMLScriptElement/);
+  assert.match(workbench, /failClosedWithoutBootstrap/);
+  assert.doesNotMatch(html, /class="evidence-nav"/);
+});
+
+test("the stage notice is hidden while loading and the initial headline is pending, not unavailable", () => {
+  assert.match(css, /\.simulator-stage:not\(\.is-unavailable\):not\(\.is-slow\) \.webgl-fallback:not\(\.noscript-fallback\)/);
+  assert.match(html, /<strong class="decision-outcome">Pending<\/strong>/);
+  assert.match(css, /-webkit-backdrop-filter: blur\(10px\);\s*backdrop-filter: blur\(10px\);/);
+  assert.doesNotMatch(css, /#efc178;[\s\S]*#efc178;/, "the caution colour is one token");
+});
+
+test("an unavailable Fleet leaves no Loading text and says so in the count", () => {
+  const element = (dataset = {}) => ({ dataset, textContent: "Loading", title: "x", removeAttribute(name) { delete this[name]; } });
+  const stage = element();
+  const source = element();
+  const count = element();
+  const fields = ["name", "devices", "policy", "evidence"].map((key) => element({ fleet: key }));
+  const root = {
+    querySelector: (selector) => ({ ".simulator-stage": stage, "[data-fleet-source]": source, "[data-fleet-count]": count })[selector],
+    querySelectorAll: (selector) => (selector === "[data-fleet]" ? fields : [])
+  };
+  showFleetUnavailable(root, "Fleet evidence unavailable");
+  assert.equal(stage.dataset.fleetReady, "false");
+  assert.equal(source.dataset.source, "unavailable");
+  assert.equal(count.textContent, "Recorded Fleet evidence could not be loaded.");
+  for (const field of fields) {
+    assert.equal(field.textContent, "Unavailable");
+    assert.equal(field.title, undefined);
+  }
 });

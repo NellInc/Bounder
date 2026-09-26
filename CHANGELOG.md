@@ -1,6 +1,40 @@
 # Changelog
 
-## 1.2.4 · 2026-09-26 (source candidate, unsealed)
+## 1.2.5 · 2026-09-26 (source candidate, unsealed)
+
+Second launch-readiness pass: quality, fidelity and plain restraint language across the site, simulator, reference runtime and tooling.
+
+### Fixed
+
+- When the live continuity feed is unreachable, the homepage shows a labelled recorded run ("Recorded run · not live") in place of empty cells. Live cells still clear, so recorded figures never stand in for live proof. Proof times read identically in every browser and time zone (for example "26 Sep 2026, 11:02 UTC").
+- The embedded simulator is replaced by a short status card with direct links when its frame fails to load, and the scroll-reveal script no longer waits on slower scripts.
+- The contact form tells a busy or refusing provider apart from a connection failure, and refuses to run inside another site's frame.
+- Receipt panels read "Unavailable" when the recorded receipts cannot load, rule rows stay neutral until a rule is evaluated, and protection boundaries stay hidden until a scenario selects one.
+- A one-finger vertical swipe over the scene scrolls the page without turning the camera. "Focus on drone" frames the drone closely and follows it in flight. The tour and fault replay keep the stage in view on every step.
+- The simulator shows a slow-loading notice with a reload button after 20 seconds, says when a browser lacks import-map support, and fails closed if its bootstrap never runs. A browser without Ed25519 is told it cannot verify here rather than shown a rejection.
+- Scene fidelity: the Fleet Guardians fly a fixed formation clear of each other and of the rooftops, the windsock streams downwind, the operating-window scenario is lit as dusk, hills sit on the horizon and the subject is framed between the status badge and the legend.
+
+### Changed
+
+- Scenario, rule and badge wording describes restraint only: Team separation, Surrender signalled, Identity check and Consequence check; rules that can only hold read CLEAR rather than PASS. Receipt badges give a plain reason, and producer text is shown with an en-GB reading beside the verbatim record.
+- Software renderers and constrained touch devices start the scene in Low power; visitors can switch back.
+- The terms add an intended-use section (restraint-only, not for weapons, targeting or fire control, with export-control responsibility), a no-warranty and limitation-of-liability section, and explicit licences: code and original text under Apache-2.0, the Bounder name, wordmark and mark excluded. NOTICE lists the third-party material. The privacy notice names Cloudflare among the services that process data.
+- The hero photograph is served as AVIF or WebP where supported, with the JPEG as fallback. The mobile header is one scrolling row, text wraps with balanced headings, and print keeps headings with their content.
+- Observability reference: every Fleet-side entry point that classifies a heartbeat now requires Fleet's own receive time and refuses to classify without it, so a fast Guardian clock cannot extend its reachability. Quarantining aggregation lists every copy of a duplicated Guardian.
+- Tooling: sealing refuses a producer commit that is not on the producer's default branch, a tracked public file missing from the working tree, or a producer statement naming a file the seal does not pin. Producer derivation runs in a detached worktree and rejects linked files. `npm run check:live` confirms the served VERSION after an authorised deploy. Documentation checks reject citations past the end of a file.
+
+### Accessibility
+
+- The resilience scrubber has a visible label and a spoken time, including after reset. Recorded codes break only at underscores. The text view grows to its content, and camera buttons do not claim a pressed state while it is shown.
+
+### Proof limits
+
+- Sealed manifests v1.1.2 to v1.2.4 name producer commit `d058ae1`, which was never merged to the producer's default branch. Its contract change has since been merged, and this release is derived from a producer commit on the default branch.
+- Deployed Guardian performance, Fleet backend integration, hardware safety and human or regulatory review remain unverified.
+
+## 1.2.4 · 2026-09-26
+
+Sealed by `release/bounder-reference-v1.2.4.manifest.json`.
 
 Launch-readiness pass across the site, simulator, reference runtime, tooling and documentation.
 

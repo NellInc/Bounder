@@ -9,7 +9,10 @@ test('scene and consequence lead; camera and text views preserve the recorded de
   await page.goto('/simulator.html?scenario=civilian');
   const stage = page.locator('.simulator-stage');
   await expect(stage).toHaveAttribute('data-webgl', 'ready');
-  await expect(page.locator('.decision-outcome')).toHaveText('Request denied');
+  await expect(page.locator('.decision-outcome')).toHaveText('Request held');
+  // The stage badge speaks plainly; the recorded code appears once, in the receipt.
+  await expect(page.locator('.status-phase')).toHaveText('Held · Civilians too close');
+  await expect(page.locator('.status-code')).toBeHidden();
   await expect(page.locator('.adapter-output')).toHaveText('Hold outside civilian buffer');
   await expect(page.locator('#fleet-evidence')).not.toHaveAttribute('open', '');
   await page.screenshot({ path: 'artifacts/verification/workspace-desktop.png', fullPage: false });
@@ -30,8 +33,13 @@ test('scene and consequence lead; camera and text views preserve the recorded de
   await expect(textView).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.scene-explanation')).toContainText('Hold outside civilian buffer');
   await expect(stage).toHaveAttribute('data-animation-state', 'offscreen');
+  // No camera view is on screen while the text view is, so none reads as pressed, and the
+  // text view grows to its content instead of scrolling inside the scene's frame.
+  await expect(page.locator('[data-camera][aria-pressed="true"]')).toHaveCount(0);
+  await expect.poll(() => page.locator('.scene-explanation').evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
   await textView.click();
   await expect(textView).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('button', { name: 'Overview', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.scene-explanation')).toBeHidden();
   await expect(stage).toHaveAttribute('data-animation-state', 'idle');
   await expect(page.locator('.decision-code')).toHaveText(before);
@@ -50,7 +58,9 @@ test('scene and consequence lead; camera and text views preserve the recorded de
 test('Fleet inspector filters real records and exposes complete reasons without hover', async ({ page }) => {
   await page.goto('/simulator.html');
   await expect(page.locator('.simulator-stage')).toHaveAttribute('data-fleet-ready', 'true', { timeout: 20_000 });
-  await page.getByRole('link', { name: 'Fleet evidence', exact: true }).click();
+  // The disclosure's own summary is the only entry point; the redundant anchor row is gone.
+  await page.locator('#fleet-evidence > summary').click();
+  await expect(page.locator('#fleet-evidence')).toHaveAttribute('open', '');
   await expect(page.locator('[data-fleet-count]')).toHaveText('100 of 100 recorded Guardians');
   await page.getByLabel('Platform', { exact: true }).selectOption('marine');
   await page.getByLabel('Outcome', { exact: true }).selectOption('held');
