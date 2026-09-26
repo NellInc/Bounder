@@ -5,28 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self'; connect-src 'self'; frame-src 'none'">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <title>Privacy | Bounder</title>
   <meta name="description" content="How the Bounder website handles contact details, technical request data, and third-party services.">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="https://www.bounder.io/privacy.html">
   <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="only light">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Bounder">
   <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://www.bounder.io/privacy.html">
   <meta property="og:title" content="Privacy | Bounder">
   <meta property="og:description" content="How the Bounder website handles contact details, technical request data, and third-party services.">
-  <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
-  <meta property="og:image:width" content="2400">
-  <meta property="og:image:height" content="1800">
+  <meta property="og:image" content="https://www.bounder.io/images/og-card.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/jpeg">
-  <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
+  <meta property="og:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Privacy | Bounder">
   <meta name="twitter:description" content="How the Bounder website handles contact details, technical request data, and third-party services.">
-  <meta name="twitter:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
-  <meta name="twitter:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
+  <meta name="twitter:image" content="https://www.bounder.io/images/og-card.jpg">
+  <meta name="twitter:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
   <link rel="stylesheet" href="styles.css">
   <script type="application/ld+json">
   {
@@ -40,7 +43,7 @@
         "description": "How the Bounder website handles contact details, technical request data, and third-party services.",
         "isPartOf": {"@id": "https://www.bounder.io/#website"},
         "breadcrumb": {"@id": "https://www.bounder.io/privacy.html#breadcrumb"},
-        "dateModified": "2026-09-11",
+        "dateModified": "2026-09-26",
         "inLanguage": "en-GB"
       },
       {
@@ -58,12 +61,12 @@
 <body class="interior-page">
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
+    <a class="wordmark" href="./" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <nav class="header-nav" aria-label="Primary navigation">
-      <a href="index.html#architecture">Architecture</a>
-      <a href="index.html#applications">Applications</a>
+      <a href="./#architecture">Architecture</a>
+      <a href="./#applications">Applications</a>
       <a href="simulator.html">Simulator</a>
-      <a href="index.html#safety">Safety</a>
+      <a href="./#safety">Roadmap</a>
       <a href="contact.html">Contact</a>
     </nav>
   </header>
@@ -71,25 +74,32 @@
   <main id="main" class="interior-main policy-layout">
     <aside class="policy-aside">
       <p class="section-label">Legal</p>
-      <p>Last updated<br><strong>11 September 2026</strong></p>
+      <p>Last updated<br><strong>26 September 2026</strong></p>
     </aside>
     <article class="policy-body">
       <h1>Privacy notice</h1>
       <p class="policy-lead">A short account of the personal information this website handles, and nothing more.</p>
+
+      <h2>Who is responsible</h2>
+      <p>This website is operated by Nell Watson, Inc., the controller of the personal information described here. Questions and requests about your information, including access, correction and deletion, can be sent through the <a href="contact.html">contact form</a>.</p>
 
       <h2>Information you choose to send</h2>
       <p>If you use the contact form, we receive the name, email address, and message you submit. Please leave out secrets, credentials, and operational details that could endanger people or systems.</p>
 
       <h2>Form processing</h2>
       <p>The contact form is processed by Formspree. Your submission is therefore transmitted to and handled by Formspree as a service provider. Review <a href="https://formspree.io/legal/privacy-policy/" target="_blank" rel="noopener noreferrer">Formspree’s privacy policy</a> before submitting.</p>
+      <p>If a send cannot be confirmed and you choose “Continue on Formspree”, you finish the submission on formspree.io itself. Formspree may show its own verification check there, under its own policy.</p>
 
       <h2>Technical request data</h2>
-      <p>The hosting provider and external asset providers may receive ordinary request data such as IP address, browser type, requested URL, and timestamp when serving this site. Bounder does not currently run its own analytics or advertising trackers on these pages.</p>
+      <p>This site is hosted on GitHub Pages. When serving it, GitHub receives ordinary request data such as your IP address, browser type, requested URL, and timestamp. The site loads no fonts, scripts, or images from other providers, and runs no analytics or advertising trackers.</p>
 
-      <p>When the home page is loaded from bounder.io or www.bounder.io, your browser automatically requests a signed continuity evidence payload from the Creed Space Fleet staging endpoint hosted on Render. That request happens without any interaction from you, and it transmits ordinary request data such as IP address, browser type, and timestamp to that host. No cookie or credential is sent with it and no referrer is disclosed. If the request fails, the page falls back to the recorded local evidence published with this site.</p>
+      <p>When the home page is loaded from bounder.io or www.bounder.io, your browser automatically requests a signed continuity evidence payload from the Creed Space Fleet staging endpoint hosted on Render, which serves it through Cloudflare’s network. That request happens without any interaction from you, and it transmits ordinary request data such as IP address, browser type, and timestamp to that host. No cookie or credential is sent with it and no referrer is disclosed. If the request fails, the page falls back to the recorded local evidence published with this site.</p>
 
       <h2>Cookies and local storage</h2>
-      <p>The current root website does not intentionally set cookies or use browser local storage. Third-party services reached through external links apply their own policies.</p>
+      <p>This website sets no cookies and does not use browser local storage. Formspree’s hosted page and other third-party services reached through links apply their own policies.</p>
+
+      <h2>Lawful basis</h2>
+      <p>We handle contact-form submissions on the basis of your consent, which you give with the checkbox on the form. You can withdraw it at any time by asking us to delete your message; withdrawal does not affect handling that has already taken place. Technical request data is handled on the basis of our legitimate interest in serving the site securely and showing current evidence.</p>
 
       <h2>Purpose and retention</h2>
       <p>We use contact information to respond to enquiries and assess collaboration or security reports. It is kept only as long as needed for those purposes, legal obligations, or dispute resolution.</p>
@@ -97,8 +107,12 @@
       <h2>Sharing</h2>
       <p>We do not sell contact information. It may be shared with service providers needed to host the site or deliver messages, with collaborators when necessary to answer an enquiry, or where disclosure is legally required.</p>
 
-      <h2>Your choices</h2>
-      <p>You may ask about personal information submitted through this website or request an appropriate correction or deletion by using the <a href="contact.html">contact form</a>. Applicable legal rights depend on your circumstances and jurisdiction.</p>
+      <h2>Where your information is processed</h2>
+      <p>Formspree, GitHub, and Render are based in the United States, so information handled by them may be processed there, under the safeguards described in each provider’s own privacy policy: <a href="https://formspree.io/legal/privacy-policy/" target="_blank" rel="noopener noreferrer">Formspree</a>, <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub</a>, and <a href="https://render.com/privacy" target="_blank" rel="noopener noreferrer">Render</a>.</p>
+
+      <h2>Your rights</h2>
+      <p>Depending on where you live, you may have the right to access the personal information we hold about you, to have it corrected or deleted, to restrict or object to how it is used, to receive a portable copy, and to withdraw consent. To make a request, use the <a href="contact.html">contact form</a>.</p>
+      <p>If you are in the United Kingdom, you can complain to the <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noopener noreferrer">Information Commissioner’s Office</a>. In the European Union, you can complain to the data protection authority where you live or work.</p>
 
       <h2>External links</h2>
       <p>This site links to GitHub, research material, and other third-party sites. Their privacy practices are outside Bounder’s control.</p>
@@ -109,15 +123,15 @@
   </main>
 
   <footer class="site-footer">
-    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
+    <a class="wordmark" href="./" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <p>Trust at the point of action.</p>
     <nav class="secondary-nav" aria-label="Footer navigation">
       <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
+      <a href="privacy.html" aria-current="page">Privacy</a>
       <a href="contact.html">Contact</a>
-      <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <p class="copyright">© Bounder. Licensed under Apache-2.0.</p>
+    <p class="copyright">© Nell Watson, Inc. Code and text under Apache-2.0; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
   </footer>
 </body>
 </html>

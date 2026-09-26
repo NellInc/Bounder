@@ -683,3 +683,26 @@ test("bounded simulator transport returns JSON and clears its timer", async () =
   assert.equal(request.options.signal.aborted, false);
   assert.equal(clearedTimer.delay, 10_000);
 });
+
+test("secondary fail-closed checks on signed receipts and Fleet evidence each reject their own mutation", async () => {
+  // Each case targets exactly one guard, so removing that guard changes the outcome.
+  const receiptCases = [
+    ["unknown evidence tier", (_value, receipt) => { receipt.evidence.tier = "copper"; }, /receipt evidence tier is invalid/],
+    ["one receipt from another subject", (value) => { value.receipts[4].subject = "bounder-substitute"; }, /receipt bundle provenance is inconsistent/],
+    ["one receipt from another policy", (value) => { value.receipts[4].policy_id = "substitute-policy"; }, /receipt bundle provenance is inconsistent/],
+    ["one receipt from another sequence", (value) => { value.receipts[4].sequence += 1; }, /receipt bundle provenance is inconsistent/]
+  ];
+  for (const [name, mutator, pattern] of receiptCases) {
+    assert.throws(() => validateReceiptBundle(mutateReceipt(mutator)), pattern, name);
+  }
+
+  const fleetCases = [
+    // A held decision must never render as allowed, and an allowed code must never be held.
+    ["blocked receipt marked allowed", (value) => { value.devices[1].receipt.allowed = true; }, /fleet receipt is invalid/],
+    ["allowed code marked held", (_value, device) => { device.receipt.allowed = false; }, /fleet receipt is invalid/],
+    ["exact duplicate device", (value) => { value.devices[1] = clone(value.devices[0]); }, /fleet device evidence is duplicated/]
+  ];
+  for (const [name, mutator, pattern] of fleetCases) {
+    await assert.rejects(validateFleetEvidence(mutateFleet(mutator)), pattern, name);
+  }
+});

@@ -7,6 +7,7 @@ its assets came from.
 | File | Source | Author | Licence |
 |------|--------|--------|---------|
 | `hero-drone-dusk.jpg` | [Unsplash](https://unsplash.com/photos/silhouette-of-quadcopter-drone-hovering-near-the-city-p_5BnqHfz3Y) | Goh Rhy Yan | [Unsplash Licence](https://unsplash.com/license) — free for commercial use, no attribution required |
+| `og-card.jpg` | Derivative of `hero-drone-dusk.jpg`: cropped to 1200×630, graded like the site hero, with the Bounder wordmark and tagline | Goh Rhy Yan (photograph); Bounder (composition) | Photograph under the [Unsplash Licence](https://unsplash.com/license) |
 
 Assets are self-hosted deliberately. The site previously hotlinked its hero and
 every Open Graph preview to a third-party CDN, which made the front page of an

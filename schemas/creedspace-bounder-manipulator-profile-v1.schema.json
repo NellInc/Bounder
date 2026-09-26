@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bounder.io/contracts/creedspace-bounder-manipulator-profile-v1.schema.json",
+  "$id": "https://www.bounder.io/schemas/creedspace-bounder-manipulator-profile-v1.schema.json",
   "title": "Creed Space Bounder Manipulator Profile v1",
   "description": "Contact-class constraints for a manipulator interlock: what may be held, what it may approach, release into, or pour into. Sibling of the drone profile; class names are matched only against these signed lists.",
   "type": "object",

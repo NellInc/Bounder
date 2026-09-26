@@ -329,10 +329,56 @@ test("trusted URL boundaries include IPv6 loopback and reject host lookalikes", 
   for (const invalidFallback of [42, "", "https://example.com/pilot.json"]) {
     await assert.rejects(
       loadPilotEvidence({ fallbackURL: invalidFallback, fetchImpl: async () => response(pilot), cryptoImpl: TEST_CRYPTO }),
-      /URL is invalid|Bounder or Creed Space host/,
+      /URL is invalid|same-origin with the page/,
       String(invalidFallback)
     );
   }
+});
+
+test("the recorded fallback is same-origin on any host while the live feed keeps its host allowlist", async () => {
+  for (const baseURL of [
+    "http://192.168.1.20:8000/simulator.html",
+    "http://0.0.0.0:8000/simulator.html",
+    "https://nellinc.github.io/Bounder/simulator.html",
+    "http://127.0.0.1:8000/simulator.html"
+  ]) {
+    const fetched = [];
+    const result = await loadPilotEvidence({
+      baseURL,
+      cryptoImpl: TEST_CRYPTO,
+      fetchImpl: async (url) => { fetched.push(String(url)); return response(pilot); }
+    });
+    assert.equal(result.source, "recorded", baseURL);
+    assert.deepEqual(fetched, [new URL("./data/bounder-staging-pilot.v1.json", baseURL).href], baseURL);
+  }
+
+  // A cross-origin or non-HTTP fallback is refused before any fetch.
+  for (const [baseURL, fallback] of [
+    ["http://192.168.1.20:8000/simulator.html", "http://192.168.1.21:8000/data/bounder-staging-pilot.v1.json"],
+    ["https://nellinc.github.io/Bounder/simulator.html", "https://www.bounder.io/data/bounder-staging-pilot.v1.json"],
+    ["http://192.168.1.20:8000/simulator.html", "data:application/json,{}"],
+    ["http://192.168.1.20:8000/simulator.html", "./data/bounder-staging-pilot.v1.json#fragment"]
+  ]) {
+    let calls = 0;
+    await assert.rejects(
+      loadPilotEvidence({ baseURL, fallbackURL: fallback, cryptoImpl: TEST_CRYPTO, fetchImpl: async () => { calls += 1; return response(pilot); } }),
+      /same-origin with the page|unsupported credentials or fragment/,
+      fallback
+    );
+    assert.equal(calls, 0, fallback);
+  }
+
+  // The live feed on a LAN origin still needs HTTPS on a Bounder or Creed Space host.
+  const lan = await loadPilotEvidence({
+    baseURL: "http://192.168.1.20:8000/simulator.html",
+    configuredURL: "./live.json",
+    configuredIntegrity: pilotIntegrity,
+    cryptoImpl: TEST_CRYPTO,
+    now: liveNow,
+    fetchImpl: async () => response(pilot)
+  });
+  assert.equal(lan.source, "recorded");
+  assert.match(lan.warning, /Bounder or Creed Space host/);
 });
 
 test("JSON media type matching is exact while allowing parameters", async () => {
@@ -377,16 +423,36 @@ test("live evidence freshness is clock-injected, boundary-exact, and does not in
   assert.match(stale.warning, /outside the live freshness window/);
   assert.equal(stale.evidence.generated_at, pilot.generated_at, "the recorded fixture is not freshness-gated");
 
+  // A visitor clock may run up to five minutes behind the producer, as in the continuity
+  // and heartbeat verifiers; beyond that the feed is treated as from the future.
+  const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
+  for (const skewMs of [1, 30_000, MAX_FUTURE_SKEW_MS]) {
+    const slowClock = await loadPilotEvidence({
+      configuredURL: liveURL,
+      configuredIntegrity: pilotIntegrity,
+      fallbackURL,
+      fetchImpl,
+      cryptoImpl: TEST_CRYPTO,
+      now: () => generatedAt - skewMs
+    });
+    assert.equal(slowClock.source, "live", `clock ${skewMs} ms slow`);
+  }
+
   const future = await loadPilotEvidence({
     configuredURL: liveURL,
     configuredIntegrity: pilotIntegrity,
     fallbackURL,
     fetchImpl,
     cryptoImpl: TEST_CRYPTO,
-    now: () => generatedAt - 1
+    now: () => generatedAt - MAX_FUTURE_SKEW_MS - 1
   });
   assert.equal(future.source, "recorded");
   assert.match(future.warning, /outside the live freshness window/);
+
+  const futureReceipt = clonePilot();
+  const receiptNow = Date.parse(futureReceipt.generated_at);
+  mirrorReceipt(futureReceipt, 0, { evaluated_at: futureReceipt.generated_at });
+  await assert.doesNotReject(validatePilotEvidence(futureReceipt, { cryptoImpl: TEST_CRYPTO, now: receiptNow - MAX_FUTURE_SKEW_MS, maxAgeMs: MAX_LIVE_AGE_MS }));
 
   for (const maxLiveAgeMs of [-1, 0.5, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1, "1000"]) {
     await assert.rejects(
@@ -510,11 +576,16 @@ test("integrity failures fall back with specific warnings and timeout boundaries
   for (const timeoutMs of [0, Number.NaN, Number.POSITIVE_INFINITY, MAX_TIMEOUT_MS + 1, "10"]) {
     await assert.rejects(
       loadRecorded(async () => response(pilot), { timeoutMs }),
-      /timeout is invalid/,
+      /staging feed timeout is invalid/,
       String(timeoutMs)
     );
+    await assert.rejects(
+      loadRecorded(async () => response(pilot), { recordedTimeoutMs: timeoutMs }),
+      /recorded staging feed timeout is invalid/,
+      `recorded ${String(timeoutMs)}`
+    );
   }
-  await assert.doesNotReject(loadRecorded(async () => response(pilot), { timeoutMs: MAX_TIMEOUT_MS }));
+  await assert.doesNotReject(loadRecorded(async () => response(pilot), { timeoutMs: MAX_TIMEOUT_MS, recordedTimeoutMs: MAX_TIMEOUT_MS }));
 
   // Audit 2026-09: this used to sleep 75 ms of wall clock to prove a 50 ms timer was
   // cleared, which races the scheduler in the failing direction — any event-loop stall
@@ -538,7 +609,7 @@ test("integrity failures fall back with specific warnings and timeout boundaries
     await loadRecorded(async (url, { signal }) => {
       completedSignal = signal;
       return response(buildEvidence(1));
-    }, { timeoutMs: 50 });
+    }, { recordedTimeoutMs: 50 });
   } finally {
     globalThis.setTimeout = realSetTimeout;
     globalThis.clearTimeout = realClearTimeout;
@@ -594,7 +665,7 @@ test("the deadline wins when fetch or body readers ignore abort", { timeout: 30_
     assert.equal(calls, 2, item.name);
 
     await assert.rejects(
-      loadRecorded(item.stalled, { timeoutMs: 10 }),
+      loadRecorded(item.stalled, { recordedTimeoutMs: 10 }),
       /timed out/,
       `${item.name} recorded path`
     );
@@ -807,5 +878,37 @@ test("pathological chunk counts and empty chunks reject promptly even when cance
     assert.equal(reads, item.maximumReads, item.name);
     assert.match(cancelReason, item.pattern, item.name);
     assert.equal(released, true, item.name);
+  }
+});
+
+test("the recorded fallback has its own same-origin budget and is not bound by the live-feed timeout", async () => {
+  const realSetTimeout = globalThis.setTimeout;
+  const realClearTimeout = globalThis.clearTimeout;
+  const armed = [];
+  globalThis.setTimeout = (callback, delay) => {
+    const handle = { callback, delay };
+    armed.push(handle);
+    return handle;
+  };
+  globalThis.clearTimeout = () => {};
+  try {
+    await loadRecorded(async () => response(pilot));
+    assert.deepEqual(armed.map(({ delay }) => delay), [10_000], "the recorded fallback alone uses the 10 s budget");
+    armed.length = 0;
+    const result = await loadPilotEvidence({
+      configuredURL: "https://staging.creed.space/live.json",
+      configuredIntegrity: pilotIntegrity,
+      fallbackURL,
+      cryptoImpl: TEST_CRYPTO,
+      now: liveNow,
+      fetchImpl: async (url) => String(url).includes("/live.json")
+        ? response({ error: "offline" }, { status: 503 })
+        : response(pilot)
+    });
+    assert.equal(result.source, "recorded");
+    assert.deepEqual(armed.map(({ delay }) => delay), [3_500, 10_000], "live keeps 3.5 s; the fallback keeps 10 s");
+  } finally {
+    globalThis.setTimeout = realSetTimeout;
+    globalThis.clearTimeout = realClearTimeout;
   }
 });

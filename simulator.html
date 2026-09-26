@@ -11,6 +11,7 @@
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="https://www.bounder.io/simulator.html">
   <meta name="theme-color" content="#11130f">
+  <meta name="color-scheme" content="only light">
   <meta name="bounder-staging-feed" content="">
   <meta name="bounder-staging-feed-integrity" content="">
   <meta name="bounder-resilience-stream" content="">
@@ -20,17 +21,19 @@
   <meta property="og:url" content="https://www.bounder.io/simulator.html">
   <meta property="og:title" content="Bounder Simulator | The Last Word Before Motion">
   <meta property="og:description" content="A widescreen 3D demonstration of local, auditable policy enforcement at the point of physical action.">
-  <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
-  <meta property="og:image:width" content="2400">
-  <meta property="og:image:height" content="1800">
+  <meta property="og:image" content="https://www.bounder.io/images/og-card.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/jpeg">
-  <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
+  <meta property="og:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bounder Simulator | The Last Word Before Motion">
   <meta name="twitter:description" content="A widescreen 3D demonstration of local, auditable policy enforcement at the point of physical action.">
-  <meta name="twitter:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
-  <meta name="twitter:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
+  <meta name="twitter:image" content="https://www.bounder.io/images/og-card.jpg">
+  <meta name="twitter:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="simulator.css">
   <script>
@@ -129,17 +132,21 @@
   <script type="importmap">
     {"imports":{"three":"./vendor/three/three.module.min.js","three/addons/":"./vendor/three/"}}
   </script>
+  <!-- Preloads follow the import map: a module fetch started before it would disable the map. -->
+  <link rel="modulepreload" href="simulator/controller.js">
+  <link rel="modulepreload" href="vendor/three/three.module.min.js">
+  <link rel="modulepreload" href="vendor/three/three.core.min.js">
   <script>if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.classList.add("simulator-embed");</script>
 </head>
 <body class="interior-page simulator-page" id="top">
-  <a class="skip-link" href="#main">Skip to simulator</a>
+  <a class="skip-link" href="#scenario-lab">Skip to simulator</a>
   <header class="site-header">
-    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
+    <a class="wordmark" href="./" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <nav class="header-nav" aria-label="Primary navigation">
-      <a href="index.html#architecture">Architecture</a>
-      <a href="index.html#applications">Applications</a>
+      <a href="./#architecture">Architecture</a>
+      <a href="./#applications">Applications</a>
       <a href="simulator.html" aria-current="page">Simulator</a>
-      <a href="index.html#safety">Safety</a>
+      <a href="./#safety">Roadmap</a>
       <a href="contact.html">Contact</a>
     </nav>
   </header>
@@ -150,103 +157,27 @@
       <div class="hero-scrim"></div>
       <div class="hero-grid" aria-hidden="true"></div>
 
-      <!-- The interlock, drawn once over the photograph: an approach vector runs at
-           the protected volume, meets the boundary, and is held. It plays a single
-           time and stops. A loop would be decoration; a settle is the argument. -->
-      <!-- The interlock, played once: the page's own Govern -> Issue -> Bound -> Act
-           arc, enacted before a word is read.
-
-             issued (and already expiring) -> four checks -> approach -> gate
-             -> HELD -> DENIED -> reroute drawn -> REROUTE
-
-           Transient beats (the meter, the checks, the denial) rest at opacity 0:
-           they are brought in and taken back out, so nothing accumulates and the
-           settled frame stays quiet. Persistent marks rest visible, so a dead
-           script or a reduced-motion preference still leaves a composed hero.
-
-           Sized and anchored in CSS with a `meet` viewBox, deliberately: a
-           full-bleed `slice` viewBox crops by an amount that swings with the
-           viewport's aspect, which pushed the gate clean off the frame at
-           narrower widths and left a vector running into nothing. -->
-      <!-- The box runs to 232 rather than 220 so the REROUTE label has room to sit
-           clear of the arrowhead without its descenders clipping at the edge. -->
-      <svg class="hero-interlock" viewBox="0 0 300 232" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
-        <g class="il-issued">
-          <text x="14" y="20" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="700" letter-spacing="1.2">AUTHORITY · EXPIRES</text>
-          <rect x="14" y="27" width="150" height="8" fill="none" stroke="rgba(201, 255, 87, 0.45)" stroke-width="1.2" rx="1.5"/>
-          <rect class="il-meter" x="14" y="27" width="150" height="8" fill="#c9ff57" opacity="0.85" rx="1.5"/>
-        </g>
-
-        <g font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700" letter-spacing="1.1" fill="#c9ff57">
-          <g class="il-check il-check-1">
-            <path d="M20 54 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <text x="42" y="58">SIGNATURE</text>
-          </g>
-          <g class="il-check il-check-2">
-            <path d="M20 74 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <text x="42" y="78">EXPIRY</text>
-          </g>
-          <g class="il-check il-check-3">
-            <path d="M20 94 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <text x="42" y="98">SEQUENCE</text>
-          </g>
-          <g class="il-check il-check-4">
-            <path d="M20 114 l4 4 l8 -10" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <text x="42" y="118">SCOPE</text>
-          </g>
-        </g>
-
-        <path class="il-vector" d="M14 150 H134" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
-
-        <g class="il-held" fill="none" stroke="#c9ff57" stroke-width="2">
-          <circle cx="150" cy="150" r="14"/>
-          <path d="M143 150 h14" stroke-linecap="round"/>
-        </g>
-        <text class="il-held-tag" x="150" y="130" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">HELD</text>
-
-        <!-- Safety red measures 3.1:1 on the graded photograph, under the 4.5:1 floor.
-             This lighter tint of the same hue reads at 5.2:1. -->
-        <g class="il-denied">
-          <path d="M168 150 H226" fill="none" stroke="#e0674a" stroke-width="2" stroke-dasharray="5 5"/>
-          <text x="197" y="140" fill="#e0674a" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="700" letter-spacing="1.2" text-anchor="middle">DENIED</text>
-        </g>
-
-        <path class="il-reroute" d="M150 166 C 150 192, 122 198, 86 198" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round"/>
-        <path class="il-arrow" d="M98 190 L84 198 L98 206" fill="none" stroke="#c9ff57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <text class="il-reroute-tag" x="86" y="223" fill="#c9ff57" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.4" text-anchor="middle">REROUTE</text>
-
-        <g class="il-gate">
-          <path d="M232 58 V202" stroke="#c9ff57" stroke-width="10" opacity="0.16" stroke-linecap="round"/>
-          <path d="M232 58 V202" stroke="#c9ff57" stroke-width="2.5" stroke-linecap="round"/>
-        </g>
-      </svg>
-
       <div class="hero-content">
-        <h1 id="hero-title">Trust, at the<br>point of action.</h1>
-        <p class="hero-summary"><strong>Open physical interlocks.</strong> Bounder verifies narrow authority, checks live conditions locally, and permits only device-safe action.</p>
+        <p class="section-label">Bounder simulator</p>
+        <h1 id="hero-title">Watch the<br>boundary hold.</h1>
+        <p class="hero-summary">Replay recorded interlock decisions in a simulated town: fifteen scenarios, a hundred simulated Guardians, and the signed evidence behind every outcome.</p>
         <div class="hero-actions">
-          <a class="button button-primary" href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">Explore the code <span aria-hidden="true">↗</span></a>
-          <a class="text-link" href="index.html#architecture">See how it works <span aria-hidden="true">↓</span></a>
+          <a class="button button-primary" href="#scenario-lab">Choose a scenario <span aria-hidden="true">↓</span></a>
+          <a class="text-link" href="simulator.html?tour=1#scenario-lab">Take the guided tour <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>
 
-    <section class="simulator-intro" aria-labelledby="simulator-title">
-      <div class="section-label">Scenario laboratory</div>
-      <div><h2 id="simulator-title">Watch the boundary hold.</h2></div>
-    </section>
-
-    <section class="simulator-workbench" aria-labelledby="workbench-title">
+    <section class="simulator-workbench" id="scenario-lab" tabindex="-1" aria-labelledby="workbench-title">
       <div class="workbench-heading">
         <div>
-          <div class="section-label">Scenario laboratory</div>
           <h2 id="workbench-title">Choose a scenario</h2>
           <p class="workbench-summary">Start with a cleared route, then explore a protective limit.</p>
         </div>
         <div class="workbench-actions">
           <button class="sim-control sim-tour" type="button" data-action="tour" aria-expanded="false" disabled>Guided tour</button>
-          <button class="sim-control sim-fleet" type="button" data-action="fleet" aria-pressed="false" disabled>Show fleet</button>
-          <button class="sim-control sim-play" type="button" data-action="play" aria-pressed="false" disabled>Play simulation</button>
+          <button class="sim-control sim-fleet" type="button" data-action="fleet" aria-pressed="false" disabled>Fleet view</button>
+          <button class="sim-control sim-play" type="button" data-action="play" disabled>Play simulation</button>
         </div>
       </div>
 
@@ -256,6 +187,7 @@
           <i><b data-tour="progress"></b></i>
         </div>
         <div class="operator-tour-copy" aria-live="polite">
+          <span class="visually-hidden" data-tour-position-announcement>Step 1 of 6.</span>
           <span class="fleet-kicker">Guided operator demonstration</span>
           <h3 id="operator-tour-title" data-tour="title">Inspect the recorded baseline</h3>
           <p data-tour="summary">Start with a permitted recovery state and inspect the recorded decision receipt.</p>
@@ -274,20 +206,20 @@
 <button class="scenario-button" type="button" data-scenario="civilian" aria-pressed="false" disabled>Civilian buffer</button>
 <button class="scenario-button" type="button" data-scenario="weather" aria-pressed="false" disabled>Weather limit</button>
 <button class="scenario-button" type="button" data-scenario="replay" aria-pressed="false" disabled>Policy replay</button></div>
-        <details class="scenario-more"><summary>More scenarios · people and operating limits</summary><fieldset><legend>People</legend><div class="scenario-group"><button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false" disabled>Friendly separation</button><button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false" disabled>Protected site</button><button class="scenario-button" type="button" data-scenario="humanitarian" aria-pressed="false" disabled>Humanitarian corridor</button><button class="scenario-button" type="button" data-scenario="surrender" aria-pressed="false" disabled>Surrender observed</button><button class="scenario-button" type="button" data-scenario="incapacitated" aria-pressed="false" disabled>Incapacitated person</button><button class="scenario-button" type="button" data-scenario="identification" aria-pressed="false" disabled>Positive identification</button><button class="scenario-button" type="button" data-scenario="proportionality" aria-pressed="false" disabled>Proportionality</button><button class="scenario-button" type="button" data-scenario="human_authorization" aria-pressed="false" disabled>Human authorization</button></div></fieldset><fieldset><legend>Operating limits</legend><div class="scenario-group"><button class="scenario-button" type="button" data-scenario="altitude" aria-pressed="false" disabled>Altitude ceiling</button><button class="scenario-button" type="button" data-scenario="window" aria-pressed="false" disabled>Operating window</button><button class="scenario-button" type="button" data-scenario="link" aria-pressed="false" disabled>Lost link</button></div></fieldset></details>
+        <details class="scenario-more"><summary>More scenarios · people and operating limits</summary><fieldset><legend>People</legend><div class="scenario-group"><button class="scenario-button" type="button" data-scenario="friendly" aria-pressed="false" disabled>Friendly separation</button><button class="scenario-button" type="button" data-scenario="protected" aria-pressed="false" disabled>Protected site</button><button class="scenario-button" type="button" data-scenario="humanitarian" aria-pressed="false" disabled>Humanitarian corridor</button><button class="scenario-button" type="button" data-scenario="surrender" aria-pressed="false" disabled>Surrender observed</button><button class="scenario-button" type="button" data-scenario="incapacitated" aria-pressed="false" disabled>Incapacitated person</button><button class="scenario-button" type="button" data-scenario="identification" aria-pressed="false" disabled>Positive identification</button><button class="scenario-button" type="button" data-scenario="proportionality" aria-pressed="false" disabled>Proportionality</button><button class="scenario-button" type="button" data-scenario="human_authorization" aria-pressed="false" disabled>Human authorisation</button></div></fieldset><fieldset><legend>Operating limits</legend><div class="scenario-group"><button class="scenario-button" type="button" data-scenario="altitude" aria-pressed="false" disabled>Altitude ceiling</button><button class="scenario-button" type="button" data-scenario="window" aria-pressed="false" disabled>Operating window</button><button class="scenario-button" type="button" data-scenario="link" aria-pressed="false" disabled>Lost link</button></div></fieldset></details>
       </div>
 
       <div class="simulator-grid" id="scenario-workspace">
         <div class="scene-column">
         <div class="simulator-stage">
-          <canvas tabindex="0" role="img" aria-keyshortcuts="W A S D Q E" aria-describedby="simulator-navigation-help" aria-label="Three-dimensional simulation of an autonomous aircraft flying above a detailed town while Bounder evaluates local protection rules"></canvas>
+          <canvas tabindex="0" role="application" aria-roledescription="3D scene" aria-keyshortcuts="W A S D Q E + -" aria-describedby="scene-explanation-text simulator-navigation-help" aria-label="Three-dimensional simulation of an autonomous aircraft flying above a detailed town while Bounder evaluates local protection rules"></canvas>
           <section class="scene-explanation" aria-labelledby="scene-explanation-title" hidden>
             <span class="section-label">Accessible explanation</span>
             <h3 id="scene-explanation-title">Read the boundary</h3>
-            <p data-scene-explanation>Choose a scenario to inspect its recorded result.</p>
+            <p id="scene-explanation-text" data-scene-explanation>Choose a scenario to inspect its recorded result.</p>
             <p>The spatial scene is illustrative. The adjacent receipt states the recorded cause and device-specific response.</p>
           </section>
-          <div class="stage-status" aria-live="polite">
+          <div class="stage-status">
             <span class="status-phase">Evidence loading</span>
             <code class="status-code">evidence_pending</code>
           </div>
@@ -295,26 +227,28 @@
             <span><i class="legend-route"></i>Route projection</span>
             <span><i class="legend-boundary"></i>Protection boundary</span>
             <span><i class="legend-bounder"></i>Bounder envelope</span>
-            <span class="legend-explore"><kbd>WASD</kbd> move <kbd>Q/E</kbd> altitude · drag orbit</span>
+            <span class="legend-explore"><kbd>WASD</kbd> move <kbd>Q/E</kbd> altitude <kbd>+/−</kbd> zoom · drag orbit</span>
           </div>
-          <p class="visually-hidden" id="simulator-navigation-help">Focus the scene, then use W, A, S, and D to move. Use Q to descend and E to climb. Drag to orbit the camera.</p>
+          <p class="visually-hidden" id="simulator-navigation-help">Focus the scene, then use W, A, S, and D to move. Use Q to descend and E to climb. Use plus and minus to zoom. Drag to orbit the camera; once the scene is focused, the mouse wheel also zooms.</p>
           <p class="webgl-fallback">The 3D scene could not start. The decision panel remains available.</p>
+          <noscript><p class="webgl-fallback noscript-fallback">The simulator needs JavaScript. The recorded evidence remains available as JSON: <a href="data/bounder-receipts.v1.json" target="_blank" rel="noopener noreferrer">decision receipts</a>, <a href="data/bounder-staging-pilot.v1.json" target="_blank" rel="noopener noreferrer">100-Guardian pilot</a> and <a href="data/bounder-fleet-evidence.v1.json" target="_blank" rel="noopener noreferrer">resilience evidence</a>.</p></noscript>
         </div>
 
         <div class="scene-toolbar" role="group" aria-label="Scene view">
           <button type="button" data-camera="overview" aria-pressed="true" disabled>Overview</button>
           <button type="button" data-camera="top" aria-pressed="false" disabled>Top-down</button>
-          <button type="button" data-camera="focus" aria-pressed="false" disabled>Focus subject</button>
+          <button type="button" data-camera="focus" aria-pressed="false" disabled>Focus on drone</button>
           <button type="button" data-explanation aria-pressed="false">Text view</button>
           <label>Detail <select data-render-quality aria-label="Scene detail"><option value="standard">Standard</option><option value="low">Low power</option></select></label>
         </div>
         <p class="scene-caption">Dashed line: illustrative route. Coloured boundary: selected protection. The receipt supplies the outcome.</p>
+        <p class="visually-hidden" aria-live="polite" data-scene-announcer></p>
         </div>
         <aside class="decision-panel" aria-labelledby="decision-title">
           <div class="decision-header">
             <h3 id="decision-title" class="visually-hidden">Decision receipt</h3>
             <div class="section-label">Decision receipt</div>
-            <span class="receipt-source">Loading Go interlock receipt</span>
+            <span class="receipt-source">Loading recorded interlock receipt</span>
             <strong class="decision-outcome">Unavailable</strong>
             <code class="decision-code">evidence_pending</code>
             <p class="decision-reason">Waiting for signed evidence before enabling the simulator.</p>
@@ -337,7 +271,7 @@
             <li data-rule="incapacitated"><span>Incapacitated-person protection</span><strong>UNAVAILABLE</strong></li>
             <li data-rule="identification"><span>Positive identification</span><strong>UNAVAILABLE</strong></li>
             <li data-rule="proportionality"><span>Proportionality condition</span><strong>UNAVAILABLE</strong></li>
-            <li data-rule="authorization"><span>Human authorization</span><strong>UNAVAILABLE</strong></li>
+            <li data-rule="authorization"><span>Human authorisation</span><strong>UNAVAILABLE</strong></li>
             <li data-rule="operating"><span>Operating envelope</span><strong>UNAVAILABLE</strong></li>
             <li data-rule="weather"><span>Weather and visibility</span><strong>UNAVAILABLE</strong></li>
             <li data-rule="link"><span>Link and telemetry</span><strong>UNAVAILABLE</strong></li>
@@ -353,7 +287,7 @@
               <div><dt>Evaluated</dt><dd data-receipt="evaluated">Loading</dd></div>
               <div class="receipt-hash"><dt>Policy hash</dt><dd data-receipt="hash">Loading</dd></div>
             </dl>
-            <p><a href="data/bounder-receipts.v1.json">Raw receipts</a> · <a href="schemas/bounder.receipt.v1.schema.json">JSON schema</a></p>
+            <p class="evidence-links"><a href="data/bounder-receipts.v1.json" target="_blank" rel="noopener noreferrer">Raw receipts <span aria-hidden="true">↗</span></a><a href="schemas/bounder.receipt.v1.schema.json" target="_blank" rel="noopener noreferrer">Receipt schema <span aria-hidden="true">↗</span></a></p>
           </details>
         </aside>
       </div>
@@ -362,7 +296,7 @@
       <details class="evidence-disclosure" id="fleet-evidence"><summary><strong>Fleet evidence</strong><span>Inspect recorded Guardians</span></summary>
 <section class="fleet-control-panel" aria-labelledby="fleet-control-title">
         <div>
-          <h3 id="fleet-control-title" class="visually-hidden">Fleet control panel</h3>
+          <h3 id="fleet-control-title" class="visually-hidden">Recorded Fleet evidence</h3>
           <span class="fleet-kicker">Creed Space Fleet</span>
           <strong>One protective rule, recorded as locally enforced by every Guardian.</strong>
           <small class="fleet-source" data-fleet-source>Loading software pilot evidence</small>
@@ -380,10 +314,10 @@
           <button class="fleet-reset" type="button" data-fleet-reset disabled>Clear filters</button>
         </div>
         <p id="fleet-result-count" data-fleet-count role="status">Waiting for recorded evidence.</p>
-        <p class="fleet-reading-note">A protective hold can be the expected successful result. Expand a Guardian to read its full reason and evidence.</p>
-        <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder guardian outcomes"></div>
+        <p class="fleet-reading-note">A protective hold can be the expected successful result. Expand a Guardian to read its full reason and evidence. Scenarios rotate across platform classes for test coverage, so any platform may show a request recorded as ‘intercept’. Every such request is held; none describes how a platform is meant to be used.</p>
+        <div class="fleet-nodes" data-fleet-nodes role="list" aria-label="Simulated Bounder Guardian outcomes"></div>
         <p class="fleet-evidence-caveat">Checks: contracts, digests and signature format. Audit authentication requires the producer’s public keys.</p>
-        <p class="fleet-contract-links"><a href="data/bounder-staging-pilot.v1.json">100-Guardian pilot evidence</a> · <a href="data/bounder-fleet-evidence.v1.json">Resilience evidence</a> · <a href="schemas/bounder-resilience-evidence.v1.schema.json">Resilience schema</a> · <a href="schemas/creedspace-bounder-envelope-v1.schema.json">Signed envelope</a> · <a href="schemas/creedspace-bounder-policy-v1.schema.json">Policy schema</a> · <a href="schemas/creedspace-bounder-checkpoint-v1.schema.json">Checkpoint schema</a></p>
+        <p class="fleet-contract-links evidence-links"><a href="data/bounder-staging-pilot.v1.json" target="_blank" rel="noopener noreferrer">100-Guardian pilot evidence <span aria-hidden="true">↗</span></a><a href="data/bounder-fleet-evidence.v1.json" target="_blank" rel="noopener noreferrer">Resilience evidence <span aria-hidden="true">↗</span></a><a href="schemas/bounder-resilience-evidence.v1.schema.json" target="_blank" rel="noopener noreferrer">Resilience schema <span aria-hidden="true">↗</span></a><a href="schemas/creedspace-bounder-envelope-v1.schema.json" target="_blank" rel="noopener noreferrer">Signed envelope schema <span aria-hidden="true">↗</span></a><a href="schemas/creedspace-bounder-policy-v1.schema.json" target="_blank" rel="noopener noreferrer">Policy schema <span aria-hidden="true">↗</span></a><a href="schemas/creedspace-bounder-checkpoint-v1.schema.json" target="_blank" rel="noopener noreferrer">Checkpoint schema <span aria-hidden="true">↗</span></a></p>
       </section>
 </details>
 
@@ -424,7 +358,7 @@
           <div><dt>Payload digest</dt><dd data-policy-field="digest">Not loaded</dd></div>
           <div><dt>Recorded receipt</dt><dd data-policy-field="receipt">Not loaded</dd></div>
         </dl>
-        <p class="policy-roundtrip-note">Inspect the signed example: <a href="data/creedspace-bounder-golden-v1.json">Signed vector</a> · <a href="data/creedspace-bounder-roundtrip-v1.json">Signed receipt</a> · <a href="schemas/creedspace-bounder-roundtrip-v1.schema.json">Receipt schema</a> · <a href="https://github.com/NellInc/Bounder/blob/main/guides/INTEGRATION.md" target="_blank" rel="noopener noreferrer">Integration guide <span aria-hidden="true">↗</span></a></p>
+        <p class="policy-roundtrip-note evidence-links"><span>Inspect the signed example:</span><a href="data/creedspace-bounder-golden-v1.json" target="_blank" rel="noopener noreferrer">Signed vector <span aria-hidden="true">↗</span></a><a href="data/creedspace-bounder-roundtrip-v1.json" target="_blank" rel="noopener noreferrer">Signed receipt <span aria-hidden="true">↗</span></a><a href="schemas/creedspace-bounder-roundtrip-v1.schema.json" target="_blank" rel="noopener noreferrer">Round-trip schema <span aria-hidden="true">↗</span></a><a href="https://github.com/NellInc/Bounder/blob/main/guides/INTEGRATION.md" target="_blank" rel="noopener noreferrer">Integration guide <span aria-hidden="true">↗</span></a></p>
       </section>
 </details>
 
@@ -434,8 +368,8 @@
           <div>
             <h3 id="resilience-title" class="visually-hidden">Fleet resilience laboratory</h3>
             <span class="fleet-kicker">Fleet resilience laboratory</span>
-            <strong>Break something on purpose. Watch every boundary hold.</strong>
-            <p>The local laboratory streams contract-checked Fleet events. The public demonstrator replays the same deterministic evidence when no laboratory endpoint is present. Audit signatures remain recorded rather than authenticated because this fixture includes no audit public key.</p>
+            <strong>Break something on purpose. Replay how each recorded boundary held.</strong>
+            <p>The local laboratory streams contract-checked Fleet events. The public demonstrator replays the same deterministic evidence when no laboratory endpoint is present. Audit signatures remain recorded rather than authenticated because this fixture includes no audit public key. METTLE, named in some scenarios, is the assurance-evidence tier a signed policy can require.</p>
           </div>
           <a class="resilience-download" href="data/bounder-fleet-evidence.v1.json" download>Download evidence</a>
         </div>
@@ -484,6 +418,7 @@
           </div>
         </div>
       </section>
+      <p class="evidence-unavailable" data-resilience-unavailable>Fault replay opens here once the 3D scene and the recorded Fleet evidence have loaded. If either cannot load in this browser, <a href="data/bounder-fleet-evidence.v1.json" download>download the resilience evidence</a> to read the recorded timelines directly.</p>
 </details>
 
       </div>
@@ -493,7 +428,7 @@
       <div class="section-heading">
         <div class="section-label">Why Bounder</div>
         <h2 id="rules-title">A narrow component with a serious job.</h2>
-        <p>Between the decision and the motion, Bounder asks one question: is this change authorised, current, and within policy? If not, the machine does not move.</p>
+        <p>Between the decision and the motion, Bounder asks one question: is this change authorised, current, and within policy? If not, the requested change does not happen, and a device-specific safe response takes over. Bounder is a restraint, not a targeting system: in this simulation, conflict-protection rules can only hold a request, and an intercept request is always denied.</p>
       </div>
       <div class="rules-context-grid">
         <article>
@@ -503,8 +438,8 @@
         </article>
         <article>
           <span>Separation</span>
-          <h3>Prevent friendly harm</h3>
-          <p>Authenticated friendly positions and minimum separation rules hold at the last point of control — where the cost of getting it wrong is highest.</p>
+          <h3>Keep separation</h3>
+          <p>Authenticated positions of friendly teams and minimum separation rules hold at the last point of control, where a mistake costs most.</p>
         </article>
         <article>
           <span>Operations</span>
@@ -516,15 +451,15 @@
   </main>
 
   <footer class="site-footer">
-    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
+    <a class="wordmark" href="./" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <p>Trust at the point of action.</p>
     <nav class="secondary-nav" aria-label="Footer navigation">
       <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
       <a href="contact.html">Contact</a>
-      <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <p class="copyright">© Bounder. Licensed under Apache-2.0.</p>
+    <p class="copyright">© Nell Watson, Inc. Code and text under Apache-2.0; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
   </footer>
   <script type="module" src="ui/policy-roundtrip-panel.js"></script>
   <script type="module" src="ui/workbench.js"></script>

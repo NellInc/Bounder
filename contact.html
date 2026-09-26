@@ -6,28 +6,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self'; connect-src 'self' https://formspree.io; frame-src 'none'">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <title>Contact | Bounder</title>
   <meta name="description" content="Talk to Bounder about physical interlocks, safety research, integrations, and open-source collaboration.">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="https://www.bounder.io/contact.html">
   <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="only light">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Bounder">
   <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://www.bounder.io/contact.html">
   <meta property="og:title" content="Contact | Bounder">
   <meta property="og:description" content="Talk to Bounder about physical interlocks, safety research, integrations, and open-source collaboration.">
-  <meta property="og:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
-  <meta property="og:image:width" content="2400">
-  <meta property="og:image:height" content="1800">
+  <meta property="og:image" content="https://www.bounder.io/images/og-card.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/jpeg">
-  <meta property="og:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
+  <meta property="og:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Contact | Bounder">
   <meta name="twitter:description" content="Talk to Bounder about physical interlocks, safety research, integrations, and open-source collaboration.">
-  <meta name="twitter:image" content="https://www.bounder.io/images/hero-drone-dusk.jpg">
-  <meta name="twitter:image:alt" content="A quadcopter hovering at dusk above a city skyline, its status light lit">
+  <meta name="twitter:image" content="https://www.bounder.io/images/og-card.jpg">
+  <meta name="twitter:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
   <link rel="stylesheet" href="styles.css">
   <script type="application/ld+json">
   {
@@ -58,13 +61,13 @@
 <body class="interior-page">
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
+    <a class="wordmark" href="./" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <nav class="header-nav" aria-label="Primary navigation">
-      <a href="index.html#architecture">Architecture</a>
-      <a href="index.html#applications">Applications</a>
+      <a href="./#architecture">Architecture</a>
+      <a href="./#applications">Applications</a>
       <a href="simulator.html">Simulator</a>
-      <a href="index.html#safety">Safety</a>
-      <a href="contact.html">Contact</a>
+      <a href="./#safety">Roadmap</a>
+      <a href="contact.html" aria-current="page">Contact</a>
     </nav>
   </header>
 
@@ -92,20 +95,21 @@
           <strong>Enquiry received.</strong>
           <p>Thank you. We will be in touch.</p>
         </div>
-        <p id="form-error" class="form-notice" role="alert" hidden></p>
+        <p id="form-error" class="form-notice form-notice-error" hidden></p>
         <h2 id="contact-form-title">Start a conversation</h2>
-        <form action="https://formspree.io/f/xqalyykn" method="post" id="contact-form">
+        <p class="form-hint form-required-note">All fields are required.</p>
+        <form action="https://formspree.io/f/xqalyykn" method="post" id="contact-form" aria-labelledby="contact-form-title">
           <div class="form-field">
-            <label for="name">Name <span aria-hidden="true">*</span></label>
+            <label for="name">Name</label>
             <input type="text" name="name" id="name" autocomplete="name" required>
           </div>
           <div class="form-field">
-            <label for="email">Email address <span aria-hidden="true">*</span></label>
+            <label for="email">Email address</label>
             <input type="email" name="email" id="email" autocomplete="email" required>
           </div>
           <div class="form-field">
-            <label for="message">Message <span aria-hidden="true">*</span></label>
-            <p id="message-hint">Optional starting point: tell us whether this is a research question, integration idea, safety critique, or website contribution. Please leave out secrets and sensitive device data.</p>
+            <label for="message">Message</label>
+            <p id="message-hint" class="form-hint">It helps to say whether this is a research question, an integration idea, a safety critique or a website contribution. Please leave out secrets and sensitive device data.</p>
             <textarea name="message" id="message" rows="8" aria-describedby="message-hint" required></textarea>
           </div>
           <div class="form-consent">
@@ -114,7 +118,7 @@
           </div>
           <input class="honeypot" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
           <input type="hidden" name="_subject" value="New Bounder enquiry">
-          <button class="button button-dark" type="submit">Send enquiry <span aria-hidden="true">→</span></button>
+          <button class="button button-dark" type="submit"><span data-label>Send enquiry</span> <span aria-hidden="true">→</span></button>
           <button class="button button-dark" type="submit" data-hosted-submit hidden>Continue on Formspree</button>
         </form>
       </div>
@@ -122,15 +126,15 @@
   </main>
 
   <footer class="site-footer">
-    <a class="wordmark" href="index.html" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
+    <a class="wordmark" href="./" aria-label="Bounder home"><span class="brand-lockup" aria-hidden="true"></span></a>
     <p>Trust at the point of action.</p>
     <nav class="secondary-nav" aria-label="Footer navigation">
       <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
-      <a href="contact.html">Contact</a>
-      <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="contact.html" aria-current="page">Contact</a>
+      <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <p class="copyright">© Bounder. Licensed under Apache-2.0.</p>
+    <p class="copyright">© Nell Watson, Inc. Code and text under Apache-2.0; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
   </footer>
   <script type="module" src="ui/contact-form.js"></script>
 </body>

@@ -122,7 +122,14 @@ export const snapshotJSON = (value, label = "value", depth = 0, ancestors = new 
     for (const key of dataKeys) {
       const descriptor = Object.getOwnPropertyDescriptor(value, key);
       if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) throw new Error(`${label} contains an accessor or hidden field`);
-      result[key] = snapshotJSON(descriptor.value, `${label}.${key}`, depth + 1, ancestors);
+      // Define rather than assign: assigning an own "__proto__" member would call the
+      // prototype setter and silently drop the field before exact-key checks see it.
+      Object.defineProperty(result, key, {
+        value: snapshotJSON(descriptor.value, `${label}.${key}`, depth + 1, ancestors),
+        enumerable: true,
+        writable: true,
+        configurable: true
+      });
     }
     return result;
   } finally {

@@ -7,6 +7,8 @@ body:
     attributes:
       value: |
         Thanks for testing the interlock. Findings from the simulator describe recorded reference evidence and browser presentation; they are not reports about deployed Guardian hardware.
+
+        **Security issues do not belong here.** If the browser accepts a signed vector, receipt or continuity record that it should reject, or you find any other way around a verification check, report it privately through [GitHub private vulnerability reporting](https://github.com/NellInc/Bounder/security/advisories/new) as described in [SECURITY.md](https://github.com/NellInc/Bounder/blob/main/SECURITY.md). Issues on this tracker are public.
   - type: input
     id: tour-step
     attributes:
@@ -61,5 +63,5 @@ body:
     id: release
     attributes:
       label: Bounder release
-      description: The version shown in `VERSION` or the release manifest you were testing against.
-      placeholder: "1.1.2"
+      description: The version in https://www.bounder.io/VERSION, or the release manifest you were testing against.
+      placeholder: "e.g. the contents of /VERSION"

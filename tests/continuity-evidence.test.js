@@ -4,10 +4,14 @@ import { generateKeyPairSync, sign, webcrypto } from "node:crypto";
 import test from "node:test";
 
 import {
+  CONTINUITY_REFRESH,
+  ContinuityUnsupportedError,
+  classifyContinuityFailure,
   createContinuityLeaseController,
   createContinuityReplayGuard,
   fetchContinuityEnvelope,
   formatEvidenceTime,
+  startContinuityMonitor,
   validateContinuityEvidence,
   verifyContinuityEnvelope
 } from "../continuity-evidence.js";
@@ -570,14 +574,18 @@ test("live proof expires fail-closed and stale timers cannot overwrite newer sta
   assert.equal(controller.showVerified(second), true);
   const secondToken = nextToken;
   assert.deepEqual(cleared, [firstToken]);
-  assert.equal(nodes.get("[data-continuity-decisions]").textContent, "16 allow / 84 hold");
+  assert.equal(nodes.get("[data-continuity-decisions]").textContent, "16\u00a0allow / 84\u00a0hold", "each count stays with its word when the cell wraps");
 
   callbacks.get(firstToken).callback();
   assert.equal(root.dataset.state, "verified", "a cancelled older generation must not downgrade newer proof");
   clockMs = Date.parse(second.expires_at);
   callbacks.get(secondToken).callback();
   assert.equal(root.dataset.state, "unavailable");
-  assert.equal(nodes.get("[data-continuity-state]").textContent, "Recorded proof");
+  assert.equal(nodes.get("[data-continuity-state]").textContent, "Proof expired");
+  assert.equal(root.dataset.reason, "expired");
+  assert.equal(nodes.get("[data-continuity-devices]").textContent, "\u2014", "an expired proof leaves no live figure on screen");
+  assert.match(nodes.get("[data-continuity-note]").textContent, /^The last verified proof expired at .+no newer proof has been verified yet\./);
+  assert.equal(controller.status(), "expired");
 
   assert.equal(controller.showVerified(second), false, "already-expired proof must not be rendered as live");
 
@@ -597,8 +605,244 @@ test("live proof expires fail-closed and stale timers cannot overwrite newer sta
 
   controller.showUnavailable();
   assert.equal(root.dataset.state, "unavailable");
+  assert.equal(root.dataset.reason, "offline");
+  assert.equal(nodes.get("[data-continuity-state]").textContent, "Live feed offline");
+  assert.equal(nodes.get("[data-continuity-decisions]").textContent, "\u2014");
 
   assert.throws(() => createContinuityLeaseController(null), /controller is unavailable/);
+});
+
+const continuityRoot = () => {
+  const selectors = [
+    "[data-continuity-state]", "[data-continuity-devices]", "[data-continuity-policies]",
+    "[data-continuity-checkpoints]", "[data-continuity-decisions]", "[data-continuity-updated]",
+    "[data-continuity-note]"
+  ];
+  const nodes = new Map(selectors.map((selector) => [selector, {
+    textContent: "",
+    attributes: new Map(),
+    setAttribute(name, value) { this.attributes.set(name, value); }
+  }]));
+  return { nodes, root: { dataset: {}, querySelector: (selector) => nodes.get(selector) } };
+};
+
+const fakeScheduler = (startMs = NOW) => {
+  let clockMs = startMs;
+  let nextToken = 0;
+  const pending = new Map();
+  return {
+    clock: () => clockMs,
+    set: (value) => { clockMs = value; },
+    timers: {
+      setTimeout(callback, delay) {
+        const token = ++nextToken;
+        pending.set(token, { callback, delay });
+        return token;
+      },
+      clearTimeout(token) { pending.delete(token); }
+    },
+    pending: () => [...pending.values()].map(({ delay }) => delay).sort((a, b) => a - b),
+    // Advances the clock to the earliest pending timer and fires it.
+    async next() {
+      const [token, entry] = [...pending.entries()].sort((a, b) => a[1].delay - b[1].delay)[0] ?? [];
+      assert.ok(token, "a timer was expected");
+      pending.delete(token);
+      clockMs += entry.delay;
+      entry.callback();
+      await new Promise((resolve) => setImmediate(resolve));
+    },
+    // Fires the pending timer created with exactly this delay.
+    async fire(delay, atMs) {
+      const found = [...pending.entries()].find(([, entry]) => entry.delay === delay);
+      assert.ok(found, `a ${delay}ms timer was expected; pending ${JSON.stringify(this.pending())}`);
+      pending.delete(found[0]);
+      clockMs = atMs ?? clockMs + delay;
+      found[1].callback();
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  };
+};
+
+const monitorHarness = ({ loads, hidden = false } = {}) => {
+  const { nodes, root } = continuityRoot();
+  const scheduler = fakeScheduler();
+  const controller = createContinuityLeaseController(root, { clock: scheduler.clock, timers: scheduler.timers });
+  const queue = [...loads];
+  let calls = 0;
+  let visibilityListener;
+  let isHidden = hidden;
+  const load = async () => {
+    calls += 1;
+    const next = queue.length > 1 ? queue.shift() : queue[0];
+    if (next instanceof Error) throw next;
+    return typeof next === "function" ? next() : next;
+  };
+  const monitor = startContinuityMonitor({
+    controller,
+    load,
+    clock: scheduler.clock,
+    timers: scheduler.timers,
+    visibility: {
+      isHidden: () => isHidden,
+      subscribe(listener) {
+        visibilityListener = listener;
+        return () => { visibilityListener = undefined; };
+      }
+    }
+  });
+  return {
+    nodes,
+    root,
+    scheduler,
+    controller,
+    monitor,
+    calls: () => calls,
+    setHidden(value) {
+      isHidden = value;
+      visibilityListener?.();
+    },
+    hasListener: () => typeof visibilityListener === "function"
+  };
+};
+
+const transportFailure = (message = "continuity feed returned 503") => {
+  const failure = new Error(message);
+  failure.continuityStage = "transport";
+  return failure;
+};
+
+test("a refreshing replay guard accepts the same proof but still rejects rollback", () => {
+  const guard = createContinuityReplayGuard(null, { allowRepeat: true });
+  const current = evidence();
+  assert.equal(guard.accept(current), current);
+  assert.equal(guard.accept(current), current, "re-reading the current proof is not a replay");
+  assert.throws(() => guard.accept(evidence({ generated_at: "2026-07-16T11:54:59Z" })), /replayed or rolled back/);
+  assert.throws(() => createContinuityReplayGuard(current.generated_at).accept(current), /replayed or rolled back/, "the default guard still treats a repeat as a replay");
+});
+
+test("a browser without Ed25519 WebCrypto is classified as unable to verify, not as a bad feed", async () => {
+  const unsupported = {
+    subtle: {
+      importKey: async () => { throw new DOMException("Unrecognized name.", "NotSupportedError"); },
+      verify: async () => true
+    }
+  };
+  await assert.rejects(() => verify(signedEnvelope(), { cryptoImpl: unsupported }), (error) => {
+    assert.ok(error instanceof ContinuityUnsupportedError);
+    assert.equal(classifyContinuityFailure(error), "unsupported");
+    return true;
+  });
+  await assert.rejects(() => verify(signedEnvelope(), { cryptoImpl: {} }), ContinuityUnsupportedError);
+
+  const broken = { subtle: { importKey: async () => { throw new DOMException("bad key", "DataError"); }, verify: async () => true } };
+  await assert.rejects(() => verify(signedEnvelope(), { cryptoImpl: broken }), (error) => {
+    assert.equal(error instanceof ContinuityUnsupportedError, false, "only an unknown algorithm means unsupported");
+    assert.equal(classifyContinuityFailure(error), "invalid");
+    return true;
+  });
+  assert.equal(classifyContinuityFailure(transportFailure()), "offline");
+});
+
+test("the continuity monitor keeps live proof current and never downgrades it early", async (t) => {
+  await t.test("a strictly newer proof replaces the current one and re-arms its lease", async () => {
+    const first = evidence({ generated_at: "2026-07-16T11:55:00Z", expires_at: "2026-07-16T12:10:00Z", allowed: 15, held: 85 });
+    const newer = evidence({ generated_at: "2026-07-16T12:00:00Z", expires_at: "2026-07-16T12:15:00Z", allowed: 16, held: 84 });
+    const harness = monitorHarness({ loads: [first, newer] });
+    assert.equal(await harness.monitor.refresh(), "verified");
+    assert.equal(harness.root.dataset.state, "verified");
+    // Next read at min(expiry - lead, interval): 9 minutes left minus a 1 minute lead caps at 5 minutes.
+    assert.deepEqual(harness.scheduler.pending(), [CONTINUITY_REFRESH.intervalMs, 10 * 60 * 1000]);
+    await harness.scheduler.fire(CONTINUITY_REFRESH.intervalMs);
+    assert.equal(harness.calls(), 2);
+    assert.equal(harness.root.dataset.state, "verified");
+    assert.equal(harness.nodes.get("[data-continuity-decisions]").textContent, "16 allow / 84 hold");
+  });
+
+  await t.test("the same proof again is 'no newer proof yet' and keeps the verified state", async () => {
+    const current = evidence({ generated_at: "2026-07-16T11:55:00Z", expires_at: "2026-07-16T12:10:00Z" });
+    const harness = monitorHarness({ loads: [current] });
+    await harness.monitor.refresh();
+    await harness.scheduler.fire(CONTINUITY_REFRESH.intervalMs);
+    assert.equal(harness.calls(), 2);
+    assert.equal(harness.root.dataset.state, "verified", "an unchanged proof is not a failure");
+    // Five minutes remain, so the next read lands a minute before expiry.
+    assert.ok(harness.scheduler.pending().includes(4 * 60 * 1000), JSON.stringify(harness.scheduler.pending()));
+  });
+
+  await t.test("failed reads leave a valid proof in place, then expiry degrades with bounded backoff", async () => {
+    const current = evidence({ generated_at: "2026-07-16T11:55:00Z", expires_at: "2026-07-16T12:10:00Z" });
+    const harness = monitorHarness({ loads: [current, transportFailure()] });
+    await harness.monitor.refresh();
+    await harness.scheduler.fire(CONTINUITY_REFRESH.intervalMs);
+    assert.equal(harness.root.dataset.state, "verified", "a failed read must not hide a proof whose lease is still valid");
+    assert.ok(harness.scheduler.pending().includes(CONTINUITY_REFRESH.retryDelaysMs[0]));
+    await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[0]);
+    await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[1]);
+    await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[2]);
+    // The lease itself lapses at 12:10; the controller renders the expiry independently.
+    await harness.scheduler.fire(10 * 60 * 1000, Date.parse("2026-07-16T12:10:00Z"));
+    assert.equal(harness.root.dataset.state, "unavailable");
+    assert.equal(harness.root.dataset.reason, "expired");
+    await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[3]);
+    await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[4]);
+    await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[4]);
+    assert.equal(harness.root.dataset.reason, "expired", "later transport failures keep the more specific expiry note");
+    assert.deepEqual(harness.scheduler.pending(), [CONTINUITY_REFRESH.retryDelaysMs.at(-1)], "backoff is capped");
+  });
+
+  await t.test("an initial transport failure shows the feed offline and keeps retrying", async () => {
+    const harness = monitorHarness({ loads: [transportFailure(), evidence()] });
+    assert.equal(await harness.monitor.refresh(), "failed");
+    assert.equal(harness.root.dataset.reason, "offline");
+    assert.equal(harness.root.dataset.reasonDetail, "continuity feed returned 503");
+    assert.equal(harness.nodes.get("[data-continuity-state]").textContent, "Live feed offline");
+    await harness.scheduler.fire(CONTINUITY_REFRESH.retryDelaysMs[0]);
+    assert.equal(harness.root.dataset.state, "verified", "a later successful read restores the live proof");
+  });
+
+  await t.test("an unsupported browser says so once and stops polling", async () => {
+    const harness = monitorHarness({ loads: [new ContinuityUnsupportedError()] });
+    await harness.monitor.refresh();
+    assert.equal(harness.root.dataset.reason, "unsupported");
+    assert.equal(harness.nodes.get("[data-continuity-state]").textContent, "Cannot verify here");
+    assert.deepEqual(harness.scheduler.pending(), []);
+  });
+
+  await t.test("a verification failure is not reported as an offline feed", async () => {
+    const harness = monitorHarness({ loads: [new Error("continuity evidence signature is invalid")] });
+    await harness.monitor.refresh();
+    assert.equal(harness.root.dataset.reason, "invalid");
+    assert.equal(harness.nodes.get("[data-continuity-state]").textContent, "Proof not verified");
+  });
+
+  await t.test("reads pause while hidden and resume when the page returns", async () => {
+    const current = evidence({ generated_at: "2026-07-16T11:55:00Z", expires_at: "2026-07-16T12:10:00Z" });
+    const newer = evidence({ generated_at: "2026-07-16T12:05:00Z", expires_at: "2026-07-16T12:20:00Z" });
+    const harness = monitorHarness({ loads: [current, newer] });
+    await harness.monitor.refresh();
+    harness.setHidden(true);
+    assert.deepEqual(harness.scheduler.pending(), [10 * 60 * 1000], "only the fail-closed lease timer survives while hidden");
+    harness.scheduler.set(Date.parse("2026-07-16T12:11:00Z"));
+    harness.setHidden(false);
+    assert.equal(harness.root.dataset.reason, "expired", "returning to view re-checks the lease at once");
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(harness.calls(), 2, "an overdue read runs as soon as the page is visible");
+    assert.equal(harness.root.dataset.state, "verified");
+  });
+
+  await t.test("a disposed monitor ignores late results and unsubscribes", async () => {
+    let release;
+    const harness = monitorHarness({ loads: [() => new Promise((resolve) => { release = resolve; })] });
+    const pending = harness.monitor.refresh();
+    harness.monitor.dispose();
+    release(evidence());
+    assert.equal(await pending, "disposed");
+    assert.equal(harness.root.dataset.state, undefined);
+    assert.equal(harness.hasListener(), false);
+    assert.equal(await harness.monitor.refresh(), "disposed");
+  });
+
+  assert.throws(() => startContinuityMonitor({}), /monitor is unavailable/);
 });
 
 test("transport timeout promptly races both fetch and body reads", async (t) => {

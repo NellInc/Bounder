@@ -1,4 +1,4 @@
-import { parseStrictJSON } from "../policy/core.js";
+import { parseStrictJSON } from "../json/policy-json.js";
 
 const deepFreeze = (value, seen = new WeakSet()) => {
   if (value === null || typeof value !== "object" || seen.has(value)) return value;

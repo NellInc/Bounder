@@ -4,6 +4,17 @@ import { verifyEnvelope } from "../runtime/policy/contracts.js";
 import { validateRoundTripEvidence } from "../runtime/policy/roundtrip.js";
 import { fetchBoundedJSON } from "../runtime/transport/bounded-json.js";
 import { classifyAuthority, createLatestRequestGate } from "../runtime/policy/presentation-state.js";
+import { asSentence } from "./text.js";
+
+// Transport errors carry no verification stage. Tag them, non-enumerably as the runtime's
+// own stage tags are, so the failure is shown at the receipt step it actually reached.
+const atReceiptStage = (error) => {
+  const tagged = error instanceof Error ? error : new Error("The recorded round-trip evidence could not be fetched.");
+  if (!("verificationStage" in tagged) && Object.isExtensible(tagged)) {
+    Object.defineProperty(tagged, "verificationStage", { value: "receipt", enumerable: false });
+  }
+  return tagged;
+};
 
 export const bootstrapPolicyRoundTrip = (
   root = document,
@@ -55,23 +66,22 @@ export const bootstrapPolicyRoundTrip = (
   };
   const rejectCurrent = (request, error, label = "Rejected") => {
     if (!request.isCurrent()) return;
-    const detail = error instanceof Error ? error.message : "The vector could not be verified.";
-    setStatus("rejected", label, label === "Unavailable"
+    const detail = asSentence(error instanceof Error ? error.message : "The vector could not be verified.");
+    const unavailable = label === "Unavailable";
+    setStatus("rejected", label, unavailable
       ? `${detail} Check your connection, then retry the published example, or inspect a compatible local JSON file.`
       : detail);
     const stage = error instanceof Error && error.verificationStage in steps ? error.verificationStage : "envelope";
-    setStep(stage, "rejected", "Verification stopped here");
+    // A transport failure is not a verdict on the bytes: it marks where evidence ran out.
+    setStep(stage, unavailable ? "unavailable" : "rejected", unavailable ? "Evidence could not be fetched" : "Verification stopped here");
   };
-  const renderVerified = (request, verified, recorded) => {
+  // Envelope, signature and policy are settled as soon as the vector verifies, so a later
+  // evidence failure can never be reported against the steps that already passed.
+  const renderVerifiedContract = (request, verified) => {
     if (!request.isCurrent()) return;
     setStep("envelope", "verified", `${verified.payloadBytes.byteLength} exact signed bytes loaded`);
     setStep("signature", "verified", `Verified with ${verified.envelope.public_key_id}`);
     setStep("policy", "verified", `${verified.policy.constraints.allowed_actions.length} allowed recovery actions; ${verified.policy.source_policies.length} source policies`);
-    setStep(
-      "receipt",
-      recorded ? "evidenced" : "unmatched",
-      recorded ? `Signed Go receipt verified: ${recorded.receipt.code}, sequence ${recorded.receipt.policy_sequence}` : "No signed Go receipt matches this exact policy sequence"
-    );
     fields.issuer.textContent = verified.policy.issuer;
     fields.subject.textContent = verified.policy.subject;
     fields.fleet.textContent = verified.policy.fleet_id;
@@ -79,6 +89,15 @@ export const bootstrapPolicyRoundTrip = (
     fields.key.textContent = verified.envelope.public_key_id;
     fields.policy.textContent = verified.policy.policy_id;
     fields.digest.textContent = verified.payloadSha256;
+  };
+  const renderVerified = (request, verified, recorded) => {
+    if (!request.isCurrent()) return;
+    renderVerifiedContract(request, verified);
+    setStep(
+      "receipt",
+      recorded ? "evidenced" : "unmatched",
+      recorded ? `Signed Go receipt verified: ${recorded.receipt.code}, sequence ${recorded.receipt.policy_sequence}` : "No signed Go receipt matches this exact policy sequence"
+    );
     fields.receipt.textContent = recorded
       ? `${recorded.receipt.code} · ${recorded.receipt.device_id} · policy sequence ${recorded.receipt.policy_sequence}`
       : "No matching recorded receipt";
@@ -92,13 +111,28 @@ export const bootstrapPolicyRoundTrip = (
     }
   };
   const inspectBytes = async (bytes, request) => {
+    let verified;
     try {
       const vector = parseStrictJSON(bytes, "signed vector");
-      const verified = await verifyVector(vector);
-      const fetched = await fetchJSON("./data/creedspace-bounder-roundtrip-v1.json", {
+      verified = await verifyVector(vector);
+    } catch (error) {
+      // A browser without Ed25519 WebCrypto has judged nothing: say so rather than "Rejected".
+      const unsupported = error instanceof Error && error.verificationStage === "signature" && /cannot verify Ed25519/.test(error.message);
+      rejectCurrent(request, error, unsupported ? "Unsupported" : "Rejected");
+      return;
+    }
+    renderVerifiedContract(request, verified);
+    let fetched;
+    try {
+      fetched = await fetchJSON("./data/creedspace-bounder-roundtrip-v1.json", {
         signal: request.signal,
         description: "recorded round-trip evidence"
       });
+    } catch (error) {
+      rejectCurrent(request, atReceiptStage(error), "Unavailable");
+      return;
+    }
+    try {
       const recorded = await validateEvidence(fetched.value, {
         policy: verified.policy,
         payloadBytes: verified.payloadBytes,
@@ -112,7 +146,8 @@ export const bootstrapPolicyRoundTrip = (
   };
   const loadPublishedExample = async () => {
     const request = begin();
-    sampleButton.disabled = true;
+    // The button stays enabled while it is focused: disabling it would drop keyboard focus to the
+    // page body. A second press simply supersedes the first through the request gate.
     fileInput.value = "";
     try {
       const fetched = await fetchJSON("./data/creedspace-bounder-golden-v1.json", {

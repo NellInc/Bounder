@@ -1,0 +1,5 @@
+Contact: https://github.com/NellInc/Bounder/security/advisories/new
+Expires: 2027-09-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://www.bounder.io/.well-known/security.txt
+Policy: https://github.com/NellInc/Bounder/blob/main/SECURITY.md

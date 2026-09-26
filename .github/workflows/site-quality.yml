@@ -9,14 +9,23 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same pull request supersedes the running gate. Runs on main are never
+# cancelled, so every commit that reaches main keeps a complete result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A path no impact rule covers selects the complete gate, so this budget matches the
+    # deploy workflow's complete verification plus the Chromium install.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
@@ -51,4 +60,6 @@ jobs:
         if: ${{ steps.impact.outputs.browser == 'true' }}
         run: npx playwright install --with-deps chromium
       - name: Run descriptor-selected gates
-        run: npm run verify:changed -- --base "${{ steps.impact.outputs.base }}"
+        env:
+          BASE: ${{ steps.impact.outputs.base }}
+        run: npm run verify:changed -- --base "$BASE"

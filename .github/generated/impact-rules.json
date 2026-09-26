@@ -28,7 +28,11 @@
         ".npmrc",
         ".nvmrc",
         "package-lock.json",
-        "tests/tooling-hygiene.test.js"
+        "tests/tooling-hygiene.test.js",
+        ".github/workflows/codeql.yml",
+        ".github/dependabot.yml",
+        "scripts/coverage.mjs",
+        "tests/coverage-runner.test.js"
       ],
       "commands": [
         "system_check",
@@ -121,7 +125,8 @@
         "schemas/bounder-release-manifest-v2.schema.json",
         ".github/workflows/receipt-drift.yml",
         "runtime/json/**",
-        "ui/policy-panel.js"
+        "ui/policy-panel.js",
+        "schemas/creedspace-bounder-manipulator-profile-v1.schema.json"
       ],
       "commands": [
         "unit_coverage",
@@ -139,10 +144,13 @@
         "simulator.html",
         "simulator.css",
         "tests/simulator-world.test.js",
-        "tests/browser/site.spec.js",
+        "tests/browser/**",
         "simulator/**",
         "ui/fleet-view.js",
-        "ui/workbench.js"
+        "ui/workbench.js",
+        "simulator-bootstrap.js",
+        "ui/**",
+        "tests/ui-presentation.test.js"
       ],
       "commands": [
         "unit_coverage",
@@ -158,7 +166,21 @@
         "tests/publication.test.js",
         ".github/workflows/deploy-pages.yml",
         "playwright.config.js",
-        "tests/playwright-config.test.js"
+        "tests/playwright-config.test.js",
+        "scripts/serve-site.mjs",
+        "tests/serve-site.test.js",
+        "tests/brand-assets.test.js",
+        "vendor/**",
+        "images/**",
+        "assets/**",
+        "favicon.ico",
+        "*.png",
+        "*.webmanifest",
+        ".well-known/**",
+        "robots.txt",
+        "CNAME",
+        "LICENSE",
+        "NOTICE"
       ],
       "commands": [
         "unit_coverage",
@@ -205,7 +227,8 @@
         "tests/site-quality.test.js",
         "tests/browser-entry-side-effects.test.js",
         "tests/embedded-simulator-height.test.js",
-        "ui/contact-form.js"
+        "ui/contact-form.js",
+        "tests/contact-form.test.js"
       ],
       "commands": [
         "unit_coverage",
@@ -234,9 +257,14 @@
       "id": "repository_provenance",
       "paths": [
         "design/**",
-        ".github/ISSUE_TEMPLATE/**"
+        ".github/ISSUE_TEMPLATE/**",
+        "docs/**",
+        "artifacts/**",
+        ".claude/**",
+        "design-qa.md"
       ],
       "commands": [
+        "unit",
         "docs_check"
       ],
       "release_sensitive": false

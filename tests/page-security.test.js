@@ -9,7 +9,7 @@ const readPage = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf
 /* GitHub Pages cannot emit response headers, so a meta policy is the only enforcement route.
    A meta CSP fails silently and closed: nothing in the page reports a stale hash, so these
    assertions are the only thing standing between an edited inline script and a dead page. */
-const INLINE_SCRIPT = /<script\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/script>/gi;
+const INLINE_SCRIPT = /<script\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/script\b[^>]*>/gi;
 
 const inlineScriptHashes = (html) => {
   const hashes = [];

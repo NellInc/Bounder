@@ -6,11 +6,23 @@ import test from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
+import { parseStrictJSON } from "../runtime/json/policy-json.js";
+import { OS_METADATA_NAMES } from "../scripts/build-site.mjs";
+import { parseRFC3339 } from "../runtime/policy/contracts.js";
+
 const root = new URL("../", import.meta.url);
-const schemaPaths = (await readdir(new URL("schemas/", root), { withFileTypes: true }))
-  .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
-  .map((entry) => `schemas/${entry.name}`)
-  .sort();
+// Every entry is inventoried, not only *.json: /schemas/ is a public route, so a stray README or
+// example there is published too. Load failures are collected and reported by a named test
+// rather than thrown at import, where they would fail the file with no test name at all.
+// Operating-system metadata is the one exception, because the publication build never ships it.
+const schemaEntries = (await readdir(new URL("schemas/", root), { withFileTypes: true }))
+  .filter((entry) => !OS_METADATA_NAMES.includes(entry.name) && !entry.name.startsWith("._"))
+  .map((entry) => ({ name: entry.name, isFile: entry.isFile() }))
+  .sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0));
+const schemaPaths = schemaEntries
+  .filter(({ name, isFile }) => isFile && name.endsWith(".json"))
+  .map(({ name }) => `schemas/${name}`);
+const schemaLoadErrors = [];
 const schemaIDs = {
   bundle: "https://www.bounder.io/schemas/bounder.receipt-bundle.v1.schema.json",
   checkpoint: "https://www.bounder.io/schemas/creedspace-bounder-checkpoint-v1.schema.json",
@@ -22,8 +34,15 @@ const schemaIDs = {
   roundTrip: "https://www.bounder.io/schemas/creedspace-bounder-roundtrip-v1.schema.json"
 };
 
-const [schemaDocuments, bundle, fleetEvidence, goldenVectorBytes, roundTrip] = await Promise.all([
-  Promise.all(schemaPaths.map(async (path) => JSON.parse(await readFile(new URL(path, root), "utf8")))),
+const [loadedSchemas, bundle, fleetEvidence, goldenVectorBytes, roundTrip] = await Promise.all([
+  Promise.all(schemaPaths.map(async (path) => {
+    try {
+      return { path, schema: JSON.parse(await readFile(new URL(path, root), "utf8")) };
+    } catch (error) {
+      schemaLoadErrors.push(`${path}: ${error.message}`);
+      return null;
+    }
+  })).then((loaded) => loaded.filter(Boolean)),
   readFile(new URL("data/bounder-receipts.v1.json", root), "utf8").then(JSON.parse),
   readFile(new URL("data/bounder-fleet-evidence.v1.json", root), "utf8").then(JSON.parse),
   readFile(new URL("data/creedspace-bounder-golden-v1.json", root)),
@@ -50,8 +69,52 @@ const derivedCheckpoint = {
 
 const ajv = new Ajv2020({ allErrors: true, strict: true, validateFormats: true });
 addFormats(ajv, { mode: "full" });
-for (const schema of schemaDocuments) ajv.addSchema(schema);
-const validators = new Map(schemaDocuments.map((schema) => [schema.$id, ajv.getSchema(schema.$id)]));
+const schemaDocuments = loadedSchemas.map(({ schema }) => schema);
+for (const { path, schema } of loadedSchemas) {
+  try {
+    ajv.addSchema(schema);
+  } catch (error) {
+    schemaLoadErrors.push(`${path}: ${error.message}`);
+  }
+}
+const validators = new Map();
+for (const { path, schema } of loadedSchemas) {
+  try {
+    const validate = ajv.getSchema(schema.$id);
+    if (validate) validators.set(schema.$id, validate);
+    else schemaLoadErrors.push(`${path}: no schema registered under ${schema.$id}`);
+  } catch (error) {
+    schemaLoadErrors.push(`${path}: ${error.message}`);
+  }
+}
+
+const SCHEMA_ORIGIN = "https://www.bounder.io/schemas/";
+test("the published schema directory holds only schemas, each loading cleanly under its own $id", () => {
+  assert.deepEqual(schemaLoadErrors, [], "a published schema failed to parse or compile");
+  for (const { name, isFile } of schemaEntries) {
+    assert.equal(isFile, true, `schemas/${name} is not a regular file`);
+    assert.match(name, /^[a-z0-9.-]+\.schema\.json$/, `schemas/${name} is published under /schemas/ but is not a schema`);
+  }
+  for (const { path, schema } of loadedSchemas) {
+    assert.equal(schema.$id, `${SCHEMA_ORIGIN}${path.slice("schemas/".length)}`, `${path} declares another file's $id`);
+  }
+});
+
+/* The manipulator contract is a mirrored preview outside the decision producer's evidence
+   statement, so neither producer derivation nor the drift workflow covers its bytes. Until the
+   producer exports it, these digests are the guard: a change here must be a deliberate re-mirror,
+   and a re-keyed, re-signed golden vector cannot pass by carrying its own public key. */
+const MIRRORED_MANIPULATOR_SHA256 = Object.freeze({
+  "data/creedspace-bounder-manipulator-golden-v1.json": "4949dc61a760609e6ad9be591d3d88180f19f2e96b74533be6c977afa8c54f97",
+  "data/creedspace-bounder-manipulator-profile-v1.example.json": "29f2ccb647cbfd489e84dd844a11f6ebf5eecaeaa94c3e2d9083d9e66d1eb29f",
+  "schemas/creedspace-bounder-manipulator-profile-v1.schema.json": "5827105a0ad834c6b71bf09e63d183c94869ccd27de2b7019c0e80d1ab7d8be4"
+});
+test("mirrored manipulator contract bytes match the pinned mirror", async () => {
+  for (const [path, expected] of Object.entries(MIRRORED_MANIPULATOR_SHA256)) {
+    const digest = createHash("sha256").update(await readFile(new URL(path, root))).digest("hex");
+    assert.equal(digest, expected, `${path} changed; re-mirror deliberately and update the pin`);
+  }
+});
 
 const schemaErrorSummary = (errors) => (errors ?? [])
   .map(({ instancePath, keyword, message }) => `${instancePath || "/"} ${keyword}: ${message}`)
@@ -634,4 +697,89 @@ test("published signatures verify and round-trip records remain relationally bou
     assertSchemaValid(schemaIDs.roundTrip, candidate, `${label} mutation is structurally valid`);
     assert.throws(() => assertRoundTripRelations(candidate), error, label);
   }
+});
+
+// Relations the manipulator profile schema cannot express. The policy wrapper has no published
+// schema yet (a producer-side addition), so its closed shape is checked here.
+const MANIPULATOR_POLICY_KEYS = [
+  "version", "policy_id", "issuer", "subject", "fleet_id", "sequence", "issued_at", "not_before", "expires_at",
+  "source_policies", "constraints"
+];
+const assertManipulatorPolicyRelations = (candidate, example) => {
+  assert.deepEqual(Object.keys(candidate).sort(), [...MANIPULATOR_POLICY_KEYS].sort(), "manipulator policy fields are closed");
+  assert.equal(candidate.version, "creedspace-bounder-manipulator-policy/v1");
+  assert.equal(candidate.issuer, "creed.space/fleet", "manipulator policy issuer");
+  assert.match(candidate.policy_id, /^sha256:[0-9a-f]{64}$/);
+  assert.ok(Number.isSafeInteger(candidate.sequence) && candidate.sequence >= 1);
+  const [issued, notBefore, expires] = [candidate.issued_at, candidate.not_before, candidate.expires_at]
+    .map((value) => parseRFC3339(value, "manipulator policy time").epochNanoseconds);
+  assert.ok(issued <= notBefore && notBefore < expires, "manipulator policy validity must be ordered");
+  assert.equal(expires - issued, BigInt(example.ttl_seconds) * 1_000_000_000n, "manipulator policy TTL must equal the example profile");
+
+  const constraints = candidate.constraints;
+  const hazards = new Set(Object.keys(constraints.hazard_classes));
+  const targets = new Set(Object.keys(constraints.hazard_targets));
+  const known = (condition, label) => assert.ok(condition, `${label} names an unknown family`);
+  for (const key of Object.keys(constraints.min_distance_metres)) {
+    const [hazard, target, extra] = key.split(":");
+    known(extra === undefined && hazards.has(hazard) && (targets.has(target) || target === "protected"), key);
+  }
+  for (const [hazard, list] of Object.entries(constraints.prohibit_release_into)) {
+    known(hazards.has(hazard) && list.every((target) => targets.has(target)), `release ${hazard}`);
+  }
+  for (const [hazard, list] of Object.entries(constraints.prohibit_pour_when_vessel_contains)) {
+    known(hazards.has(hazard) && list.every((other) => hazards.has(other)), `pour ${hazard}`);
+  }
+  known(constraints.require_human_authorization_for_classes.every((hazard) => hazards.has(hazard)), "human authorisation");
+  const tokens = [
+    ...Object.values(constraints.hazard_classes).flat(),
+    ...Object.values(constraints.hazard_targets).flat(),
+    ...constraints.protected_classes
+  ];
+  assert.equal(new Set(tokens).size, tokens.length, "class tokens must be disjoint across families");
+  assert.deepEqual(candidate.constraints, example.constraints, "signed constraints must equal the mirrored example");
+};
+
+test("manipulator profile contract validates its mirrored example and signed golden vector", async () => {
+  const schemaID = "https://www.bounder.io/schemas/creedspace-bounder-manipulator-profile-v1.schema.json";
+  const [example, golden] = await Promise.all([
+    readFile(new URL("data/creedspace-bounder-manipulator-profile-v1.example.json", root), "utf8").then(JSON.parse),
+    readFile(new URL("data/creedspace-bounder-manipulator-golden-v1.json", root), "utf8").then(JSON.parse)
+  ]);
+  assertSchemaValid(schemaID, example, "manipulator profile example");
+  assertSchemaValid(schemaIDs.envelope, golden.envelope, "manipulator policy envelope");
+
+  const payloadBytes = decodeCanonicalBase64(golden.envelope.payload, "manipulator payload");
+  const signature = decodeCanonicalBase64(golden.envelope.signature, "manipulator signature");
+  assert.equal(
+    verifySignature(null, payloadBytes, rawEd25519PublicKey(golden.public_key, "manipulator public key"), signature),
+    true,
+    "published manipulator signature must verify"
+  );
+  const manipulatorPolicy = parseStrictJSON(payloadBytes, "manipulator payload");
+  assert.equal(manipulatorPolicy.version, "creedspace-bounder-manipulator-policy/v1");
+  assertSchemaValid(schemaID, { version: example.version, ttl_seconds: example.ttl_seconds, constraints: manipulatorPolicy.constraints }, "golden-derived manipulator profile");
+
+  // The mirrored vector is signed with the published simulation key, not a new deployment key.
+  assert.deepEqual(Object.keys(golden).sort(), ["envelope", "public_key", "version"]);
+  assert.equal(golden.version, "creedspace-bounder-manipulator-golden/v1");
+  assert.equal(golden.public_key, goldenVector.public_key);
+  assert.equal(golden.envelope.public_key_id, goldenVector.envelope.public_key_id);
+  assertManipulatorPolicyRelations(manipulatorPolicy, example);
+  for (const [label, change, error] of [
+    ["unknown pair family", (value) => { value.constraints.min_distance_metres["blade:nonexistent"] = 0.3; }, /unknown family/],
+    ["unknown release family", (value) => { value.constraints.prohibit_release_into.reactive = ["nonexistent"]; }, /unknown family/],
+    ["unknown authorisation class", (value) => { value.constraints.require_human_authorization_for_classes.push("heat_source"); }, /unknown family/],
+    ["shared class token", (value) => { value.constraints.hazard_targets.vessel.push("knife"); }, /disjoint/],
+    ["issuer changed", (value) => { value.issuer = "example.invalid"; }, /issuer/],
+    ["validity out of order", (value) => { value.not_before = value.expires_at; }, /validity/],
+    ["TTL mismatch", (value) => { value.expires_at = "2026-09-20T12:05:01Z"; }, /TTL/],
+    ["extra policy field", (value) => { value.note = "ignored"; }, /policy fields/],
+    ["constraints drift from the example", (value) => { value.constraints.allowed_actions.pop(); }, /example/]
+  ]) {
+    assert.throws(() => assertManipulatorPolicyRelations(mutate(manipulatorPolicy, change), example), error, label);
+  }
+
+  assertSchemaInvalid(schemaID, mutate(example, (value) => { value.constraints.unexpected = true; }), "unknown constraint", /additionalProperties/);
+  assertSchemaInvalid(schemaID, mutate(example, (value) => { value.ttl_seconds = 5; }), "ttl below floor", /minimum/);
 });

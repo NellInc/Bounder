@@ -54,18 +54,26 @@ test("the toolchain pins its Node floor in exactly one place and ignores machine
   // than a tarball fetched from the network at deploy time.
   assert.match(manifest.scripts.quality, /node_modules\/\.bin\/impeccable detect \./);
   assert.doesNotMatch(manifest.scripts.quality, /npx/);
-  assert.equal(manifest.devDependencies.impeccable, "3.2.1", "the design linter must be exactly pinned");
+  // Exact pin, agreeing with the lockfile. Asserting a literal version instead would fail every
+  // Dependabot bump by design and leave the linter stuck on whatever version the test names.
+  const lock = JSON.parse(await readFile(join(repositoryRoot, "package-lock.json"), "utf8"));
+  assert.match(manifest.devDependencies.impeccable, /^\d+\.\d+\.\d+$/, "the design linter must be exactly pinned");
+  assert.equal(lock.packages[""].devDependencies.impeccable, manifest.devDependencies.impeccable, "package-lock.json disagrees with the pinned design linter");
+  assert.equal(lock.packages["node_modules/impeccable"].version, manifest.devDependencies.impeccable, "the locked design linter is not the pinned version");
   const descriptor = JSON.parse(await readFile(join(repositoryRoot, "system", "bounder-system.v1.json"), "utf8"));
   const designLint = descriptor.commands.find(({ id }) => id === "design_lint");
   assert.deepEqual(designLint.argv, ["node_modules/.bin/impeccable", "detect", "."]);
 
   // A fixed coverage scratch path is shared across concurrent runs and across users; --clean
   // then deletes another run's V8 output mid-flight and moves the per-file floors under it.
-  assert.doesNotMatch(manifest.scripts["test:coverage"], /--temp-directory=\/tmp\/[a-z0-9-]+ /);
-  assert.match(manifest.scripts["test:coverage"], /--temp-directory="\$\(mktemp -d "\$\{TMPDIR:-\/tmp\}\/bounder-c8-XXXXXX"\)"/);
+  // The wrapper gives each run a private directory and removes it afterwards.
+  assert.equal(manifest.scripts["test:coverage"], "node scripts/coverage.mjs");
+  assert.equal(manifest.scripts["release:manifest"], undefined, "the v1 generator cannot seal a release and must not look like the entry point");
 
   const ignored = await readFile(join(repositoryRoot, ".gitignore"), "utf8");
   assert.match(ignored, /^tmp\/$/m, "scratch under tmp/ is not ignored");
+  assert.match(ignored, /^coverage\/$/m, "coverage output is not ignored");
+  assert.match(ignored, /^\.claude\/$/m, "machine-local agent files are not ignored");
 });
 
 test("CLI entry guards survive a checkout path that needs percent-encoding", () => {

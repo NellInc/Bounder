@@ -22,7 +22,7 @@ export const DEFAULT_OBSERVABILITY_BUDGETS = Object.freeze({
   fleet_max_guardians: 10_000,
   heartbeat_validity_ms: 90_000,
   healthy_interval_ms: 30_000,
-  stable_interval_ms: 60_000,
+  stable_interval_ms: 40_000,
   attention_interval_ms: 5_000,
   jitter_fraction: 0.1,
   audit_backlog_count: 100,
@@ -150,13 +150,23 @@ export function validateObservabilityBudgets(overrides = {}) {
   if (!(budgets.attention_interval_ms <= budgets.healthy_interval_ms && budgets.healthy_interval_ms <= budgets.stable_interval_ms)) {
     throw new Error("observability heartbeat intervals are inconsistent");
   }
-  if (Math.ceil(budgets.stable_interval_ms * (1 + budgets.jitter_fraction)) >= budgets.heartbeat_validity_ms) {
+  const longestScheduledDelay = Math.ceil(budgets.stable_interval_ms * (1 + budgets.jitter_fraction));
+  if (longestScheduledDelay >= budgets.heartbeat_validity_ms) {
     throw new Error("observability heartbeat interval can outlive its validity window");
+  }
+  // One lost report must not mark a stable Guardian unreachable: the report after a lost one
+  // arrives up to two maximum delays later and must still land inside the validity window.
+  if (2 * longestScheduledDelay >= budgets.heartbeat_validity_ms) {
+    throw new Error("observability heartbeat interval cannot tolerate one lost report");
   }
   return Object.freeze(budgets);
 }
 
-function deriveGuardianStateUnchecked(heartbeat, atMs, budgets) {
+// `atMs` governs the absolute deadlines (policy expiry and continuity lease), which Fleet may
+// re-check at observation time. Evidence age is a rolling Guardian-local reading: Fleet cannot
+// see evidence refreshed after the heartbeat, so it is judged at `evidenceAtMs`, which Fleet
+// classification pins to the heartbeat's own generated_at.
+function deriveGuardianStateUnchecked(heartbeat, atMs, budgets, evidenceAtMs = atMs) {
   if (heartbeat.checkpoint.rollback_detected) return Object.freeze({ state: "held", reason: "rollback_detected" });
   if (!heartbeat.policy.verified) return Object.freeze({ state: "held", reason: "policy_unverified" });
   if (parseObservabilityTimestamp(heartbeat.policy.expires_at, "policy expiry") <= atMs) {
@@ -168,7 +178,7 @@ function deriveGuardianStateUnchecked(heartbeat, atMs, budgets) {
   if (STATE_REASONS.recovering.includes(heartbeat.reason)) {
     return Object.freeze({ state: "recovering", reason: heartbeat.reason });
   }
-  const evidenceAge = atMs - parseObservabilityTimestamp(heartbeat.evidence.freshest_at, "freshest evidence time");
+  const evidenceAge = evidenceAtMs - parseObservabilityTimestamp(heartbeat.evidence.freshest_at, "freshest evidence time");
   if (evidenceAge > heartbeat.evidence.required_max_age_ms) {
     return Object.freeze({ state: "degraded", reason: "evidence_lag" });
   }
@@ -283,21 +293,36 @@ export function validateGuardianHeartbeat(heartbeat, {
   return deepFreeze(snapshot);
 }
 
+function assertReceivedAt(receivedAtMs, nowMs) {
+  if (receivedAtMs === undefined) return;
+  if (!Number.isSafeInteger(receivedAtMs) || receivedAtMs > nowMs) throw new Error("heartbeat receive time is invalid");
+}
+
+// Liveness is the earlier of the Guardian-declared expiry and the Fleet receive time plus the
+// validity window, so a Guardian clock running fast cannot stretch its own reachability.
+function heartbeatLivenessExpiry(heartbeat, receivedAtMs, budgets) {
+  const declared = parseObservabilityTimestamp(heartbeat.expires_at, "heartbeat expires_at");
+  return receivedAtMs === undefined ? declared : Math.min(declared, receivedAtMs + budgets.heartbeat_validity_ms);
+}
+
 export function classifyGuardianHeartbeat(heartbeat, {
   nowMs = Date.now(),
+  receivedAtMs,
   budgets: budgetOverrides = {}
 } = {}) {
   if (heartbeat === null || heartbeat === undefined) return Object.freeze({ state: "unreachable", reason: "missing_heartbeat" });
   const budgets = validateObservabilityBudgets(budgetOverrides);
+  assertReceivedAt(receivedAtMs, nowMs);
   const validated = validateGuardianHeartbeat(heartbeat, { nowMs, allowExpired: true, budgets });
-  return classifyValidatedGuardianHeartbeat(validated, nowMs, budgets);
+  return classifyValidatedGuardianHeartbeat(validated, nowMs, budgets, receivedAtMs);
 }
 
-function classifyValidatedGuardianHeartbeat(validated, nowMs, budgets) {
-  if (parseObservabilityTimestamp(validated.expires_at, "heartbeat expires_at") <= nowMs) {
+function classifyValidatedGuardianHeartbeat(validated, nowMs, budgets, receivedAtMs) {
+  if (heartbeatLivenessExpiry(validated, receivedAtMs, budgets) <= nowMs) {
     return Object.freeze({ state: "unreachable", reason: "heartbeat_expired" });
   }
-  return deriveGuardianStateUnchecked(validated, nowMs, budgets);
+  const generatedAt = parseObservabilityTimestamp(validated.generated_at, "heartbeat generated_at");
+  return deriveGuardianStateUnchecked(validated, nowMs, budgets, generatedAt);
 }
 
 export function createGuardianHeartbeatGuard({
@@ -310,19 +335,33 @@ export function createGuardianHeartbeatGuard({
   const guardians = new Map();
 
   return Object.freeze({
-    accept(heartbeat, nowMs = Date.now()) {
+    // Accepts a raw heartbeat or, preferably, the frozen result of verifyTelemetryEnvelope, in
+    // which case the signing key's subject binding is re-checked before any floor moves.
+    accept(input, nowMs = Date.now()) {
+      if (!Number.isSafeInteger(nowMs)) throw new Error("heartbeat clock is invalid");
+      let heartbeat = input;
+      if (VERIFIED_TELEMETRY.has(input)) {
+        if (input.payload.version !== HEARTBEAT_VERSION) throw new Error("verified telemetry is not a Guardian heartbeat");
+        assertTelemetrySubject(input.payload, input.binding);
+        heartbeat = input.payload;
+      }
       const validated = validateGuardianHeartbeat(heartbeat, { nowMs, budgets });
       const previous = guardians.get(validated.guardian_id);
       const generatedAt = parseObservabilityTimestamp(validated.generated_at, "heartbeat generated_at");
       if (!previous && guardians.size >= budgets.fleet_max_guardians) throw new Error("Guardian heartbeat guard capacity is exhausted");
+      let clockRegression = false;
       if (previous) {
         if (validated.fleet_id !== previous.fleetId) throw new Error("Guardian heartbeat changed Fleet identity");
         if (validated.policy.sequence < previous.policySequence) throw new Error("Guardian heartbeat policy sequence rolled back");
         if (validated.checkpoint.sequence < previous.checkpointSequence) throw new Error("Guardian heartbeat checkpoint sequence rolled back");
-        if (generatedAt <= previous.generatedAt) throw new Error("Guardian heartbeat time was replayed or reordered");
         if (validated.boot_id === previous.bootId) {
+          // Within one boot the signed sequence is the replay defence. A generated_at that steps
+          // back under a higher sequence is a Guardian clock correction, recorded as a diagnostic
+          // rather than a lockout, so a corrected clock is not silenced for the skew window.
           if (validated.sequence <= previous.sequence) throw new Error("Guardian heartbeat sequence was replayed or reordered");
+          clockRegression = generatedAt <= previous.generatedAt;
         } else {
+          if (generatedAt <= previous.generatedAt) throw new Error("Guardian heartbeat time was replayed or reordered");
           if (previous.retiredBoots.has(validated.boot_id)) throw new Error("Guardian heartbeat boot epoch was replayed");
           if (previous.retiredBoots.size >= maxBootHistory) throw new Error("Guardian heartbeat boot history is exhausted");
         }
@@ -336,10 +375,19 @@ export function createGuardianHeartbeatGuard({
         retiredBoots,
         sequence: validated.sequence,
         generatedAt,
+        receivedAt: nowMs,
+        clockRegressions: Math.min(MAX_SAFE_INTEGER, (previous?.clockRegressions || 0) + Number(clockRegression)),
         policySequence: validated.policy.sequence,
         checkpointSequence: validated.checkpoint.sequence
       });
       return validated;
+    },
+    // Removes a Guardian that has left the expected inventory, releasing its capacity. The guard
+    // keeps no tombstone: re-admission of a retired id is refused by the inventory check in
+    // aggregation and by revoking the device key's subject binding, not by this guard.
+    retire(guardianId) {
+      assertIdentity(guardianId, "retired Guardian id");
+      return guardians.delete(guardianId);
     },
     state(guardianId) {
       const value = guardians.get(guardianId);
@@ -350,6 +398,8 @@ export function createGuardianHeartbeatGuard({
         retired_boot_ids: [...value.retiredBoots],
         sequence: value.sequence,
         generated_at_ms: value.generatedAt,
+        received_at_ms: value.receivedAt,
+        clock_regressions: value.clockRegressions,
         policy_sequence: value.policySequence,
         checkpoint_sequence: value.checkpointSequence
       });
@@ -376,16 +426,35 @@ function materializeRange(range) {
   return range.minimum === null ? { minimum: 0, maximum: 0 } : { minimum: range.minimum, maximum: range.maximum };
 }
 
-export function aggregateFleetSnapshot({
+function lookupOwn(collection, key) {
+  if (collection instanceof Map) return collection.get(key);
+  if (collection && typeof collection === "object" && Object.hasOwn(collection, key)) return collection[key];
+  return undefined;
+}
+
+function rejectedGuardianId(heartbeat) {
+  try {
+    const value = heartbeat?.guardian_id;
+    return typeof value === "string" && value.length <= 255 && IDENTITY.test(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function aggregateFleet({
   fleetId,
   expectedGuardians,
   heartbeats,
   nowMs = Date.now(),
   cycleStartedAtMs = nowMs,
+  receivedAtMs,
   budgets: budgetOverrides = {}
-}) {
+}, { quarantine }) {
   if (!Number.isSafeInteger(nowMs) || !Number.isSafeInteger(cycleStartedAtMs) || cycleStartedAtMs > nowMs) {
     throw new Error("Fleet snapshot clock is invalid");
+  }
+  if (receivedAtMs !== undefined && !(receivedAtMs instanceof Map) && (!receivedAtMs || typeof receivedAtMs !== "object" || Array.isArray(receivedAtMs))) {
+    throw new Error("Fleet heartbeat receive times are invalid");
   }
   assertIdentity(fleetId, "Fleet snapshot id");
   const budgets = validateObservabilityBudgets(budgetOverrides);
@@ -404,13 +473,33 @@ export function aggregateFleetSnapshot({
   }
 
   const heartbeatById = new Map();
-  for (const heartbeat of heartbeats) {
-    const validated = validateGuardianHeartbeat(heartbeat, { nowMs, allowExpired: true, budgets });
-    if (validated.fleet_id !== fleetId) throw new Error("Fleet heartbeat has the wrong Fleet identity");
-    if (!expectedById.has(validated.guardian_id)) throw new Error("Fleet heartbeat is from an unknown Guardian");
-    if (expectedById.get(validated.guardian_id) !== validated.platform) throw new Error("Fleet heartbeat platform does not match inventory");
-    if (heartbeatById.has(validated.guardian_id)) throw new Error("Fleet heartbeat collection has duplicate Guardian ids");
-    heartbeatById.set(validated.guardian_id, validated);
+  const receivedById = new Map();
+  const rejected = [];
+  const duplicated = new Set();
+  heartbeats.forEach((heartbeat, index) => {
+    try {
+      const validated = validateGuardianHeartbeat(heartbeat, { nowMs, allowExpired: true, budgets });
+      if (validated.fleet_id !== fleetId) throw new Error("Fleet heartbeat has the wrong Fleet identity");
+      if (!expectedById.has(validated.guardian_id)) throw new Error("Fleet heartbeat is from an unknown Guardian");
+      if (expectedById.get(validated.guardian_id) !== validated.platform) throw new Error("Fleet heartbeat platform does not match inventory");
+      if (heartbeatById.has(validated.guardian_id) || duplicated.has(validated.guardian_id)) {
+        duplicated.add(validated.guardian_id);
+        throw new Error("Fleet heartbeat collection has duplicate Guardian ids");
+      }
+      const received = receivedAtMs === undefined ? undefined : lookupOwn(receivedAtMs, validated.guardian_id);
+      assertReceivedAt(received, nowMs);
+      heartbeatById.set(validated.guardian_id, validated);
+      if (received !== undefined) receivedById.set(validated.guardian_id, received);
+    } catch (error) {
+      if (!quarantine) throw error;
+      rejected.push({ index, guardian_id: rejectedGuardianId(heartbeat), reason: error instanceof Error ? error.message : "Fleet heartbeat is invalid" });
+    }
+  });
+  // An ambiguous Guardian is observed by none of its heartbeats: every copy is quarantined, so it
+  // counts as missing and the snapshot cannot be complete or healthy.
+  for (const guardianId of duplicated) {
+    heartbeatById.delete(guardianId);
+    receivedById.delete(guardianId);
   }
 
   const states = emptyCounts(FLEET_STATES);
@@ -423,14 +512,23 @@ export function aggregateFleetSnapshot({
 
   for (const guardianId of expectedById.keys()) {
     const heartbeat = heartbeatById.get(guardianId);
+    const received = receivedById.get(guardianId);
     const classification = heartbeat
-      ? classifyValidatedGuardianHeartbeat(heartbeat, nowMs, budgets)
+      ? classifyValidatedGuardianHeartbeat(heartbeat, nowMs, budgets, received)
       : Object.freeze({ state: "unreachable", reason: "missing_heartbeat" });
     states[classification.state] += 1;
     reasonCounts[classification.reason] += 1;
     if (!heartbeat) continue;
-    const heartbeatExpiry = parseObservabilityTimestamp(heartbeat.expires_at, "heartbeat expires_at");
-    if (heartbeatExpiry > nowMs) earliestExpiry = Math.min(earliestExpiry, heartbeatExpiry);
+    // The snapshot expires at the first deadline that would change any Guardian's classification:
+    // its liveness, its signed policy expiry, or its continuity lease. A snapshot therefore cannot
+    // keep certifying health after a policy or lease it summarises has lapsed.
+    for (const deadline of [
+      heartbeatLivenessExpiry(heartbeat, received, budgets),
+      parseObservabilityTimestamp(heartbeat.policy.expires_at, "heartbeat policy expires_at"),
+      parseObservabilityTimestamp(heartbeat.continuity_lease_expires_at, "heartbeat continuity lease expiry")
+    ]) {
+      if (deadline > nowMs) earliestExpiry = Math.min(earliestExpiry, deadline);
+    }
     updateRange(policySequences, heartbeat.policy.sequence);
     updateRange(checkpointSequences, heartbeat.checkpoint.sequence);
     for (const key of ["evaluated", "allowed", "held", "failures"]) {
@@ -465,7 +563,32 @@ export function aggregateFleetSnapshot({
     complete,
     healthy
   };
-  return validateFleetSnapshot(snapshot, { nowMs, budgets });
+  let guardiansWithOneEvaluation = 0;
+  for (const heartbeat of heartbeatById.values()) guardiansWithOneEvaluation += Number(heartbeat.decisions.evaluated === 1);
+  return {
+    snapshot: validateFleetSnapshot(snapshot, { nowMs, budgets }),
+    rejected: deepFreeze(rejected),
+    guardiansWithOneEvaluation
+  };
+}
+
+/**
+ * Strict aggregation: any invalid, unknown, mismatched, or duplicate heartbeat aborts the cycle.
+ * Callers pass only guard-accepted, inventory-matched heartbeats.
+ */
+export function aggregateFleetSnapshot(input) {
+  return aggregateFleet(input, { quarantine: false }).snapshot;
+}
+
+/**
+ * Quarantining aggregation: a heartbeat that fails validation, names an unknown Guardian or the
+ * wrong Fleet or platform, or duplicates another Guardian's heartbeat is set aside, and that
+ * Guardian counts as missing. The cycle therefore still produces a snapshot, but one that cannot
+ * be complete or healthy. `rejected` is Fleet-private and never enters the snapshot.
+ */
+export function aggregateFleetObservations(input) {
+  const { snapshot, rejected } = aggregateFleet(input, { quarantine: true });
+  return deepFreeze({ snapshot, rejected });
 }
 
 export function validateFleetSnapshot(value, {
@@ -538,14 +661,25 @@ export function validateFleetSnapshot(value, {
   return deepFreeze(snapshot);
 }
 
+/**
+ * Projects a Fleet snapshot to the public continuity proof. The snapshot carries only fleet-wide
+ * sums, so the caller must also state `guardiansEvaluated`: the number of Guardians whose own
+ * heartbeat reported exactly one evaluation this cycle, derived from the same heartbeats. Prefer
+ * projectPublicContinuityFromHeartbeats, which derives it. `signed_audits` is one per published
+ * platform cohort, not one per Guardian.
+ */
 export function projectPublicContinuity(snapshot, {
   nowMs = Date.now(),
   mode = "real-fleet-postgresql",
   signedAudits = PLATFORMS.length,
+  guardiansEvaluated,
   budgets: budgetOverrides = {}
 } = {}) {
   const validated = validateFleetSnapshot(snapshot, { nowMs, budgets: budgetOverrides });
   if (mode !== "real-fleet-postgresql") throw new Error("public continuity mode is invalid");
+  if (!Number.isSafeInteger(guardiansEvaluated) || guardiansEvaluated !== validated.expected_guardians) {
+    throw new Error("Fleet snapshot does not prove one completed evaluation per Guardian");
+  }
   if (!validated.complete || !validated.healthy || validated.expected_guardians !== 100 || validated.observed_guardians !== 100) {
     throw new Error("Fleet snapshot does not prove a complete healthy 100-Guardian cycle");
   }
@@ -571,6 +705,21 @@ export function projectPublicContinuity(snapshot, {
     signed_audits: signedAudits,
     failure_count: validated.decisions.failures,
     cycle_duration_ms: validated.cycle_duration_ms
+  });
+}
+
+export function projectPublicContinuityFromHeartbeats({
+  mode = "real-fleet-postgresql",
+  signedAudits = PLATFORMS.length,
+  ...aggregation
+}) {
+  const { snapshot, guardiansWithOneEvaluation } = aggregateFleet(aggregation, { quarantine: false });
+  return projectPublicContinuity(snapshot, {
+    nowMs: aggregation.nowMs ?? parseObservabilityTimestamp(snapshot.generated_at, "Fleet snapshot generated_at"),
+    mode,
+    signedAudits,
+    guardiansEvaluated: guardiansWithOneEvaluation,
+    budgets: aggregation.budgets ?? {}
   });
 }
 
@@ -620,11 +769,13 @@ export async function deriveFleetEvents({
   currentHeartbeat = null,
   previousObservedState = null,
   observedAtMs = Date.now(),
+  receivedAtMs,
   budgets: budgetOverrides = {},
   cryptoImpl = globalThis.crypto
 } = {}) {
   if (!Number.isSafeInteger(observedAtMs)) throw new Error("Fleet event clock is invalid");
   const budgets = validateObservabilityBudgets(budgetOverrides);
+  assertReceivedAt(receivedAtMs, observedAtMs);
   if (!previousHeartbeat && !currentHeartbeat) return Object.freeze([]);
   const previous = previousHeartbeat ? validateGuardianHeartbeat(previousHeartbeat, { nowMs: observedAtMs, allowExpired: true, budgets }) : null;
   const current = currentHeartbeat ? validateGuardianHeartbeat(currentHeartbeat, { nowMs: observedAtMs, allowExpired: true, budgets }) : null;
@@ -635,13 +786,14 @@ export async function deriveFleetEvents({
   if (previous && current) {
     const previousAt = parseObservabilityTimestamp(previous.generated_at, "previous heartbeat generated_at");
     const currentAt = parseObservabilityTimestamp(current.generated_at, "current heartbeat generated_at");
-    if (currentAt <= previousAt || current.policy.sequence < previous.policy.sequence || current.checkpoint.sequence < previous.checkpoint.sequence || (current.boot_id === previous.boot_id && current.sequence <= previous.sequence)) {
+    const sameBoot = current.boot_id === previous.boot_id;
+    if ((sameBoot ? current.sequence <= previous.sequence : currentAt <= previousAt) || current.policy.sequence < previous.policy.sequence || current.checkpoint.sequence < previous.checkpoint.sequence) {
       throw new Error("Fleet event heartbeats are replayed, reordered, or rolled back");
     }
   }
   const fromState = previousObservedState || previous?.state || null;
   if (fromState !== null && !FLEET_STATES.includes(fromState)) throw new Error("previous Fleet state is invalid");
-  const classification = classifyValidatedGuardianHeartbeat(current || previous, observedAtMs, budgets);
+  const classification = classifyValidatedGuardianHeartbeat(current || previous, observedAtMs, budgets, receivedAtMs);
   const eventTypes = [];
   if (!previous) eventTypes.push("guardian_connected");
   else if (current && previous.boot_id !== current.boot_id) eventTypes.push("guardian_restarted");
@@ -735,6 +887,37 @@ function telemetryPayloadLimit(kind, budgets) {
   throw new Error("telemetry payload kind is invalid");
 }
 
+const VERIFIED_TELEMETRY = new WeakSet();
+const AGGREGATOR_ROLE = "fleet-aggregator";
+
+// A telemetry key is bound to one subject: a single Guardian of one Fleet, or that Fleet's
+// aggregator. Without the binding, any enrolled key could sign for another Guardian and move its
+// replay floors.
+function validateKeyBinding(binding) {
+  if (!binding || typeof binding !== "object" || Array.isArray(binding)) throw new Error("telemetry key binding is invalid");
+  const keys = Object.keys(binding).sort().join(",");
+  if (keys === "fleet_id,guardian_id") {
+    assertIdentity(binding.fleet_id, "telemetry key binding Fleet id");
+    assertIdentity(binding.guardian_id, "telemetry key binding Guardian id");
+  } else if (keys === "fleet_id,role") {
+    assertIdentity(binding.fleet_id, "telemetry key binding Fleet id");
+    if (binding.role !== AGGREGATOR_ROLE) throw new Error("telemetry key binding role is invalid");
+  } else {
+    throw new Error("telemetry key binding is invalid");
+  }
+  return Object.freeze({ ...binding });
+}
+
+function assertTelemetrySubject(payload, binding) {
+  const aggregator = binding.role === AGGREGATOR_ROLE;
+  let bound = payload.fleet_id === binding.fleet_id;
+  if (payload.version === HEARTBEAT_VERSION) bound &&= !aggregator && payload.guardian_id === binding.guardian_id;
+  else if (payload.version === FLEET_SNAPSHOT_VERSION) bound &&= aggregator;
+  else if (payload.version === FLEET_EVENT_VERSION) bound &&= aggregator || payload.guardian_id === binding.guardian_id;
+  else bound = false;
+  if (!bound) throw new Error("telemetry signing key is not bound to the payload subject");
+}
+
 async function importVerificationKey(value, cryptoImpl) {
   if (typeof CryptoKey !== "undefined" && value instanceof CryptoKey) return value;
   let bytes;
@@ -748,6 +931,7 @@ async function importVerificationKey(value, cryptoImpl) {
 export async function verifyTelemetryEnvelope({
   envelope,
   publicKeys,
+  keyBindings,
   nowMs = Date.now(),
   budgets: budgetOverrides = {},
   cryptoImpl = globalThis.crypto
@@ -760,8 +944,11 @@ export async function verifyTelemetryEnvelope({
     throw new Error("telemetry envelope metadata is invalid");
   }
   assertIdentity(snapshot.public_key_id, "telemetry public key id", 128);
-  const keyValue = publicKeys instanceof Map ? publicKeys.get(snapshot.public_key_id) : publicKeys?.[snapshot.public_key_id];
+  const keyValue = lookupOwn(publicKeys, snapshot.public_key_id);
   if (!keyValue) throw new Error("telemetry public key id is unknown");
+  const bindingValue = lookupOwn(keyBindings, snapshot.public_key_id);
+  if (!bindingValue) throw new Error("telemetry public key id has no subject binding");
+  const binding = validateKeyBinding(bindingValue);
   const payloadLimit = telemetryPayloadLimit(snapshot.payload_kind, budgets);
   const payloadBytes = decodeCanonicalBase64(snapshot.payload, "telemetry payload", payloadLimit);
   const signatureBytes = decodeCanonicalBase64(snapshot.signature, "telemetry signature", 64);
@@ -787,5 +974,8 @@ export async function verifyTelemetryEnvelope({
     const expectedId = `sha256:${await sha256Hex(stableJson(body), cryptoImpl)}`;
     if (validated.event_id !== expectedId) throw new Error("Fleet event id does not match its payload");
   } else throw new Error("telemetry payload version is invalid");
-  return deepFreeze({ payload: validated, public_key_id: snapshot.public_key_id });
+  assertTelemetrySubject(validated, binding);
+  const result = deepFreeze({ payload: validated, public_key_id: snapshot.public_key_id, binding });
+  VERIFIED_TELEMETRY.add(result);
+  return result;
 }

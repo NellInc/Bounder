@@ -19,8 +19,9 @@ test("the homepage positions Bounder within the Guardian and Creed Space Fleet a
 
 test("simulator exposes focused WASD and altitude navigation", () => {
   assert.match(simulatorHtml, /tabindex="0"/);
-  assert.match(simulatorHtml, /aria-keyshortcuts="W A S D Q E"/);
+  assert.match(simulatorHtml, /aria-keyshortcuts="W A S D Q E \+ -"/);
   assert.match(simulatorHtml, /Use Q to descend and E to climb/);
+  assert.match(simulatorHtml, /Use plus and minus to zoom/);
 });
 
 test("town buildings use footprint-aware ridged roofs", async () => {
@@ -88,16 +89,25 @@ test("the simulator canvas leaves vertical page scrolling to the browser on touc
   assert.match(simulatorScript, /controls\.touches = \{ ONE: THREE\.TOUCH\.ROTATE, TWO: THREE\.TOUCH\.DOLLY_ROTATE \};/);
 });
 
-test("a WebGL runtime failure releases the renderer and the canvas input surface", () => {
+// Source guards, not behavioural proof: each pins the code shape of a behaviour that
+// tests/browser proves in a real browser (WebGL loss and bootstrap in workspace.spec.js and
+// site.spec.js; reduced motion by counting animation frames in site.spec.js).
+test("source guard: a WebGL runtime failure releases the renderer and the canvas input surface", () => {
   assert.match(simulatorScript, /controls\.dispose\(\);/);
   assert.match(simulatorScript, /renderer\.dispose\(\);/);
   assert.match(simulatorScript, /releaseCanvasInput\(\);/);
 });
 
-test("reduced motion waits on a timer instead of spinning a full-rate animation frame", () => {
-  assert.match(simulatorScript, /reduceMotionTimer = window\.setTimeout/);
-  assert.match(simulatorScript, /animationFrame === undefined && reduceMotionTimer === undefined/);
-  assert.match(simulatorScript, /if \(reduceMotionTimer !== undefined\) window\.clearTimeout\(reduceMotionTimer\);/);
+test("source guard: reduced motion removes autonomous motion without throttling user-driven frames", () => {
+  // No frame gate: a two-second throttle made Play take minutes and camera input lag.
+  assert.doesNotMatch(simulatorScript, /reduceMotionTimer/);
+  // Autonomous motion alone keeps the loop alive; input, camera moves and state changes render once.
+  assert.match(simulatorScript, /if \(\(playing && !reduceMotion\) \|\| pressedNavigationKeys\.size \|\| cameraChanged \|\| tweening\) scheduleAnimation\(\);/);
+  // No post-drag camera glide and no animated camera transitions under reduced motion.
+  assert.match(simulatorScript, /controls\.enableDamping = !reduceMotion;/);
+  assert.match(simulatorScript, /if \(!animate \|\| reduceMotion \|\| !rendererOperational\) \{/);
+  // Play jumps to the recorded decision instead of flying the route.
+  assert.match(simulatorScript, /Reduced motion: no flight\./);
 });
 
 test("every abandoned live resilience stream keeps the recorded local fallback and marks it", () => {
@@ -106,7 +116,7 @@ test("every abandoned live resilience stream keeps the recorded local fallback a
   assert.doesNotMatch(simulatorScript, /catch \(error\) \{\n\s+playResilienceLocally\(\);/);
 });
 
-test("bootstrap fails closed and always restores the render loop", () => {
+test("source guard: bootstrap fails closed and always restores the render loop", () => {
   assert.match(simulatorScript, /const showBootstrapFailure = \(\) => \{/);
   assert.match(simulatorScript, /\} finally \{\n\s+bootstrapSettled = true;\n\s+resize\(\);\n\s+scheduleAnimation\(\);\n\s+\}/);
   assert.match(simulatorScript, /bootstrap\(\)\.catch\(/);
@@ -117,7 +127,10 @@ test("Guardian names the component consistently in simulator copy", () => {
   assert.match(simulatorScript, /for every enrolled Guardian\./);
   assert.match(simulatorScript, /but older Guardian state\./);
   assert.match(simulatorScript, /"Creed Space Fleet \+ Bounder Guardian"/);
-  assert.match(simulatorScript, /"Single Guardian"/);
+  // The Fleet toggle keeps one accessible name; aria-pressed carries its state.
+  assert.doesNotMatch(simulatorScript, /"Single Guardian"/);
+  assert.match(simulatorScript, /fleetButton\.setAttribute\("aria-pressed", String\(fleetMode\)\)/);
+  assert.match(simulatorHtml, /data-action="fleet" aria-pressed="false" disabled>Fleet view<\/button>/);
 });
 
 test("rollback proof scenarios expose local and Fleet floors plus bounded authority", () => {

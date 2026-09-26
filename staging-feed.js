@@ -2,6 +2,11 @@ import { parseStrictJSON } from "./runtime/json/policy-json.js";
 
 const MAX_FEED_BYTES = 2 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 3500;
+// The recorded pilot is a same-origin file of about 170 KB; it gets the same budget as the
+// other same-origin simulator evidence rather than the short optional live-feed budget.
+const DEFAULT_RECORDED_TIMEOUT_MS = 10_000;
+// Matches the continuity and heartbeat verifiers: a visitor clock may run up to five minutes slow.
+const MAX_FUTURE_SKEW_NANOSECONDS = 5n * 60n * 1_000_000_000n;
 const DEFAULT_MAX_LIVE_AGE_MS = 15 * 60 * 1000;
 const MAX_TIMEOUT_MS = 2_147_483_647;
 const MAX_FEED_CHUNKS = 4096;
@@ -263,11 +268,12 @@ export const validatePilotEvidence = async (
   }
   if (maxAgeNanoseconds !== undefined) {
     const nowNanoseconds = BigInt(sampleFreshnessClock(now)) * 1_000_000n;
-    if (generatedAt > nowNanoseconds || nowNanoseconds - generatedAt > maxAgeNanoseconds) {
+    const latestAcceptable = nowNanoseconds + MAX_FUTURE_SKEW_NANOSECONDS;
+    if (generatedAt > latestAcceptable || nowNanoseconds - generatedAt > maxAgeNanoseconds) {
       throw new Error("pilot evidence is outside the live freshness window");
     }
     if (evaluatedInstants.some((evaluatedAt) =>
-      evaluatedAt > nowNanoseconds || nowNanoseconds - evaluatedAt > maxAgeNanoseconds)) {
+      evaluatedAt > latestAcceptable || nowNanoseconds - evaluatedAt > maxAgeNanoseconds)) {
       throw new Error("pilot receipt evidence is outside the live freshness window");
     }
   }
@@ -287,6 +293,24 @@ const resolveFeedURL = (value, baseURL) => {
   }
   if (url.username || url.password || url.hash) throw new Error("staging feed URL contains unsupported credentials or fragment");
   return url;
+};
+
+// The recorded fallback ships with the page, so it needs only the page's own origin, not the
+// live-feed host allowlist. This keeps LAN, loopback, and preview hosts working.
+const resolveRecordedURL = (value, baseURL) => {
+  const base = new URL(baseURL);
+  const url = new URL(value, base);
+  if ((url.protocol !== "https:" && url.protocol !== "http:") || url.origin !== base.origin) {
+    throw new Error("recorded staging feed must be same-origin with the page");
+  }
+  if (url.username || url.password || url.hash) throw new Error("staging feed URL contains unsupported credentials or fragment");
+  return url;
+};
+
+const validateTimeout = (value, label) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || value > MAX_TIMEOUT_MS) {
+    throw new Error(`${label} timeout is invalid`);
+  }
 };
 
 const readBoundedBytes = async (response, signal) => {
@@ -419,13 +443,13 @@ export const loadPilotEvidence = async ({
   fetchImpl = globalThis.fetch,
   cryptoImpl = globalThis.crypto,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  recordedTimeoutMs = DEFAULT_RECORDED_TIMEOUT_MS,
   now = Date.now,
   maxLiveAgeMs = DEFAULT_MAX_LIVE_AGE_MS
 } = {}) => {
   if (typeof fetchImpl !== "function") throw new Error("staging feed transport is unavailable");
-  if (typeof timeoutMs !== "number" || !Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAX_TIMEOUT_MS) {
-    throw new Error("staging feed timeout is invalid");
-  }
+  validateTimeout(timeoutMs, "staging feed");
+  validateTimeout(recordedTimeoutMs, "recorded staging feed");
   let liveError;
   let liveURLText = "";
   if (typeof configuredURL !== "string") {
@@ -452,8 +476,8 @@ export const loadPilotEvidence = async ({
   }
 
   if (typeof fallbackURL !== "string" || !fallbackURL.trim()) throw new Error("recorded staging feed URL is invalid");
-  const fallback = resolveFeedURL(fallbackURL.trim(), baseURL);
-  const evidence = await validatePilotEvidence(await fetchBoundedJSON(fallback, fetchImpl, timeoutMs), { cryptoImpl });
+  const fallback = resolveRecordedURL(fallbackURL.trim(), baseURL);
+  const evidence = await validatePilotEvidence(await fetchBoundedJSON(fallback, fetchImpl, recordedTimeoutMs), { cryptoImpl });
   return {
     evidence,
     source: "recorded",

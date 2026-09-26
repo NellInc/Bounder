@@ -201,7 +201,8 @@ test("simulator loads recorded evidence and responds to keyboard navigation", as
   test.setTimeout(90_000);
   const errors = collectErrors(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/simulator.html?scenario=safe");
+  // The route-clearance audit is opt-in instrumentation; ordinary visits never run it.
+  await page.goto("/simulator.html?scenario=safe&audit=1");
   const stage = page.locator(".simulator-stage");
   await expect(stage).toHaveAttribute("data-receipts-ready", "true");
   await expect(stage).toHaveAttribute("data-webgl", "ready");
@@ -225,7 +226,7 @@ test("guided tour traverses all six proofs and restores focus when finished", as
   const root = page.locator(".simulator-workbench");
   const tour = page.locator("[data-operator-tour]");
   const tourButton = page.getByRole("button", { name: "Guided tour" });
-  await expect(page.locator(".simulator-stage")).toHaveAttribute("data-fleet-ready", "true");
+  await expect(page.locator(".simulator-stage")).toHaveAttribute("data-fleet-ready", "true", { timeout: 20_000 });
   await tourButton.click();
   await expect(tour).toBeVisible();
 
@@ -233,7 +234,7 @@ test("guided tour traverses all six proofs and restores focus when finished", as
     ["signed-baseline", "Inspect the recorded baseline", "allowed"],
     ["fleet-projection", "Project one rule across the fleet", "allowed"],
     ["civilian-protection", "Protect civilians at the final boundary", "civilian_proximity"],
-    ["friendly-separation", "Prevent blue-on-blue action", "friendly_force_proximity"],
+    ["friendly-separation", "Keep clear of friendly teams", "friendly_force_proximity"],
     ["evidence-only-roe", "Keep high-consequence evidence non-authoritative", "surrender_protected"],
     ["rollback-proof", "Reject a coherent older snapshot", "ready"]
   ];
@@ -307,12 +308,49 @@ test("malformed Fleet evidence is isolated from valid local receipt controls", a
   const stage = page.locator(".simulator-stage");
   await expect(stage).toHaveAttribute("data-receipts-ready", "true", { timeout: 20_000 });
   await expect(stage).toHaveAttribute("data-fleet-ready", "false");
-  await expect(page.getByRole("button", { name: "Show fleet" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Fleet view" })).toBeDisabled();
   await page.locator(".scenario-more > summary").click();
   await expect(page.getByRole("button", { name: "Friendly separation" })).toBeEnabled();
   await page.getByRole("button", { name: "Friendly separation" }).click();
   await expect(page.locator(".decision-code")).toHaveText("friendly_force_proximity");
   await expect(page.locator("[data-fleet-source]")).toContainText("Fleet evidence unavailable");
+  await expect(page.locator(".fleet-metrics")).not.toContainText("Loading");
+  await page.locator("#fault-replay > summary").click();
+  await expect(page.locator("#fault-replay [data-resilience-unavailable]")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("fault replay re-renders the scene from the recorded timeline, including when scrubbed back", async ({ page }) => {
+  // The receipt panel and the 3D envelope must never disagree: each timeline event schedules a
+  // frame, the hold applies from the decision onward, and scrubbing back removes it again.
+  test.setTimeout(90_000);
+  const errors = collectErrors(page);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  // Tall enough that the scene and the fault-replay controls are on screen together; an
+  // offscreen stage correctly suspends rendering, which would hide the frames under test.
+  await page.setViewportSize({ width: 1280, height: 1600 });
+  await page.goto("/simulator.html?resilience=network-partition");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-fleet-ready", "true", { timeout: 20_000 });
+  await stage.scrollIntoViewIfNeeded();
+  const outcome = page.locator(".decision-outcome");
+  await expect(outcome).toHaveText("Ready");
+  await expect(outcome).not.toHaveAttribute("data-outcome", /.+/);
+  await expect(stage).toHaveAttribute("data-animation-state", "idle");
+  const framesBefore = Number(await stage.getAttribute("data-render-frames"));
+  const step = page.locator("[data-resilience-action='step']");
+  for (let index = 0; index < 3; index += 1) await step.click();
+  await expect(outcome).toHaveText("Held safely");
+  await expect(outcome).toHaveAttribute("data-outcome", "held");
+  await expect.poll(async () => Number(await stage.getAttribute("data-render-frames"))).toBeGreaterThan(framesBefore);
+  await expect(page.locator(".legend-bounder").locator("..")).toContainText("Bounder hold");
+  await page.locator("[data-resilience-scrubber]").evaluate((element) => {
+    element.value = "700";
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await expect(outcome).toHaveText("Verifying");
+  await expect(outcome).not.toHaveAttribute("data-outcome", /.+/);
+  await expect(page.locator(".legend-bounder").locator("..")).toContainText("Bounder envelope");
   expect(errors).toEqual([]);
 });
 
@@ -361,6 +399,54 @@ test("the accessible iframe fallback reports height evidence to its parent", asy
     Number.isFinite(message.height) &&
     message.height >= 500
   )))).toBe(true);
+});
+
+test("the embedded simulator frame shrinks again after an evidence disclosure closes", async ({ page }) => {
+  await page.goto("/");
+  const iframe = page.locator("[data-bounder-simulator]");
+  await iframe.scrollIntoViewIfNeeded();
+  const embedded = iframe.contentFrame();
+  await expect(embedded.locator(".simulator-stage")).toHaveAttribute("data-fleet-ready", /true|false/, { timeout: 20_000 });
+  const frameHeight = async () => (await iframe.boundingBox()).height;
+  await expect.poll(frameHeight).toBeGreaterThan(400);
+  const closed = await frameHeight();
+  await embedded.locator("#fleet-evidence > summary").click();
+  await expect.poll(frameHeight).toBeGreaterThan(closed + 200);
+  const opened = await frameHeight();
+  await embedded.locator("#fleet-evidence > summary").click();
+  await expect.poll(frameHeight).toBeLessThan(opened - 200);
+  expect(Math.abs((await frameHeight()) - closed)).toBeLessThanOrEqual(4);
+});
+
+test("when no evidence view can load, the page fails closed and offers only a reload", async ({ page }) => {
+  await page.route(/\/simulator(-fallback)?\.js(\?.*)?$/, (route) => route.abort("failed"));
+  await page.goto("/simulator.html?scenario=safe");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-webgl", "fallback-error");
+  await expect(stage).toHaveAttribute("data-fail-closed", "true");
+  await expect(stage).toHaveAttribute("data-fleet-ready", "false");
+  await expect(page.locator(".decision-code")).toHaveText("bootstrap_unavailable");
+  await expect(page.locator(".adapter-output")).toHaveText("No command authority");
+  await expect(page.locator(".webgl-fallback")).toContainText("The simulator could not load.");
+  await expect(page.locator(".webgl-fallback")).not.toContainText("remains available");
+  await expect(page.getByRole("button", { name: "Reload the simulator" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Civilian buffer" })).toBeDisabled();
+  await expect(page.locator(".fleet-metrics")).not.toContainText("Loading");
+});
+
+test("the accessible evidence view renders recorded Fleet evidence and explains the absent fault replay", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/simulator.html?webgl=off");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-fleet-ready", "true");
+  await page.locator("#fleet-evidence > summary").click();
+  await expect(page.locator(".fleet-metrics")).not.toContainText("Loading");
+  await expect(page.locator("[data-fleet-count]")).toHaveText("100 of 100 recorded Guardians");
+  await page.getByLabel("Find a Guardian").fill("allowed");
+  await expect(page.locator("[data-fleet-count]")).toHaveText("13 of 100 recorded Guardians");
+  await page.locator("#fault-replay > summary").click();
+  await expect(page.locator("[data-resilience-unavailable]")).toBeVisible();
+  expect(errors).toEqual([]);
 });
 
 test("malformed, late, out-of-order and partial resilience streams fall back while stale sources stay inert", async ({ page }) => {
@@ -417,11 +503,11 @@ test("malformed, late, out-of-order and partial resilience streams fall back whi
 
   const thirdScenario = page.locator(".resilience-scenario").nth(2);
   await thirdScenario.click();
-  await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-bravo");
+  await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-ground-002 (recorded as bounder-bravo)");
   await page.evaluate((event) => {
     window.__bounderTestSources[1].emit("resilience", JSON.stringify(event));
   }, events[1]);
-  await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-bravo");
+  await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-ground-002 (recorded as bounder-bravo)");
 
   if (await page.locator("#fault-replay").getAttribute("open") === null) await page.locator("#fault-replay > summary").click();
   await page.locator(".resilience-scenario").first().click();
@@ -533,7 +619,7 @@ test("resilience transport controls and the scrubber move the console through re
   await scrubber.fill("0");
   await expect(currentCode).toHaveText("policy_active");
   await expect(eventTime).toHaveText("0.00 s");
-  await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-alpha");
+  await expect(page.locator('[data-receipt="subject"]')).toHaveText("bounder-aerial-001 (recorded as bounder-alpha)");
 
   expect(errors).toEqual([]);
 });
@@ -542,7 +628,8 @@ test("visibility, focus exceptions and WebGL context loss stop active state safe
   // Multi-stage GPU/focus lifecycle journey, consistent with the other 90-second simulator journeys.
   test.setTimeout(90_000);
   const errors = collectErrors(page);
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  // Full motion: under reduced motion Play settles on the decision after about a second, which
+  // would let the hidden-page assertions below pass without an active animation to stop.
   await page.goto("/simulator.html?scenario=safe");
   const stage = page.locator(".simulator-stage");
   const canvas = stage.locator("canvas");
@@ -561,7 +648,8 @@ test("visibility, focus exceptions and WebGL context loss stop active state safe
   });
   await expect(stage).toHaveAttribute("data-playing", "false");
   await expect(stage).toHaveAttribute("data-animation-state", "hidden");
-  await expect(page.getByRole("button", { name: "Play simulation" })).toHaveAttribute("aria-pressed", "false");
+  // Play is an action button whose label names the next action, so it carries no aria-pressed.
+  await expect(page.getByRole("button", { name: "Play simulation" })).not.toHaveAttribute("aria-pressed", /.*/);
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
     document.dispatchEvent(new Event("visibilitychange"));
@@ -578,7 +666,7 @@ test("visibility, focus exceptions and WebGL context loss stop active state safe
   await page.getByRole("button", { name: "Next proof" }).focus();
 
   await canvas.dispatchEvent("webglcontextlost");
-  await expect(stage).toHaveAttribute("data-webgl", "runtime-error");
+  await expect(stage).toHaveAttribute("data-webgl", "context-lost");
   await expect(stage).toHaveAttribute("data-fail-closed", "true");
   await expect(page.locator(".adapter-output")).toHaveText("No command authority");
   await expect(page.getByRole("button", { name: "Play simulation" })).toBeDisabled();
@@ -589,7 +677,69 @@ test("visibility, focus exceptions and WebGL context loss stop active state safe
   await expect(root).not.toHaveAttribute("data-operator-tour-step", /.+/);
   expect(new URL(page.url()).searchParams.has("tour")).toBe(false);
   expect(new URL(page.url()).searchParams.has("step")).toBe(false);
+  await expect(page.locator(".webgl-fallback")).toContainText("The 3D view was interrupted");
+  // Recorded receipts stay inspectable while the scene is paused; the scene stays hidden.
+  await page.getByRole("button", { name: "Civilian buffer" }).click();
+  await expect(page.locator(".decision-code")).toHaveText("civilian_proximity");
+  await expect(stage).toHaveAttribute("data-fail-closed", "true");
+  await expect(page.getByRole("button", { name: "Play simulation" })).toBeDisabled();
+  // A restored context resumes the scene on the receipt that is on screen.
+  await canvas.dispatchEvent("webglcontextrestored");
+  await expect(stage).toHaveAttribute("data-webgl", "ready");
+  await expect(stage).not.toHaveAttribute("data-fail-closed", /.+/);
+  await expect(page.getByRole("button", { name: "Play simulation" })).toBeEnabled();
+  await expect(page.locator(".decision-code")).toHaveText("civilian_proximity");
   expect(errors).toEqual([]);
+});
+
+test("reduced motion jumps to the recorded decision without a flight or a full-rate loop", async ({ browser }) => {
+  // Behavioural counterpart to the source guard in tests/interface.test.js: Play shows the start
+  // state and then the recorded decision within seconds, the loop never spins at full rate, and
+  // user input still renders immediately.
+  test.setTimeout(60_000);
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  const errors = collectErrors(page);
+  await page.addInitScript(() => {
+    window.__bounderAnimationFrames = 0;
+    const requestFrame = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback) => {
+      window.__bounderAnimationFrames += 1;
+      return requestFrame(callback);
+    };
+  });
+  await page.goto("/simulator.html?scenario=civilian");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-receipts-ready", "true");
+  await stage.scrollIntoViewIfNeeded();
+  await expect(page.locator(".decision-code")).toHaveText("civilian_proximity");
+  const sample = () => page.evaluate(() => ({
+    requested: window.__bounderAnimationFrames,
+    rendered: Number(document.querySelector(".simulator-stage").dataset.renderFrames ?? 0)
+  }));
+  const before = await sample();
+  // Record every decision code in the page: the start state is shown for about a second, which a
+  // polling assertion can miss on a loaded machine.
+  await page.evaluate(() => {
+    const code = document.querySelector(".decision-code");
+    window.__bounderDecisionCodes = [code.textContent];
+    new MutationObserver(() => window.__bounderDecisionCodes.push(code.textContent))
+      .observe(code, { childList: true, characterData: true, subtree: true });
+  });
+  await page.getByRole("button", { name: "Play simulation" }).click();
+  await expect.poll(() => page.evaluate(() => window.__bounderDecisionCodes), { timeout: 5_000 })
+    .toEqual(["civilian_proximity", "evaluating", "civilian_proximity"]);
+  await expect(page.locator(".decision-code")).toHaveText("civilian_proximity");
+  await expect(stage).toHaveAttribute("data-playing", "false");
+  const after = await sample();
+  expect(after.requested - before.requested, "reduced motion requested full-rate animation frames").toBeLessThanOrEqual(15);
+  const canvas = stage.locator("canvas");
+  await canvas.focus();
+  const beforeZoom = (await sample()).rendered;
+  await page.keyboard.press("Minus");
+  await expect.poll(async () => (await sample()).rendered, { timeout: 5_000 }).toBeGreaterThan(beforeZoom);
+  expect(errors).toEqual([]);
+  await context.close();
 });
 
 test("accessible evidence honours scenario deep links and remains usable without WebGL", async ({ page }) => {
@@ -599,7 +749,7 @@ test("accessible evidence honours scenario deep links and remains usable without
   await expect(stage).toHaveAttribute("data-webgl", "unavailable");
   await expect(stage).toHaveAttribute("data-receipts-ready", "true");
   await expect(page.locator(".webgl-fallback")).toBeVisible();
-  await expect(page.locator("[data-receipt='evidence']")).toHaveText("30s old · gold evidence");
+  await expect(page.locator("[data-receipt='evidence']")).toHaveText("gold · mettle.creed.space · 30s old");
   await expect(page.locator("body")).not.toContainText("undefined");
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
@@ -633,30 +783,36 @@ test("contact success and simulator embed query states expose only their intende
   await expect(page.locator("html")).toHaveClass(/simulator-embed/);
   await expect(page.locator(".simulator-stage")).toHaveAttribute("data-receipts-ready", "true");
   await expect(page.locator(".site-header")).toBeHidden();
-  await expect(page.locator(".simulator-intro")).toBeHidden();
+  await expect(page.locator(".hero")).toBeHidden();
   await expect(page.locator(".rules-context")).toBeHidden();
   await expect(page.locator(".site-footer")).toBeHidden();
   await expect(page.locator(".simulator-workbench")).toBeVisible();
 });
 
 test("pages do not overflow and retain usable controls across every declared breakpoint band", async ({ page }) => {
-  // Audit 2026-09: 390px and Chromium's 1280px default were the only widths ever
-  // rendered, so four of the six bands declared by the stylesheets were unguarded.
-  // The declared max-width breakpoints are styles.css:1358 (900) and :1409 (680),
-  // simulator.css:1141 (960), :1156 (560), :1381 (1050) and :1407 (680). One width
-  // per band: 390 (<=560), 620 (561-680), 820 (681-900), 930 (901-960), 1000
-  // (961-1050); 1280 (>1050) is covered by every other test in this file.
-  // 390 keeps the full page sweep; the four added widths run on the two pages that
-  // carry all six breakpoints between them, which keeps the serial suite affordable.
-  test.setTimeout(120_000);
+  // The stylesheets declare max-width breakpoints at 1050, 1023, 960, 900, 760, 680, 560,
+  // 420 and 360px (styles.css: 1023, 900, 680; simulator.css: 1050, 960, 760, 680, 560,
+  // 420, 360). One width per band: 320 (<=360, and the WCAG 1.4.10 reflow width), 390
+  // (361-420), 480 (421-560), 620 (561-680), 720 (681-760), 820 (761-900), 930 (901-960),
+  // 1000 (961-1023) and 1040 (1024-1050); 1280 (>1050) is covered by every other test in
+  // this file. Line numbers are deliberately not cited: they drift with every stylesheet
+  // edit, and tests/site-quality.test.js fails when a new breakpoint has no width here.
+  // 320 and 390 keep the full page sweep; the other widths run on the two pages that
+  // carry every breakpoint between them, which keeps the serial suite affordable. The budget
+  // allows about ten seconds per load across the 26 loads, above the old per-load allowance.
+  test.setTimeout(300_000);
   const everyPath = ["/", "/simulator.html?webgl=off", "/contact.html", "/privacy.html", "/terms.html", "/404.html"];
   const complexPaths = ["/", "/simulator.html?webgl=off"];
   const passes = [
+    { width: 320, height: 640, paths: everyPath },
     { width: 390, height: 844, paths: everyPath },
+    { width: 480, height: 900, paths: complexPaths },
     { width: 620, height: 900, paths: complexPaths },
+    { width: 720, height: 900, paths: complexPaths },
     { width: 820, height: 900, paths: complexPaths },
     { width: 930, height: 900, paths: complexPaths },
-    { width: 1000, height: 900, paths: complexPaths }
+    { width: 1000, height: 900, paths: complexPaths },
+    { width: 1040, height: 900, paths: complexPaths }
   ];
   for (const { width, height, paths } of passes) {
     await page.setViewportSize({ width, height });
@@ -701,7 +857,7 @@ test("primary and footer navigation are consistent across pages", async ({ page 
   // all footers are now canonical; this pins them.
   const interior = ["/simulator.html?webgl=off", "/contact.html", "/privacy.html", "/terms.html"];
   // Compare lowercased: CSS text-transform is styling, not content.
-  const expectedHeader = ["architecture", "applications", "simulator", "safety", "contact"];
+  const expectedHeader = ["architecture", "applications", "simulator", "roadmap", "contact"];
   const expectedFooter = ["terms", "privacy", "contact", "github"];
   for (const path of interior) {
     await page.goto(path);
@@ -710,7 +866,8 @@ test("primary and footer navigation are consistent across pages", async ({ page 
   }
   for (const path of ["/", ...interior]) {
     await page.goto(path);
-    const footer = (await page.locator("nav.secondary-nav a").allInnerTexts()).map((s) => s.trim().toLowerCase());
+    // The external-link glyph is decorative (aria-hidden); compare the link names only.
+    const footer = (await page.locator("nav.secondary-nav a").allInnerTexts()).map((s) => s.replace("↗", "").trim().toLowerCase());
     expect(footer, `${path} footer nav diverges`).toEqual(expectedFooter);
   }
 });

@@ -6,7 +6,7 @@ This project is simulation-only. The contract is suitable for software integrati
 
 ## Authority flow
 
-1. Creed Space Fleet resolves organization, team, mission, and device rules into a `creedspace-bounder-policy/v1` payload.
+1. Creed Space Fleet resolves organisation, team, mission, and device rules into a `creedspace-bounder-policy/v1` payload.
 2. Fleet signs the exact UTF-8 payload bytes in a `creedspace-bounder-envelope/v1` envelope. Consumers verify those bytes without parsing and reserializing them first.
 3. The local Guardian checks the Ed25519 signature, trusted key identifier, subject binding, monotonic sequence, validity window, and policy schema.
 4. Bounder evaluates the requested action against the verified policy, current platform state, and fresh evidence.
@@ -43,6 +43,33 @@ signed envelope  --->  Bounder Guardian  --->  platform adapter  --->  simulated
 | [`creedspace-bounder-fleet-snapshot-v1.schema.json`](../schemas/creedspace-bounder-fleet-snapshot-v1.schema.json) | Privacy-bounded Fleet aggregate |
 | [`creedspace-bounder-fleet-event-v1.schema.json`](../schemas/creedspace-bounder-fleet-event-v1.schema.json) | Meaningful Fleet state transition |
 | [`creedspace-bounder-telemetry-envelope-v1.schema.json`](../schemas/creedspace-bounder-telemetry-envelope-v1.schema.json) | Exact-byte private telemetry signature envelope |
+| [`bounder-resilience-evidence.v1.schema.json`](../schemas/bounder-resilience-evidence.v1.schema.json) | Recorded fault-replay timeline shown in the simulator |
+| [`bounder-evidence-provenance-v1.schema.json`](../schemas/bounder-evidence-provenance-v1.schema.json) | Producer evidence statement with generator, input and output hashes |
+| [`bounder-release-manifest-v2.schema.json`](../schemas/bounder-release-manifest-v2.schema.json) | Sealed release manifest separating producer, publisher, build and observation claims |
+
+### Manipulator profile preview
+
+A second contract family is mirrored here as a preview. It describes contact-class
+constraints for a manipulator interlock: what it may hold, approach, release into,
+or pour into.
+
+| File | Purpose |
+|---|---|
+| [`creedspace-bounder-manipulator-profile-v1.schema.json`](../schemas/creedspace-bounder-manipulator-profile-v1.schema.json) | Manipulator profile constraints |
+| [`creedspace-bounder-manipulator-profile-v1.example.json`](../data/creedspace-bounder-manipulator-profile-v1.example.json) | Example profile |
+| [`creedspace-bounder-manipulator-golden-v1.json`](../data/creedspace-bounder-manipulator-golden-v1.json) | Signed golden vector under the simulation Fleet key |
+
+These files are copied from the private producer, but they are not yet part of
+its evidence statement, so no producer-derivation run covers their bytes. New
+release manifests record them as recorded observations with that limitation,
+and the test suite pins their SHA-256 digests. The schema's `$id` has been
+moved under `https://www.bounder.io/schemas/` here ahead of the producer's
+copy, so this one schema is not yet byte-identical to its source. The golden
+vector's signed payload declares `creedspace-bounder-manipulator-policy/v1`,
+for which no schema is published yet, and its `policy_id` is not yet derived
+from the policy body. The simulator's contract panel accepts only
+`creedspace-bounder-golden/v1` vectors, so it rejects this one. Treat the family
+as a draft for review, not as a contract to build against.
 
 ## Browser verification laboratory
 
@@ -58,24 +85,24 @@ The simulator’s contract panel accepts the published vector or a local compati
 
 The browser does not create authority or mint a deployment receipt. Canonical
 decisions and derived evidence come from the Go interlock in the private
-[`NellInc/Bounder-from-org`](https://github.com/NellInc/Bounder-from-org)
-producer repository. The public site republishes byte-identical contracts and
+`NellInc/Bounder-from-org` producer repository, which is not publicly readable.
+The public site republishes the shared contracts byte for byte and
 verifies deterministic outputs from an exact clean producer commit.
 
 ## Developer contract walkthrough
 
-Start with the [guided browser demo](../simulator.html?tour=1), then inspect the published contracts above. This is a static verification laboratory. It publishes no policy-issuance, device-command, or Fleet ingestion HTTP API. Producer and backend integration requires a separately agreed private implementation; schema identifiers are contract names, not service endpoints.
+Start with the [guided browser demo](https://www.bounder.io/simulator.html?tour=1), then inspect the published contracts above. This is a static verification laboratory. It publishes no policy-issuance, device-command, or Fleet ingestion HTTP API. Producer and backend integration requires a separately agreed private implementation; schema identifiers are contract names, not service endpoints.
 
 ### What crosses each boundary
 
 - **Policy and envelope:** the policy schema defines subject, Fleet, monotonic sequence, validity, provenance, and constraints. The envelope carries base64 payload bytes, signature, algorithm, and signing-key ID. A structurally valid envelope alone proves no authority.
 - **Profile and checkpoint:** a profile supplies reusable constraints; a checkpoint records restart and rollback floors. Neither substitutes for a verified current signed policy.
 - **Receipt and round trip:** a receipt describes a decision. The round-trip fixture binds policy identity and exact payload digest to the recorded Go evaluation and signed Fleet audit. A matching recorded receipt is evidence of that evaluation, never a new device command.
-- **Heartbeat and Fleet contracts:** telemetry envelopes authenticate observations; snapshots and events summarize operational state. They do not change local permission.
+- **Heartbeat and Fleet contracts:** telemetry envelopes authenticate observations; snapshots and events summarise operational state. They do not change local permission.
 
 ### Signed bytes and trust
 
-Decode canonical base64 and verify Ed25519 against the exact decoded payload bytes. Do not parse, pretty-print, normalize, or reserialize the payload before signature verification. The browser pins its simulation Fleet key and key ID independently of the uploaded file; a file's self-declared public key is insufficient. After verification, strict UTF-8 JSON parsing rejects duplicate members and unsupported contract fields. Policy identity and validity are checked separately from signature authenticity.
+Decode canonical base64 and verify Ed25519 against the exact decoded payload bytes. Do not parse, pretty-print, normalise, or reserialise the payload before signature verification. The browser pins its simulation Fleet key and key ID independently of the uploaded file; a file's self-declared public key is insufficient. After verification, strict UTF-8 JSON parsing rejects duplicate members and unsupported contract fields. Policy identity and validity are checked separately from signature authenticity.
 
 ### Valid and invalid examples
 
@@ -108,11 +135,23 @@ Fleet classification to unreachable; the Guardian continues to derive local
 authority only from its verified policy, evidence freshness, checkpoint floor,
 and continuity lease.
 
-Detailed telemetry is Fleet-private. The public continuity projection contains
-only aggregate counts and is emitted only from a complete, fresh, healthy
-100-Guardian snapshot with zero decision failures and no audit backlog. The
-reference state model and performance budgets are software integration proof;
-deployed Guardian timing, Fleet capacity, and physical safety remain unverified.
+Detailed telemetry is Fleet-private. Each telemetry signing key is bound to one
+subject: a Guardian key signs only that Guardian's heartbeats and events, and
+only the Fleet aggregator key signs snapshots. Aggregation either fails the
+cycle closed on any invalid heartbeat or, in its quarantining form, counts that
+Guardian as missing, so the snapshot cannot be healthy.
+
+In the reference model, the public continuity projection contains only
+aggregate counts and is emitted only from a complete, healthy 100-Guardian
+snapshot with one completed evaluation per Guardian, zero decision failures and
+no audit backlog. Its lease is the snapshot's, at most the 90-second heartbeat
+validity window. The deployed staging continuity feed is produced independently
+of this reference model and signs its own longer lease: on 26 September 2026 it
+issued a proof about every five minutes, each with a 15-minute lease and a
+Fleet cycle of about 110 seconds. Browsers accept a signed lease of at most 30
+minutes. The reference state model and performance budgets are software
+integration proof; deployed Guardian timing, Fleet capacity, and physical
+safety remain unverified.
 
 ## Platform adapters
 
@@ -121,9 +160,9 @@ deployed Guardian timing, Fleet capacity, and physical safety remain unverified.
 | Aircraft | takeoff, route segment, altitude change | position, altitude, battery, weather, link | hold, loiter, return, land |
 | Ground robot | enter zone, cross doorway, change speed | map pose, proximity, identity, load | stop, slow, retreat, park |
 | Autonomous boat | enter channel, approach berth, change speed | GNSS, chart zone, traffic, weather | hold station, slow, turn away |
-| Warehouse vehicle | cross aisle, lift load, enter human area | localization, pedestrian distance, load state | brake, lower, wait, reroute |
-| Inspection platform | approach asset, energize tool, enter exclusion area | permit, tool state, personnel clearance | inhibit, retract, isolate |
-| Fixed machinery | move axis, open valve, energize process | guards, lockout state, pressure, operator key | interlock, stop, vent, isolate |
+| Warehouse vehicle | cross aisle, lift load, enter human area | localisation, pedestrian distance, load state | brake, lower, wait, reroute |
+| Inspection platform | approach asset, energise tool, enter exclusion area | permit, tool state, personnel clearance | inhibit, retract, isolate |
+| Fixed machinery | move axis, open valve, energise process | guards, lockout state, pressure, operator key | interlock, stop, vent, isolate |
 
 An adapter should be narrow, deterministic, separately tested, and fail safe. When its input is missing, stale, malformed, or beyond its declared capability, it does the safest thing available — not nothing.
 

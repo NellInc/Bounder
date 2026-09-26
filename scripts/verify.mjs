@@ -16,6 +16,18 @@ export const DEFAULT_VERIFICATION_PHASES = Object.freeze([
   Object.freeze({ id: "documentation", command: "npm", args: ["run", "docs:check"], timeout_ms: 60_000 })
 ]);
 
+export const COMPLETE_VERIFICATION_CLAIMS = Object.freeze([
+  "source_behavior", "browser_behavior", "publisher_integrity", "runtime_observability", "observability_performance"
+]);
+export const PRODUCER_VERIFICATION_CLAIMS = Object.freeze(["producer_derivation", "cross_repository_compatibility"]);
+
+// Complete means every default phase ran, whatever else a caller added (verify:changed inserts
+// producer derivation into the same list).
+export function isCompletePhaseSet(phases) {
+  const ids = new Set(phases.map(({ id }) => id));
+  return DEFAULT_VERIFICATION_PHASES.every(({ id }) => ids.has(id));
+}
+
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 export const FAILURE_LOG_TAIL_LINES = 60;
@@ -298,20 +310,28 @@ export async function runVerification({
   }
 
   const finishedAtMs = clock();
+  // A focused run proves only the phases it ran. It claims nothing, says why, and never replaces
+  // latest.json, which release sealing reads as the complete gate's receipt.
+  const complete = isCompletePhaseSet(phases);
   const receipt = {
     version: "bounder-verification/v1",
+    scope: complete ? "complete" : "focused",
     candidate,
     started_at: startedAt,
     finished_at: new Date(finishedAtMs).toISOString(),
     environment: { platform: process.platform, architecture: process.arch, node: process.version },
     phases: results,
     artifacts: await hashArtifacts(root, artifactPaths),
-    claims: failed ? [] : [
-      "source_behavior", "browser_behavior", "publisher_integrity", "runtime_observability", "observability_performance",
-      ...(candidate.producer_commits.length ? ["producer_derivation", "cross_repository_compatibility"] : [])
+    claims: failed || !complete ? [] : [
+      ...COMPLETE_VERIFICATION_CLAIMS,
+      ...(candidate.producer_commits.length ? PRODUCER_VERIFICATION_CLAIMS : [])
     ],
     unverified: [
       ...unverified,
+      ...(complete ? [] : [{
+        proof_class: "complete_verification",
+        reason: `focused run of ${phases.map(({ id }) => id).join(", ")}; only the complete gate supports release claims`
+      }]),
       ...(candidate.producer_commits.length ? [] : [{
         proof_class: "producer_derivation",
         reason: candidate.producer_receipt_status?.reason || NO_PRODUCER_RECEIPT_REASON
@@ -327,11 +347,13 @@ export async function runVerification({
   const receiptPath = join(runDirectory, "receipt.json");
   await writeFile(temporaryPath, receiptSource, { encoding: "utf8", flag: "wx" });
   await rename(temporaryPath, receiptPath);
-  const latestTemporary = join(runDirectory, ".latest.tmp");
-  const latestPath = join(outputRoot, "latest.json");
-  await writeFile(latestTemporary, receiptSource, { encoding: "utf8", flag: "wx" });
-  await rename(latestTemporary, latestPath);
-  logger.log(`Verification receipt: ${receiptPath}`);
+  if (complete) {
+    const latestTemporary = join(runDirectory, ".latest.tmp");
+    const latestPath = join(outputRoot, "latest.json");
+    await writeFile(latestTemporary, receiptSource, { encoding: "utf8", flag: "wx" });
+    await rename(latestTemporary, latestPath);
+  }
+  logger.log(`Verification receipt: ${receiptPath}${complete ? "" : " (focused run; latest.json left unchanged)"}`);
   return Object.freeze({ receipt: Object.freeze(receipt), receiptPath });
 }
 

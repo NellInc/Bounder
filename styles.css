@@ -9,9 +9,30 @@
   --line-light: rgba(255, 255, 255, 0.2);
   --content: 1180px;
   --focus-ring: var(--signal);
-  --font-sans: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, sans-serif;
-  --font-display: "Avenir Next Condensed", "Arial Narrow", var(--font-sans);
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Avenir Next Condensed is the tuned face. Systems without it (Windows, Android,
+     Linux) get the self-hosted condensed fallback below rather than a wide Arial or
+     Roboto that breaks the tight display composition. Apple visitors never fetch it. */
+  --font-display: "Avenir Next Condensed", "Bounder Display", "Arial Narrow", var(--font-sans);
+  /* Chromium does not map SFMono-Regular or ui-monospace on macOS and falls back to
+     Courier, so Menlo and the per-platform monospaces are named explicitly. */
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", "Segoe UI Mono", Consolas, "Roboto Mono", "Liberation Mono", "DejaVu Sans Mono", monospace;
+  color-scheme: only light;
+}
+
+/* Open Sans (OFL 1.1), instanced at width 75 and weights 600-800 and subset to Latin:
+   see assets/fonts/OFL.txt. The vertical metric overrides match Avenir Next Condensed
+   (ascent 1000, descent 366 per 1000 units), so the tight display leading behaves the
+   same on every platform. */
+@font-face {
+  font-family: "Bounder Display";
+  src: url("assets/fonts/open-sans-condensed-latin.woff2") format("woff2");
+  font-weight: 600 800;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 100%;
+  descent-override: 36.6%;
+  line-gap-override: 0%;
 }
 
 *, *::before, *::after {
@@ -85,8 +106,7 @@ button, a {
 
 .step-icon,
 .principle-mark,
-.application-mark,
-.boundary-icon {
+.application-mark {
   display: block;
   flex: 0 0 auto;
   width: 2rem;
@@ -172,6 +192,20 @@ button, a {
   border: 0 !important;
 }
 
+/* Every link that opens a new tab says so to assistive technology. The visible cue is the
+   aria-hidden ↗ glyph in the markup; this adds the spoken one, site-wide, without layout. */
+a[target="_blank"]::after {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  content: " (opens in a new tab)";
+}
+
 .header-nav {
   display: flex;
   gap: 1.75rem;
@@ -213,7 +247,7 @@ button, a {
 .hero {
   position: relative;
   display: grid;
-  /* Kept under the common 720px viewport so the hero note stays above the fold. */
+  /* Kept under the common 720px viewport so the headline and calls to action stay above the fold. */
   min-height: 640px;
   height: 100svh;
   color: white;
@@ -275,6 +309,13 @@ button, a {
   height: auto;
   transform: translateY(-50%);
   pointer-events: none;
+}
+
+/* The SVG labels carry a presentation-attribute font list for standalone viewers; the
+   author rule wins in the page so they follow the same mono token as the rest of the UI. */
+.hero-interlock text,
+.hero-interlock g {
+  font-family: var(--font-mono);
 }
 
 /* Resting state is the RESOLVED frame, so the hero reads as composed even if the
@@ -380,7 +421,8 @@ button, a {
   font-family: var(--font-display);
   font-weight: 760;
   letter-spacing: -0.04em;
-  line-height: 0.82;
+  /* 0.82 let the comma in "Trust," land on the ascender of the next line. */
+  line-height: 0.88;
 }
 
 .hero-summary {
@@ -457,20 +499,6 @@ button, a {
   color: var(--ink);
 }
 
-.hero-note {
-  position: absolute;
-  right: max(1.5rem, calc((100vw - var(--content)) / 2));
-  bottom: 2rem;
-  max-width: 360px;
-  margin: 0;
-  padding-left: 1rem;
-  border-left: 2px solid var(--signal);
-  color: rgba(255, 255, 255, 0.72);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-
 .section {
   width: min(calc(100% - 3rem), var(--content));
   margin: 0 auto;
@@ -501,7 +529,7 @@ button, a {
   font-size: clamp(2.5rem, 5vw, 5.2rem);
   font-weight: 720;
   letter-spacing: -0.035em;
-  line-height: 0.98;
+  line-height: 1.02;
 }
 
 .section-heading > p {
@@ -669,31 +697,6 @@ button, a {
   font-size: 0.92rem;
 }
 
-.boundary-note {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1rem;
-  max-width: 790px;
-  margin: 4rem 0 0 auto;
-  padding-top: 1.4rem;
-  border-top: 1px solid var(--signal);
-}
-
-.boundary-icon {
-  color: var(--signal);
-  margin-top: 0.15rem;
-}
-
-.boundary-note p {
-  margin: 0;
-  max-width: 72ch;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.boundary-note strong {
-  color: white;
-}
-
 .principle-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -740,7 +743,9 @@ button, a {
 
 .continuity::before {
   position: absolute;
-  top: 5rem;
+  /* Sits just below the status pill (section padding + the pill's own height) so the
+     rings frame it as a beacon instead of cutting through its border. */
+  top: calc(clamp(5rem, 10vw, 9rem) + 3.5rem);
   right: 0;
   width: clamp(9rem, 20vw, 17rem);
   height: clamp(9rem, 20vw, 17rem);
@@ -780,7 +785,7 @@ button, a {
   font-size: clamp(2.8rem, 6vw, 6rem);
   font-weight: 720;
   letter-spacing: -0.04em;
-  line-height: 0.94;
+  line-height: 0.98;
 }
 
 .continuity-state {
@@ -822,10 +827,37 @@ button, a {
   background: var(--safety);
 }
 
+/* Only verified live evidence earns the heavy display figures. Every other state
+   (checking, offline, expired, unverifiable) reads as a quiet placeholder. */
+.continuity:not([data-state="verified"]) .continuity-metrics dd {
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+/* Without scripting, nothing can verify the live feed: the noscript note replaces the
+   in-progress badge, metrics and note rather than leaving them "Checking" forever. */
+.continuity-noscript {
+  grid-column: 1;
+  max-width: 58ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+@media (scripting: none) {
+  .continuity .continuity-state,
+  .continuity .continuity-metrics,
+  .continuity [data-continuity-note] {
+    display: none;
+  }
+}
+
 .continuity-summary {
   position: relative;
   z-index: 1;
-  max-width: 780px;
+  max-width: 58ch;
   margin: 2rem 0 4rem;
   color: var(--ink-soft);
   font-size: 1.12rem;
@@ -876,7 +908,7 @@ button, a {
 }
 
 .continuity-proof p {
-  max-width: 760px;
+  max-width: 58ch;
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.9rem;
@@ -979,6 +1011,8 @@ button, a {
 .application-list article {
   display: grid;
   grid-template-columns: 50px 1fr;
+  /* Rows stay at their content height when a taller neighbour stretches the card. */
+  align-content: start;
   column-gap: 1.2rem;
   padding: 2.2rem 2.2rem 2.2rem 0;
   border-right: 1px solid var(--line);
@@ -1106,6 +1140,17 @@ button, a {
 
 .interior-page .header-nav a::after {
   background: var(--safety);
+}
+
+/* The current page keeps its rule drawn, so the self-link reads as "you are here". */
+.interior-page .header-nav a[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+.secondary-nav a[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.35em;
 }
 
 .interior-main {
@@ -1278,6 +1323,22 @@ button, a {
   color: rgba(255, 255, 255, 0.72);
 }
 
+/* A failed send must not wear the success colour. */
+.form-notice-error {
+  border-top-color: var(--safety);
+}
+
+.form-hint {
+  margin: 0 0 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.form-required-note {
+  margin: -0.4rem 0 1.5rem;
+}
+
 .policy-layout {
   display: grid;
   grid-template-columns: 180px minmax(0, 760px);
@@ -1319,6 +1380,13 @@ button, a {
 
 .policy-body p {
   color: var(--ink-soft);
+}
+
+/* A comfortable reading measure of about 72 characters. Avenir's zero is wide, so 58ch
+   rather than the usual 65-70ch; the 760px column otherwise ran to about 90. */
+.policy-body p,
+.policy-lead {
+  max-width: 58ch;
 }
 
 .error-page {
@@ -1364,6 +1432,14 @@ button, a {
   list-style: none;
 }
 
+/* No negative space beside the headline below desktop widths: scaled to fit, the interlock's
+   labels shrank to 7-9px and crowded the summary. The photograph carries the hero. */
+@media (max-width: 1023px) {
+  .hero-interlock {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   .section-heading,
   .intro,
@@ -1378,7 +1454,7 @@ button, a {
 
   .section-heading > p {
     grid-column: 1;
-    margin-top: 0;
+    margin-top: 1rem;
   }
 
   .section-heading-offset h2,
@@ -1413,30 +1489,52 @@ button, a {
   .policy-aside {
     position: static;
   }
+
+  .continuity::before {
+    display: none;
+  }
 }
 
 @media (max-width: 680px) {
+  /* Two rows on every page: the wordmark, then the links wrapping left-aligned beneath
+     it. A two-column grid beside the wordmark overran a 320px viewport. */
   .site-header {
+    flex-direction: column;
     align-items: flex-start;
+    gap: 0.2rem;
+    padding: 1.1rem 0 0.25rem;
   }
 
   .header-nav {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.45rem 1rem;
-    text-align: right;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.1rem;
+    text-align: left;
   }
 
   .header-nav a {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     min-height: 44px;
   }
 
-  .hero {
-    /* Matches the desktop floor: a taller hero pushes the note below the fold on short phones. */
-    min-height: 640px;
+  /* The home header overlays the photograph, so the hero reserves the header's measured
+     height (two link rows) instead of centring the headline underneath it. */
+  body:not(.interior-page) .hero {
+    height: auto;
+    min-height: max(640px, 100svh);
+    padding-top: 8.5rem;
+  }
+
+  body:not(.interior-page) .hero-content {
+    margin: 0 auto;
+    padding: 2rem 0 3rem;
+  }
+
+  /* The drone sits left of centre; this crop keeps it whole above the headline. */
+  .hero-image {
+    object-position: 38% 30%;
   }
 
   .hero-scrim {
@@ -1454,25 +1552,16 @@ button, a {
   }
 
   .hero h1 {
-    font-size: clamp(3.6rem, 19vw, 6rem);
-  }
-
-  /* The headline stacks and fills the frame at this width, leaving no negative
-     space for the interlock to occupy without colliding. The photograph carries
-     the hero on its own here. */
-  .hero-interlock {
-    display: none;
+    /* 18vw keeps "Trust, at the" on one line down to 320px; balance is the safety net
+       for wider fallback faces, which would otherwise orphan "the". */
+    font-size: clamp(3.2rem, 18vw, 6rem);
+    text-wrap: balance;
   }
 
   .hero-actions,
   .cta-actions {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .hero-note {
-    right: 1.5rem;
-    left: 1.5rem;
   }
 
   .architecture-flow,
@@ -1518,8 +1607,10 @@ button, a {
   }
 
   .architecture-flow li,
+  .architecture-flow li:first-child,
   .architecture-flow li:nth-child(2),
   .principle-grid article,
+  .principle-grid article:first-child,
   .principle-grid article:nth-child(2) {
     min-height: auto;
     padding: 1.5rem 0 2rem;
@@ -1592,20 +1683,113 @@ button, a {
   }
 }
 
+/* On very wide frames the cover crop cuts the photograph's lower band, which pushed the
+   drone up into the header rule and behind the headline. Lift the crop instead. */
+@media (min-aspect-ratio: 2/1) {
+  .hero-image {
+    object-position: center 22%;
+  }
+}
+
+/* Windows High Contrast replaces backgrounds with Canvas, which erased the masked
+   wordmark and the status dots. Paint them in the system text colour instead. */
+@media (forced-colors: active) {
+  .brand-lockup,
+  .interior-page:not(.simulator-page) .site-header .brand-lockup,
+  .continuity .continuity-state::before,
+  .continuity[data-state] .continuity-state::before,
+  .fleet-node i,
+  .policy-roundtrip-steps i {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+}
+
 @media print {
+  @page {
+    margin: 18mm;
+  }
+
+  .skip-link,
   .site-header,
+  .hero-image,
+  .hero-scrim,
+  .hero-grid,
+  .hero-interlock,
   .hero-actions,
   .cta-actions,
+  .home-simulator-frame,
+  .continuity::before,
+  .section-dark::before,
   .site-footer {
-    display: none;
+    display: none !important;
+  }
+
+  /* The scroll reveal never runs for content the printer lays out off screen. */
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   body,
+  .hero,
   .section-dark,
   .section-safety,
   .cta {
     color: black;
     background: white;
+  }
+
+  .hero {
+    height: auto;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .hero-content {
+    margin: 0;
+  }
+
+  .hero *,
+  .section-dark *,
+  .section-safety *,
+  .cta * {
+    color: black !important;
+    background: transparent !important;
+    border-color: rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .authority-wedge {
+    display: none;
+  }
+
+  .section {
+    padding: 2rem 0;
+  }
+
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  article,
+  li,
+  .continuity-metrics div {
+    break-inside: avoid;
+  }
+
+  main a[href^="http"]::after {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    overflow-wrap: anywhere;
   }
 }
 

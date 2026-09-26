@@ -112,8 +112,12 @@ function validateBudgets(budgets) {
   if (!(budgets.attention_interval_ms <= budgets.healthy_interval_ms && budgets.healthy_interval_ms <= budgets.stable_interval_ms)) {
     throw new Error("observability heartbeat budgets are out of order");
   }
-  if (Math.ceil(budgets.stable_interval_ms * (1 + budgets.jitter_fraction)) >= budgets.heartbeat_validity_ms) {
+  const longestScheduledDelay = Math.ceil(budgets.stable_interval_ms * (1 + budgets.jitter_fraction));
+  if (longestScheduledDelay >= budgets.heartbeat_validity_ms) {
     throw new Error("observability stable heartbeat can expire before its next scheduled report");
+  }
+  if (2 * longestScheduledDelay >= budgets.heartbeat_validity_ms) {
+    throw new Error("observability stable heartbeat can expire after one lost report");
   }
   if (!(budgets.event_max_bytes <= budgets.heartbeat_max_bytes && budgets.heartbeat_max_bytes <= budgets.snapshot_max_bytes)) {
     throw new Error("observability payload budgets are out of order");
@@ -227,6 +231,11 @@ export function planForPaths(model, paths, { claim = null } = {}) {
   const componentIds = new Set(matchedRules.flatMap((rule) => rule.components));
   const commandIds = new Set(matchedRules.flatMap((rule) => rule.commands));
   const proofIds = new Set(matchedRules.flatMap((rule) => rule.proof_classes));
+  const unmatchedPaths = normalizedPaths.filter((path) => !matchedRules.some((rule) => rule.paths.some((pattern) => matchesPathPattern(path, pattern))));
+  // Fail closed: a path no rule describes gets the complete gate, never an empty plan that a
+  // changed-path run would record as a verified success. CI reads this plan to decide whether to
+  // install Chromium, so the command has to be in the plan itself, not added downstream.
+  if (unmatchedPaths.length > 0) commandIds.add("verify");
   if (claim) {
     const proof = model.proof_classes.find(({ id }) => id === claim);
     if (!proof) throw new Error(`unknown proof claim: ${claim}`);
@@ -240,9 +249,9 @@ export function planForPaths(model, paths, { claim = null } = {}) {
     commands: collectOrdered(model.commands, commandIds),
     proof_classes: collectOrdered(model.proof_classes, proofIds),
     authority_boundaries: [...new Set(matchedRules.flatMap((rule) => rule.authority_boundaries))].sort(compare),
-    release_sensitive: matchedRules.some((rule) => rule.release_sensitive),
+    release_sensitive: unmatchedPaths.length > 0 || matchedRules.some((rule) => rule.release_sensitive),
     documentation_refresh: [...new Set(matchedRules.flatMap((rule) => rule.documentation_refresh))].sort(compare),
-    unmatched_paths: normalizedPaths.filter((path) => !matchedRules.some((rule) => rule.paths.some((pattern) => matchesPathPattern(path, pattern))))
+    unmatched_paths: unmatchedPaths
   });
 }
 

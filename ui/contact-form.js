@@ -1,6 +1,11 @@
 // Progressive enhancement of the existing Formspree form. Native submission still works without JS.
 const form = document.querySelector('#contact-form');
 const submit = form.querySelector('button[type="submit"]');
+// Only the label text changes while sending; the decorative arrow stays in place.
+const submitLabel = submit.querySelector('[data-label]') ?? submit;
+const idleLabel = submitLabel.textContent;
+// On success the heading and required-fields note belong to a form that no longer shows.
+const formIntro = [document.querySelector('#contact-form-title'), document.querySelector('.form-required-note')].filter(Boolean);
 const success = document.querySelector('#form-success');
 const error = document.querySelector('#form-error');
 const hostedSubmit = form.querySelector('[data-hosted-submit]');
@@ -13,7 +18,7 @@ form.addEventListener('submit', async (event) => {
   pending = true;
   submit.disabled = true;
   hostedSubmit.disabled = true;
-  submit.textContent = 'Sending enquiry…';
+  submitLabel.textContent = 'Sending enquiry…';
   error.hidden = true;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -32,9 +37,10 @@ form.addEventListener('submit', async (event) => {
     success.hidden = false;
     success.tabIndex = -1;
     form.hidden = true;
+    for (const element of formIntro) element.hidden = true;
     success.focus();
   } catch {
-    error.textContent = 'Something went wrong and we could not confirm delivery. Your message is still here — check your connection and try again, or use the hosted form below.';
+    error.textContent = 'We could not confirm delivery. Your message is still here: check your connection and try again, or continue on Formspree below. If the first attempt did arrive, we may receive it twice.';
     error.hidden = false;
     hostedSubmit.hidden = false;
     error.tabIndex = -1;
@@ -44,6 +50,6 @@ form.addEventListener('submit', async (event) => {
     pending = false;
     submit.disabled = false;
     hostedSubmit.disabled = false;
-    submit.textContent = 'Send enquiry';
+    submitLabel.textContent = idleLabel;
   }
 });

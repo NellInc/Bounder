@@ -29,8 +29,11 @@ tmp/
 .env.local
 .env.*.local
 
-# Machine-local agent state (locks are per-machine, not project content)
-.claude/*.lock
+# Machine-local agent state and tool guidance (not project content)
+.claude/
+
+# Coverage output
+coverage/
 _site/
 _site.lock/
 artifacts/verification/

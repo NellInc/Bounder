@@ -23,7 +23,7 @@ import {
 const execFileAsync = promisify(execFile);
 const quietLogger = Object.freeze({ log() {}, warn() {} });
 const expectedPublicPaths = Object.freeze([
-  "404.html", "CNAME", "CHANGELOG.md", "LICENSE", "NOTICE", "README.md",
+  ".well-known", "404.html", "CNAME", "CHANGELOG.md", "LICENSE", "NOTICE", "README.md",
   "SECURITY.md", "VERSION", "contact.html", "continuity-evidence.js",
   "favicon.ico", "index.html", "policy-roundtrip.js", "privacy.html",
   "robots.txt", "simulator-bootstrap.js", "simulator-contracts.js",
@@ -971,4 +971,68 @@ test("a signal during promotion is deferred so the artifact is never left half-p
   await assert.rejects(fs.lstat(lockPath), { code: "ENOENT" });
   await assert.rejects(fs.lstat(stageAtSignal), { code: "ENOENT" });
   assert.equal(listeners.size, 0);
+});
+
+test("operating-system metadata never reaches the artifact and any other stray dotfile fails the build", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => fs.rm(fixture.base, { recursive: true, force: true }));
+  // Finder recreates .DS_Store whenever a folder is opened, so it is skipped, not fatal.
+  for (const junk of [".DS_Store", "._file.txt", "Thumbs.db"]) {
+    await fs.writeFile(join(fixture.root, "public", "nested", junk), "metadata\n");
+  }
+  await fs.writeFile(join(fixture.output, ".DS_Store"), "metadata in the prior artifact\n");
+  await buildSite({ ...fixture, publicPaths: ["public"], logger: quietLogger });
+  const built = await inspectTree({ root: fixture.output });
+  assert.deepEqual(built.map(({ path }) => path), ["public", "public/file.txt", "public/nested", "public/nested/child.txt"]);
+  assert.equal(built.some(({ path }) => path.split("/").some((segment) => segment.startsWith("."))), false);
+
+  // A copied secret or an editor swap file is a mistake: publishing it and dropping it silently
+  // are both wrong, so the build names it and leaves the prior artifact untouched.
+  for (const stray of [".env", "notes.txt.swp", "draft.html~", ".hidden-dir"]) {
+    const path = join(fixture.root, "public", "nested", stray);
+    if (stray === ".hidden-dir") await fs.mkdir(path);
+    else await fs.writeFile(path, "stray\n");
+    await assert.rejects(
+      () => buildSite({ ...fixture, publicPaths: ["public"], logger: quietLogger }),
+      new RegExp(`Stray file under a public path: public/nested/${stray.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.`)
+    );
+    await fs.rm(path, { recursive: true });
+  }
+  assert.equal(await fs.readFile(join(fixture.output, "public", "file.txt"), "utf8"), "new artifact\n");
+
+  // RFC 8615 reserves /.well-known/ for exactly this kind of public metadata.
+  await fs.mkdir(join(fixture.root, "public", ".well-known"));
+  await fs.writeFile(join(fixture.root, "public", ".well-known", "security.txt"), "Contact: https://example.invalid/\n");
+  await buildSite({ ...fixture, publicPaths: ["public"], logger: quietLogger });
+  assert.equal(await fs.readFile(join(fixture.output, "public", ".well-known", "security.txt"), "utf8"), "Contact: https://example.invalid/\n");
+});
+
+test("the canonical public tree carries no dot-prefixed segment beyond .well-known", async () => {
+  for (const { path } of await inspectPublicTree()) {
+    const hidden = path.split("/").filter((segment) => segment.startsWith(".") && segment !== ".well-known");
+    assert.deepEqual(hidden, [], `${path} would publish a hidden file`);
+  }
+});
+
+test("the site publishes an RFC 9116 security.txt that routes reports to private disclosure", async () => {
+  const published = (await inspectPublicTree()).map(({ path }) => path);
+  assert.ok(published.includes(".well-known/security.txt"), "security.txt is not in the public tree");
+  const text = await fs.readFile(join(canonicalRoot, ".well-known", "security.txt"), "utf8");
+  const fields = new Map(text.trimEnd().split("\n").map((line) => {
+    const colon = line.indexOf(": ");
+    assert.ok(colon > 0, `malformed security.txt line: ${line}`);
+    return [line.slice(0, colon), line.slice(colon + 2)];
+  }));
+  assert.equal(fields.get("Contact"), "https://github.com/NellInc/Bounder/security/advisories/new");
+  assert.equal(fields.get("Canonical"), "https://www.bounder.io/.well-known/security.txt");
+  assert.equal(fields.get("Policy"), "https://github.com/NellInc/Bounder/blob/main/SECURITY.md");
+  // RFC 9116 asks for an expiry under a year away. Anchor it to the newest release entry rather
+  // than the wall clock, so the check is deterministic and each release renews it.
+  const expires = Date.parse(fields.get("Expires") ?? "");
+  assert.ok(Number.isFinite(expires), "Expires must be an RFC 3339 timestamp");
+  const changelog = await fs.readFile(join(canonicalRoot, "CHANGELOG.md"), "utf8");
+  const [, newest] = /^## \d+\.\d+\.\d+ · (\d{4}-\d{2}-\d{2})/mu.exec(changelog) ?? [];
+  const released = Date.parse(`${newest}T00:00:00Z`);
+  assert.ok(expires > released, "security.txt has expired relative to the newest release");
+  assert.ok(expires - released <= 366 * 24 * 60 * 60 * 1000, "security.txt expires more than a year after the newest release");
 });

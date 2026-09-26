@@ -1,14 +1,28 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import * as THREE from "../vendor/three/three.module.min.js";
 import {
   BUILDING_SPECS,
   FLIGHT_ALTITUDE_OFFSET,
+  HOLD_CLEARANCE,
   MAX_POLYLINE_WAYPOINTS,
+  PROTECTION_BOUNDARIES,
+  ROUTE_CURVE,
+  ROUTE_STOPS,
   ROUTE_WAYPOINTS,
+  METRES_PER_UNIT,
   WORLD_BOUNDS,
-  findPolylineBuildingCollisions
+  findPolylineBuildingCollisions,
+  metres
 } from "../simulator-world.js";
+
+const routeCurve = (name) => new THREE.CatmullRomCurve3(
+  ROUTE_WAYPOINTS[name].map(([x, y, z]) => new THREE.Vector3(x, y, z)),
+  false,
+  ROUTE_CURVE.curveType,
+  ROUTE_CURVE.tension
+);
 
 const buildingNamed = (name) => {
   const building = BUILDING_SPECS.find((candidate) => candidate.name === name);
@@ -70,8 +84,11 @@ test("world model is finite, immutable, visible, bounded, and non-overlapping", 
     assertApproxEqual(building.visibleBounds.maxX, building.x + expectedHalfWidth, `${building.name} maximum x envelope`);
     assert.equal(building.visibleBounds.minY, 0, `${building.name} must begin at ground level`);
     assertApproxEqual(building.visibleBounds.maxY, expectedTop, `${building.name} top envelope`);
-    assertApproxEqual(building.visibleBounds.minZ, building.z - building.depth / 2 - 0.275, `${building.name} rear envelope`);
-    assertApproxEqual(building.visibleBounds.maxZ, building.z + building.depth / 2 + awningFrontOverhang, `${building.name} front envelope`);
+    assert.equal(building.facing, building.z > 5 ? -1 : 1, `${building.name} must front its nearest street`);
+    const rearDepth = building.depth / 2 + 0.275;
+    const frontDepth = building.depth / 2 + awningFrontOverhang;
+    assertApproxEqual(building.visibleBounds.minZ, building.z - (building.facing === 1 ? rearDepth : frontDepth), `${building.name} minimum z envelope`);
+    assertApproxEqual(building.visibleBounds.maxZ, building.z + (building.facing === 1 ? frontDepth : rearDepth), `${building.name} maximum z envelope`);
     for (const [field, value] of Object.entries(building.visibleBounds)) {
       assert.equal(Number.isFinite(value), true, `${building.name}.visibleBounds.${field} is not finite`);
     }
@@ -111,6 +128,27 @@ test("canonical route waypoints are finite, bounded, visibly elevated, and colli
     const minimumWaypointAltitude = Math.min(...waypoints.map(([, y]) => y));
     assert.ok(minimumWaypointAltitude >= tallestVisiblePoint + 0.5, `${name} waypoints lack visible vertical clearance`);
     assert.deepEqual(findPolylineBuildingCollisions(waypoints), [], `${name} route intersects a visible building prism`);
+  }
+});
+
+test("rendered route curves keep visible clearance from every building", () => {
+  // The browser draws Catmull-Rom curves, not the raw waypoint polylines, so the sampled curve
+  // carries the clearance invariant that the page no longer audits on every visit.
+  for (const name of Object.keys(ROUTE_WAYPOINTS)) {
+    const samples = routeCurve(name).getPoints(500).map(({ x, y, z }) => [x, y, z]);
+    assert.deepEqual(findPolylineBuildingCollisions(samples, 0.45), [], `${name} curve passes too close to a building`);
+  }
+});
+
+test("every scenario has a route stop and boundary holds are drawn outside the boundary", () => {
+  assert.deepEqual(Object.keys(ROUTE_STOPS).sort(), Object.keys(ROUTE_WAYPOINTS).sort());
+  for (const [name, stop] of Object.entries(ROUTE_STOPS)) {
+    assert.ok(Number.isFinite(stop) && stop >= 0 && stop <= 1, `${name} stop is outside [0, 1]`);
+  }
+  for (const [name, boundary] of Object.entries(PROTECTION_BOUNDARIES)) {
+    const hold = routeCurve(name).getPointAt(ROUTE_STOPS[name]);
+    const distance = Math.hypot(hold.x - boundary.x, hold.z - boundary.z);
+    assert.ok(distance >= boundary.radius + HOLD_CLEARANCE, `${name} hold is drawn ${(distance - boundary.radius).toFixed(2)} units from its boundary`);
   }
 });
 
@@ -338,4 +376,13 @@ test("far finite geometry is constant-work and nonfinite horizontal geometry is 
     name: "RangeError",
     message: "waypoint at index 1 coordinates must be finite"
   });
+});
+
+test("scene objects are sized from one metres-per-unit scale", () => {
+  assert.equal(metres(METRES_PER_UNIT), 1);
+  assert.equal(metres(0), 0);
+  // A 1.7 m person stands well under a 1.12-unit storey, and a 4.4 m car outscales them.
+  assert.ok(metres(1.7) < 1.12 * 0.6);
+  assert.ok(metres(4.4) > metres(1.7) * 2);
+  assert.ok(Math.abs(metres(3.024) - 1.12) < 1e-9);
 });

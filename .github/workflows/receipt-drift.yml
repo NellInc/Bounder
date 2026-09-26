@@ -1,4 +1,4 @@
-name: Producer derivation and contract drift
+name: Contract drift (producer derivation when token present)
 
 on:
   push:
@@ -27,19 +27,24 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       # The secrets context is not readable inside step conditions, so expose only whether the
-      # private read token exists. The token itself stays scoped to the one step that uses it.
+      # private read token exists. The token itself is passed only to the producer checkout.
       PRODUCER_TOKEN_AVAILABLE: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN != '' }}
     steps:
       - name: Checkout publisher
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: publisher
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -69,15 +74,23 @@ jobs:
         with:
           repository: NellInc/Bounder-from-org
           ref: ${{ steps.producer.outputs.commit }}
-          # Scoped to the one step that consumes it. A job-level env block would put the private
-          # producer credential in the process environment of every step, including steps that
-          # execute pull-request-head code.
+          # Passed to this checkout only. A job-level env block would put the private producer
+          # credential in the process environment of every step, including steps that execute
+          # pull-request-head code, and persist-credentials: false stops checkout from leaving
+          # it in producer/.git/config, where those same steps could read it. The later steps
+          # only run local Git inspection in the producer tree and need no credential.
           token: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN }}
           path: producer
+          persist-credentials: false
       - name: Regenerate producer evidence and compare exact bytes
         if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
         working-directory: publisher
         run: npm run verify:producer -- --producer-root ../producer
+      # A skipped derivation must not read as a passed one. The warning annotation and the job
+      # summary make the unverified state visible next to the green contract checks.
       - name: Record unavailable private-producer proof
         if: ${{ env.PRODUCER_TOKEN_AVAILABLE != 'true' }}
-        run: echo "Producer derivation is unverified in this run because BOUNDER_PRODUCER_READ_TOKEN is unavailable. Release sealing must supply a current local producer receipt."
+        run: |
+          message="Producer derivation is unverified in this run because BOUNDER_PRODUCER_READ_TOKEN is unavailable. Only the local contract and provenance checks ran. Release sealing must supply a current local producer receipt."
+          echo "::warning title=Producer derivation unverified::${message}"
+          printf '### Producer derivation unverified\n\n%s\n' "${message}" >> "$GITHUB_STEP_SUMMARY"

@@ -15,13 +15,17 @@ import {
   HISTORICAL_MANIFEST_SHA256,
   assertHistoricalManifests,
   assertPublisherCommit,
+  assertCompleteVerification,
   assertReceipt,
+  assertStatementMatchesInventory,
   buildManifestV2,
+  compareInventoryPaths,
   fileReceipt,
   inventoryHash,
   parseReleaseManifestV2Arguments,
   validateManifest
 } from "../scripts/generate-release-manifest-v2.mjs";
+import { COMPLETE_VERIFICATION_CLAIMS, DEFAULT_VERIFICATION_PHASES, PRODUCER_VERIFICATION_CLAIMS } from "../scripts/verify.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const execFileAsync = promisify(execFile);
@@ -36,7 +40,8 @@ async function makeManifestFixture(t) {
     "VERSION": "1.1.0\n",
     "README.md": "fixture\n",
     "data/bounder-fleet-evidence.v1.json": "{}\n",
-    "data/bounder-staging-pilot.v1.json": "{}\n"
+    "data/bounder-staging-pilot.v1.json": "{}\n",
+    "data/creedspace-bounder-manipulator-profile-v1.example.json": "{\"mirror\":true}\n"
   };
   await Promise.all([
     ...Object.entries(publicSources).map(([path, source]) => writeFile(join(root, path), source)),
@@ -66,11 +71,16 @@ async function makeManifestFixture(t) {
       outputs: [producerRecord]
     }
   };
+  // A realistic complete receipt: every default phase passed, the full claim set, and the
+  // producer tree the seal cites. A fixture without these would lock in the missing checks.
   const verificationReceipt = {
     version: "bounder-verification/v1",
+    scope: "complete",
     success: true,
-    candidate: { publisher_commit: publisherCommit, dirty: false },
-    environment: { node: "v22.0.0" }
+    candidate: { publisher_commit: publisherCommit, producer_commits: [producerCommit], dirty: false },
+    environment: { node: "v22.0.0" },
+    phases: DEFAULT_VERIFICATION_PHASES.map(({ id }) => ({ id, exit_code: 0, signal: null, timed_out: false })),
+    claims: [...COMPLETE_VERIFICATION_CLAIMS, ...PRODUCER_VERIFICATION_CLAIMS]
   };
   await Promise.all([
     writeFile(producerReceiptPath, `${JSON.stringify(producerReceipt)}\n`),
@@ -187,8 +197,19 @@ test("release manifest v2 builds deterministically from exact source and success
   const manifest = await buildManifestV2(options);
   assert.equal(manifest.publisher_source.commit, fixture.publisherCommit);
   assert.equal(manifest.evidence_producers[0].commit, "a".repeat(40));
-  assert.equal(manifest.observations.length, 2);
+  assert.equal(manifest.observations.length, 3);
+  assert.deepEqual(manifest.observations[2], {
+    path: "data/creedspace-bounder-manipulator-profile-v1.example.json",
+    classification: "recorded_observation",
+    sha256: sha256("{\"mirror\":true}\n"),
+    limitation: manifest.observations[2].limitation
+  });
+  assert.match(manifest.observations[2].limitation, /not in the decision producer's evidence statement/);
   assert.equal(manifest.files.length, fixture.publicPaths.length);
+  // Code-unit order, which any verifier can reproduce; ICU "en" collation would put data/ first.
+  const paths = manifest.files.map(({ path }) => path);
+  assert.deepEqual(paths, [...paths].sort(compareInventoryPaths));
+  assert.deepEqual(paths.slice(0, 2), ["README.md", "VERSION"]);
   assert.equal(manifest.build.public_inventory_sha256, inventoryHash(manifest.files));
   await validateManifest(fixture.root, manifest);
   await assertPublisherCommit(fixture.root, fixture.publisherCommit, manifest.files);
@@ -249,4 +270,80 @@ test("release manifest v2 command arguments are exact and complete", () => {
   assert.throws(() => parseReleaseManifestV2Arguments(["--bad"]), /unknown/);
   assert.throws(() => parseReleaseManifestV2Arguments(["--publisher-commit"]), /requires a value/);
   assert.throws(() => parseReleaseManifestV2Arguments([]), /missing --publisher-commit/);
+});
+
+test("a seal refuses any verification receipt short of the complete gate against the cited producer tree", async (t) => {
+  const fixture = await makeManifestFixture(t);
+  const options = { ...fixture, historicalManifestDigests: {} };
+  const producerCommit = fixture.producerReceipt.producer.commit;
+  assert.doesNotThrow(() => assertCompleteVerification(fixture.verificationReceipt, producerCommit));
+  const cases = [
+    ["focused run", (receipt) => { receipt.scope = "focused"; }, /focused run, not the complete gate/],
+    ["single phase", (receipt) => { receipt.phases = receipt.phases.filter(({ id }) => id === "documentation"); }, /did not run the descriptor phase/],
+    ["missing browser", (receipt) => { receipt.phases = receipt.phases.filter(({ id }) => id !== "browser"); }, /did not run the browser phase/],
+    ["no phase list", (receipt) => { delete receipt.phases; }, /did not run/],
+    ["failed phase", (receipt) => { receipt.phases[3].exit_code = 1; }, /failed unit-coverage phase/],
+    ["timed-out phase", (receipt) => { receipt.phases[5].timed_out = true; }, /failed browser phase/],
+    ["missing claim", (receipt) => { receipt.claims = receipt.claims.filter((claim) => claim !== "producer_derivation"); }, /does not claim producer_derivation/],
+    ["no claims", (receipt) => { delete receipt.claims; }, /does not claim/],
+    ["producer re-run after verify", (receipt) => { receipt.candidate.producer_commits = ["b".repeat(40)]; }, /not produced against producer commit/],
+    ["no producer receipt at verify time", (receipt) => { delete receipt.candidate.producer_commits; }, /not produced against producer commit/]
+  ];
+  for (const [label, mutate, pattern] of cases) {
+    const receipt = structuredClone(fixture.verificationReceipt);
+    mutate(receipt);
+    assert.throws(() => assertCompleteVerification(receipt, producerCommit), pattern, label);
+    await writeFile(fixture.verificationReceiptPath, `${JSON.stringify(receipt)}\n`);
+    await assert.rejects(() => buildManifestV2(options), pattern, `${label} sealed`);
+  }
+  // Receipts written before the scope field existed are judged by their phases and claims alone.
+  const legacy = structuredClone(fixture.verificationReceipt);
+  delete legacy.scope;
+  assert.doesNotThrow(() => assertCompleteVerification(legacy, producerCommit));
+});
+
+test("a seal refuses a producer statement that hashes a published file differently", async (t) => {
+  const fixture = await makeManifestFixture(t);
+  const options = { ...fixture, historicalManifestDigests: {} };
+  const readme = fileRecord("README.md", "fixture\n");
+  assert.doesNotThrow(() => assertStatementMatchesInventory({ outputs: [readme] }, [readme]));
+  assert.doesNotThrow(() => assertStatementMatchesInventory({}, [readme]));
+  assert.throws(
+    () => assertStatementMatchesInventory({ contracts: [{ ...readme, sha256: "0".repeat(64) }] }, [readme]),
+    /disagree on README\.md/
+  );
+  const receipt = structuredClone(fixture.producerReceipt);
+  receipt.producer_statement.outputs.push({ ...readme, bytes: readme.bytes + 1 });
+  await writeFile(fixture.producerReceiptPath, `${JSON.stringify(receipt)}\n`);
+  await assert.rejects(() => buildManifestV2(options), /disagree on README\.md/);
+
+  // A mirrored file that the producer does export is producer-derived and is not relabelled.
+  const mirrored = fileRecord("data/creedspace-bounder-manipulator-profile-v1.example.json", "{\"mirror\":true}\n");
+  const exported = structuredClone(fixture.producerReceipt);
+  exported.producer_statement.outputs.push(mirrored);
+  await writeFile(fixture.producerReceiptPath, `${JSON.stringify(exported)}\n`);
+  const manifest = await buildManifestV2(options);
+  assert.equal(manifest.observations.some(({ path }) => path === mirrored.path), false);
+});
+
+test("an untracked file under a public path fails sealing with its name", async (t) => {
+  const fixture = await makeManifestFixture(t);
+  await writeFile(join(fixture.root, "data", "scratch.json"), "{}\n");
+  await assert.rejects(
+    () => buildManifestV2({ ...fixture, publicPaths: ["VERSION", "README.md", "data"], historicalManifestDigests: {} }),
+    /untracked or ignored file under a public path: data\/scratch\.json/
+  );
+});
+
+test("every sealed v2 manifest's inventory hash is recomputable from its files array as recorded", async () => {
+  // Order is part of the recorded array, not something a verifier re-derives: v1.1.0 to v1.2.2
+  // used ICU collation and later releases use code-unit order, and both verify this way.
+  for (const path of Object.keys(HISTORICAL_MANIFEST_SHA256)) {
+    const manifest = JSON.parse(await readFile(new URL(`../${path}`, import.meta.url), "utf8"));
+    if (manifest.manifest_version !== "bounder-release-manifest/v2") continue;
+    assert.equal(inventoryHash(manifest.files), manifest.build.public_inventory_sha256, path);
+  }
+  assert.equal(compareInventoryPaths("CNAME", "assets/x"), -1);
+  assert.equal(compareInventoryPaths("b", "a"), 1);
+  assert.equal(compareInventoryPaths("a", "a"), 0);
 });

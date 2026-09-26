@@ -13,6 +13,7 @@ adapter.
 
 Please report suspected vulnerabilities through GitHub's private vulnerability
 reporting for [`NellInc/Bounder`](https://github.com/NellInc/Bounder/security/advisories/new).
+The same route is published at `https://www.bounder.io/.well-known/security.txt`.
 Do not test against public infrastructure, third-party aircraft, or devices you
 do not control.
 
@@ -22,7 +23,7 @@ Include the affected revision, entry point, expected trust boundary, reproductio
 
 **Protected assets:** the integrity of published evidence and schemas, the simulator's fail-closed decisions, visitor privacy, and the clear line between simulation evidence and operational proof.
 
-**Primary threats:** tampered evidence, replayed or expired policy, unexpected cross-origin data, compromised dependencies or deployment automation, unsafe file uploads to the local verifier, and claims that overstate what the simulation demonstrates.
+**Primary threats:** tampered evidence, replayed or expired policy, unexpected cross-origin data, compromised dependencies or deployment automation, untrusted local files opened in the browser verifier, and claims that overstate what the simulation demonstrates.
 
 **Critical controls:** exact Ed25519 payload verification, pinned evidence keys, strict schemas, sequence and expiry checks, same-origin fixtures, bounded cross-origin continuity fetching, fail-closed UI states, self-hosted dependencies, immutable release manifests, and an allowlisted deployment artifact.
 
@@ -54,4 +55,4 @@ that request against the signed policy before displaying a result.
 
 ## Security gates
 
-Do not connect this reference site or its simulator to live hardware. A real deployment requires a separately reviewed implementation, hazard analysis, device-specific safe states, hardware-in-the-loop testing, and applicable regulatory approval. The simulation proves the pattern; the deployment proves the machine.
+Do not connect this reference site or its simulator to live hardware. A real deployment requires a separately reviewed implementation, hazard analysis, device-specific safe states, hardware-in-the-loop testing, and applicable regulatory approval. The simulation demonstrates the pattern; only reviewed deployment testing can show that a machine is safe.

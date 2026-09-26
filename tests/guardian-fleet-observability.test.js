@@ -13,6 +13,7 @@ import {
   FLEET_SNAPSHOT_VERSION,
   HEARTBEAT_VERSION,
   TELEMETRY_ENVELOPE_VERSION,
+  aggregateFleetObservations,
   aggregateFleetSnapshot,
   classifyGuardianHeartbeat,
   createGuardianHeartbeatGuard,
@@ -21,6 +22,7 @@ import {
   parseObservabilityTimestamp,
   planHeartbeatDelay,
   projectPublicContinuity,
+  projectPublicContinuityFromHeartbeats,
   validateFleetEvent,
   validateFleetSnapshot,
   validateGuardianHeartbeat,
@@ -31,6 +33,7 @@ import { DuplicateJsonMemberError, parseUniqueJson, rejectDuplicateJsonMembers }
 import { makeExpectedGuardians, makeFleet, makeHeartbeat, setOperationalState, TEST_NOW_MS } from "./helpers/observability-fixtures.js";
 
 const clone = structuredClone;
+const guardianBinding = (guardianId = "bounder-000", fleetId = "relief-fleet") => ({ fleet_id: fleetId, guardian_id: guardianId });
 
 test("published observability schemas accept canonical private contracts and reject leakage or extension", async () => {
   const ajv = new Ajv2020({ strict: true, allErrors: true });
@@ -106,8 +109,15 @@ test("heartbeat validation derives one exact operational state and preserves imm
   assert.deepEqual(classifyGuardianHeartbeat(expired, { nowMs: TEST_NOW_MS }), { state: "unreachable", reason: "heartbeat_expired" });
   assert.deepEqual(classifyGuardianHeartbeat(null, { nowMs: TEST_NOW_MS }), { state: "unreachable", reason: "missing_heartbeat" });
 
+  // Evidence age is judged as the Guardian declared it at generated_at. Fleet cannot see evidence
+  // refreshed after the heartbeat, so re-aging it at observation time would flap every cycle.
   const agingEvidence = makeHeartbeat();
-  assert.deepEqual(classifyGuardianHeartbeat(agingEvidence, { nowMs: TEST_NOW_MS + 31_000 }), { state: "degraded", reason: "evidence_lag" });
+  assert.deepEqual(classifyGuardianHeartbeat(agingEvidence, { nowMs: TEST_NOW_MS + 31_000 }), { state: "healthy", reason: "none" });
+  const lagging = setOperationalState(makeHeartbeat(), "degraded", "evidence_lag");
+  assert.deepEqual(classifyGuardianHeartbeat(lagging, { nowMs: TEST_NOW_MS + 1_000 }), { state: "degraded", reason: "evidence_lag" });
+  const expiringPolicy = makeHeartbeat();
+  expiringPolicy.policy.expires_at = new Date(TEST_NOW_MS + 10_000).toISOString();
+  assert.deepEqual(classifyGuardianHeartbeat(expiringPolicy, { nowMs: TEST_NOW_MS + 10_000 }), { state: "held", reason: "policy_expired" });
   const expiringLease = makeHeartbeat();
   expiringLease.continuity_lease_expires_at = new Date(TEST_NOW_MS + 20_000).toISOString();
   assert.deepEqual(classifyGuardianHeartbeat(expiringLease, { nowMs: TEST_NOW_MS + 21_000 }), { state: "held", reason: "continuity_lease_expired" });
@@ -211,15 +221,20 @@ test("Fleet aggregation classifies loss and expiry, preserves privacy, and rejec
   assert.throws(() => aggregateFleetSnapshot({ fleetId: "relief-fleet", expectedGuardians: fleet.expectedGuardians, heartbeats: [wrongPlatform], nowMs: TEST_NOW_MS }), /platform/);
 });
 
-test("public projection accepts only a complete healthy 100-Guardian aggregate and remains compatible with the existing verifier", () => {
-  const fleet = makeFleet(100);
+const oneEvaluationEach = (fleet) => {
   for (const heartbeat of fleet.heartbeats) {
     heartbeat.decisions.evaluated = 1;
     heartbeat.decisions.allowed = 1;
     heartbeat.decisions.held = 0;
   }
+  return fleet;
+};
+
+test("public projection accepts only a complete healthy 100-Guardian aggregate and remains compatible with the existing verifier", () => {
+  const fleet = oneEvaluationEach(makeFleet(100));
   const snapshot = aggregateFleetSnapshot({ fleetId: "relief-fleet", ...fleet, nowMs: TEST_NOW_MS });
-  const projected = projectPublicContinuity(snapshot, { nowMs: TEST_NOW_MS });
+  const projected = projectPublicContinuityFromHeartbeats({ fleetId: "relief-fleet", ...fleet, nowMs: TEST_NOW_MS });
+  assert.deepEqual(projectPublicContinuity(snapshot, { nowMs: TEST_NOW_MS, guardiansEvaluated: 100 }), projected);
   assert.equal(projected.device_count, 100);
   assert.equal(projected.healthy, true);
   assert.equal(projected.policies_verified, 100);
@@ -229,9 +244,94 @@ test("public projection accepts only a complete healthy 100-Guardian aggregate a
   const degradedFleet = makeFleet(100);
   setOperationalState(degradedFleet.heartbeats[0], "degraded", "partial_connectivity");
   const degraded = aggregateFleetSnapshot({ fleetId: "relief-fleet", ...degradedFleet, nowMs: TEST_NOW_MS });
-  assert.throws(() => projectPublicContinuity(degraded, { nowMs: TEST_NOW_MS }), /complete healthy/);
-  assert.throws(() => projectPublicContinuity(aggregateFleetSnapshot({ fleetId: "relief-fleet", ...makeFleet(6), nowMs: TEST_NOW_MS }), { nowMs: TEST_NOW_MS }), /100-Guardian/);
-  assert.throws(() => projectPublicContinuity(snapshot, { nowMs: TEST_NOW_MS, mode: "simulation" }), /mode/);
+  assert.throws(() => projectPublicContinuity(degraded, { nowMs: TEST_NOW_MS, guardiansEvaluated: 100 }), /complete healthy/);
+  assert.throws(() => projectPublicContinuity(aggregateFleetSnapshot({ fleetId: "relief-fleet", ...makeFleet(6), nowMs: TEST_NOW_MS }), { nowMs: TEST_NOW_MS, guardiansEvaluated: 6 }), /100-Guardian/);
+  assert.throws(() => projectPublicContinuity(snapshot, { nowMs: TEST_NOW_MS, mode: "simulation", guardiansEvaluated: 100 }), /mode/);
+});
+
+test("public projection requires one completed evaluation per Guardian, not only a matching fleet-wide sum", () => {
+  const fleet = oneEvaluationEach(makeFleet(100));
+  const snapshot = aggregateFleetSnapshot({ fleetId: "relief-fleet", ...fleet, nowMs: TEST_NOW_MS });
+  for (const guardiansEvaluated of [undefined, 99, 101, "100", 100.5]) {
+    assert.throws(() => projectPublicContinuity(snapshot, { nowMs: TEST_NOW_MS, guardiansEvaluated }), /one completed evaluation per Guardian/, String(guardiansEvaluated));
+  }
+
+  // Half the Fleet evaluated twice and half not at all: the sum is still 100.
+  const uneven = oneEvaluationEach(makeFleet(100));
+  uneven.heartbeats.forEach((heartbeat, index) => {
+    const evaluated = index < 50 ? 2 : 0;
+    heartbeat.decisions.evaluated = evaluated;
+    heartbeat.decisions.allowed = evaluated;
+    if (evaluated === 0) heartbeat.decisions.latency_ms = { p50: 0, p95: 0, p99: 0, max: 0 };
+  });
+  const unevenSnapshot = aggregateFleetSnapshot({ fleetId: "relief-fleet", ...uneven, nowMs: TEST_NOW_MS });
+  assert.equal(unevenSnapshot.decisions.evaluated, 100);
+  assert.equal(unevenSnapshot.healthy, true);
+  assert.throws(() => projectPublicContinuityFromHeartbeats({ fleetId: "relief-fleet", ...uneven, nowMs: TEST_NOW_MS }), /one completed evaluation per Guardian/);
+});
+
+test("a healthy Fleet stays healthy between heartbeats even when evidence must be fresher than the heartbeat interval", async () => {
+  const fleet = oneEvaluationEach(makeFleet(100));
+  for (const heartbeat of fleet.heartbeats) {
+    heartbeat.evidence = { freshest_at: new Date(TEST_NOW_MS - 1_000).toISOString(), required_max_age_ms: 5_000 };
+  }
+  const later = aggregateFleetSnapshot({ fleetId: "relief-fleet", ...fleet, nowMs: TEST_NOW_MS + 10_000 });
+  assert.equal(later.states.healthy, 100);
+  assert.equal(later.healthy, true);
+  assert.equal(projectPublicContinuityFromHeartbeats({ fleetId: "relief-fleet", ...fleet, nowMs: TEST_NOW_MS + 10_000 }).healthy, true);
+
+  const first = fleet.heartbeats[0];
+  const connected = await deriveFleetEvents({ currentHeartbeat: first, observedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  const between = await deriveFleetEvents({ previousHeartbeat: first, previousObservedState: "healthy", observedAtMs: TEST_NOW_MS + 10_000, cryptoImpl: webcrypto });
+  assert.deepEqual(connected.map(({ event_type }) => event_type), ["guardian_connected"]);
+  assert.deepEqual(between, [], "no degraded/recovered pair between two healthy heartbeats");
+});
+
+test("a Fleet snapshot expires at the first policy, lease, or liveness deadline it summarises", () => {
+  const fleet = oneEvaluationEach(makeFleet(100));
+  for (const heartbeat of fleet.heartbeats) heartbeat.policy.expires_at = new Date(TEST_NOW_MS + 10_000).toISOString();
+  const snapshot = aggregateFleetSnapshot({ fleetId: "relief-fleet", ...fleet, nowMs: TEST_NOW_MS });
+  assert.equal(snapshot.healthy, true);
+  assert.equal(snapshot.expires_at, new Date(TEST_NOW_MS + 10_000).toISOString());
+  assert.throws(() => projectPublicContinuity(snapshot, { nowMs: TEST_NOW_MS + 50_000, guardiansEvaluated: 100 }), /validity window/);
+  assert.throws(() => projectPublicContinuity(snapshot, { nowMs: TEST_NOW_MS + 10_000, guardiansEvaluated: 100 }), /validity window/);
+
+  const leased = makeFleet(6);
+  leased.heartbeats[3].continuity_lease_expires_at = new Date(TEST_NOW_MS + 7_000).toISOString();
+  assert.equal(aggregateFleetSnapshot({ fleetId: "relief-fleet", ...leased, nowMs: TEST_NOW_MS }).expires_at, new Date(TEST_NOW_MS + 7_000).toISOString());
+
+  const received = makeFleet(6);
+  const receivedAtMs = { "bounder-002": TEST_NOW_MS - 50_000 };
+  assert.equal(
+    aggregateFleetSnapshot({ fleetId: "relief-fleet", ...received, nowMs: TEST_NOW_MS, receivedAtMs }).expires_at,
+    new Date(TEST_NOW_MS + 40_000).toISOString()
+  );
+});
+
+test("quarantining aggregation sets aside bad heartbeats per Guardian and fails the cycle closed instead of aborting it", () => {
+  const fleet = makeFleet(6);
+  const longWindow = clone(fleet.heartbeats[1]);
+  longWindow.expires_at = new Date(TEST_NOW_MS + 120_000).toISOString();
+  const foreign = makeHeartbeat({ guardianId: "foreign" });
+  const heartbeats = [fleet.heartbeats[0], longWindow, fleet.heartbeats[2], fleet.heartbeats[2], fleet.heartbeats[3], foreign];
+  assert.throws(() => aggregateFleetSnapshot({ fleetId: "relief-fleet", expectedGuardians: fleet.expectedGuardians, heartbeats, nowMs: TEST_NOW_MS }), /validity window/);
+
+  const { snapshot, rejected } = aggregateFleetObservations({ fleetId: "relief-fleet", expectedGuardians: fleet.expectedGuardians, heartbeats, nowMs: TEST_NOW_MS });
+  assert.equal(snapshot.complete, false);
+  assert.equal(snapshot.healthy, false);
+  assert.equal(snapshot.observed_guardians, 2, "Guardians 0 and 3 remain observed");
+  assert.equal(snapshot.states.unreachable, 4);
+  assert.equal(snapshot.reason_counts.missing_heartbeat, 4);
+  assert.deepEqual(rejected.map(({ index, guardian_id }) => [index, guardian_id]), [[1, "bounder-001"], [3, "bounder-002"], [5, "foreign"]]);
+  assert.match(rejected[0].reason, /validity window/);
+  assert.match(rejected[1].reason, /duplicate/);
+  assert.match(rejected[2].reason, /unknown Guardian/);
+  assert.doesNotMatch(JSON.stringify(snapshot), /bounder-00|foreign/);
+  assert.equal(Object.isFrozen(rejected[0]), true);
+
+  const junk = aggregateFleetObservations({ fleetId: "relief-fleet", expectedGuardians: fleet.expectedGuardians.slice(0, 1), heartbeats: [null], nowMs: TEST_NOW_MS });
+  assert.deepEqual(junk.rejected.map(({ guardian_id }) => guardian_id), [null]);
+  assert.throws(() => aggregateFleetObservations({ fleetId: "relief-fleet", expectedGuardians: [], heartbeats: [], nowMs: TEST_NOW_MS }), /inventory is invalid/);
 });
 
 test("Fleet events are deterministic, transition-only, private, and content-addressed", async () => {
@@ -271,13 +371,24 @@ test("Fleet events are deterministic, transition-only, private, and content-addr
 test("adaptive scheduling is bounded, immediate on transition, and faster for attention states", () => {
   assert.equal(planHeartbeatDelay({ state: "healthy", stateChanged: true }), 0);
   assert.equal(planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 0, jitterUnit: 0 }), 30_000);
-  assert.equal(planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 10, jitterUnit: 0 }), 60_000);
-  assert.equal(planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 10, jitterUnit: 1 }), 66_000);
-  assert.equal(planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 10, jitterUnit: -1 }), 54_000);
+  assert.equal(planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 10, jitterUnit: 0 }), 40_000);
+  assert.equal(planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 10, jitterUnit: 1 }), 44_000);
+  assert.equal(planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 10, jitterUnit: -1 }), 36_000);
   for (const state of ["degraded", "held", "recovering"]) assert.equal(planHeartbeatDelay({ state, jitterUnit: 0 }), 5_000);
   assert.throws(() => planHeartbeatDelay({ state: "unreachable" }), /state/);
   assert.throws(() => planHeartbeatDelay({ state: "healthy", jitterUnit: 2 }), /jitter/);
   assert.throws(() => validateObservabilityBudgets({ stable_interval_ms: 90_000 }), /outlive/);
+  // A stable Guardian must survive one lost report: two maximal delays stay inside validity.
+  const { stable_interval_ms: stable, jitter_fraction: jitter, heartbeat_validity_ms: validity } = DEFAULT_OBSERVABILITY_BUDGETS;
+  assert.ok(2 * Math.ceil(stable * (1 + jitter)) < validity);
+  assert.throws(() => validateObservabilityBudgets({ stable_interval_ms: 60_000 }), /one lost report/);
+  assert.doesNotThrow(() => validateObservabilityBudgets({ stable_interval_ms: 60_000, heartbeat_validity_ms: 150_000 }));
+
+  const lastReceived = makeHeartbeat();
+  lastReceived.expires_at = new Date(TEST_NOW_MS + validity).toISOString();
+  const longest = planHeartbeatDelay({ state: "healthy", consecutiveHealthy: 10, jitterUnit: 1 });
+  // The next report is lost; the one after it lands at 2 × the longest delay.
+  assert.equal(classifyGuardianHeartbeat(lastReceived, { nowMs: TEST_NOW_MS + 2 * longest }).state, "healthy");
 });
 
 test("signed telemetry verifies exact bytes, key identity, payload kind, event id, and strict JSON", async () => {
@@ -297,12 +408,12 @@ test("signed telemetry verifies exact bytes, key identity, payload kind, event i
   };
   const heartbeat = makeHeartbeat();
   const envelope = await signPayload(JSON.stringify(heartbeat));
-  const verified = await verifyTelemetryEnvelope({ envelope, publicKeys: { "guardian-test-key": publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  const verified = await verifyTelemetryEnvelope({ envelope, publicKeys: { "guardian-test-key": publicKey }, keyBindings: { "guardian-test-key": guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto });
   assert.equal(verified.payload.guardian_id, heartbeat.guardian_id);
   assert.equal(verified.public_key_id, "guardian-test-key");
 
   const mutableEnvelope = clone(envelope);
-  const pendingVerification = verifyTelemetryEnvelope({ envelope: mutableEnvelope, publicKeys: { "guardian-test-key": publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  const pendingVerification = verifyTelemetryEnvelope({ envelope: mutableEnvelope, publicKeys: { "guardian-test-key": publicKey }, keyBindings: { "guardian-test-key": guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto });
   mutableEnvelope.public_key_id = "changed-after-verification-started";
   assert.equal((await pendingVerification).public_key_id, "guardian-test-key");
 
@@ -310,22 +421,22 @@ test("signed telemetry verifies exact bytes, key identity, payload kind, event i
   const bytes = Buffer.from(tampered.payload, "base64");
   bytes[bytes.length - 2] ^= 1;
   tampered.payload = bytes.toString("base64");
-  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: tampered, publicKeys: { "guardian-test-key": publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /signature/);
-  await assert.rejects(() => verifyTelemetryEnvelope({ envelope, publicKeys: {}, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /unknown/);
+  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: tampered, publicKeys: { "guardian-test-key": publicKey }, keyBindings: { "guardian-test-key": guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /signature/);
+  await assert.rejects(() => verifyTelemetryEnvelope({ envelope, publicKeys: {}, keyBindings: { "guardian-test-key": guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /unknown/);
 
   const wrongKind = await signPayload(JSON.stringify(heartbeat), FLEET_SNAPSHOT_VERSION);
-  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: wrongKind, publicKeys: { "guardian-test-key": publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /kind does not match/);
+  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: wrongKind, publicKeys: { "guardian-test-key": publicKey }, keyBindings: { "guardian-test-key": guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /kind does not match/);
   const duplicateSource = JSON.stringify(heartbeat).replace('{"version"', '{"version":"duplicate","version"');
   const duplicate = await signPayload(duplicateSource);
-  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: duplicate, publicKeys: { "guardian-test-key": publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /duplicate/);
+  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: duplicate, publicKeys: { "guardian-test-key": publicKey }, keyBindings: { "guardian-test-key": guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /duplicate/);
 
   const [event] = await deriveFleetEvents({ currentHeartbeat: heartbeat, observedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
   const eventEnvelope = await signPayload(JSON.stringify(event), FLEET_EVENT_VERSION);
-  assert.equal((await verifyTelemetryEnvelope({ envelope: eventEnvelope, publicKeys: new Map([["guardian-test-key", publicKey]]), nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).payload.event_id, event.event_id);
+  assert.equal((await verifyTelemetryEnvelope({ envelope: eventEnvelope, publicKeys: new Map([["guardian-test-key", publicKey]]), keyBindings: new Map([["guardian-test-key", guardianBinding()]]), nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).payload.event_id, event.event_id);
   const badEvent = clone(event);
   badEvent.event_id = `sha256:${"0".repeat(64)}`;
   const badEventEnvelope = await signPayload(JSON.stringify(badEvent), FLEET_EVENT_VERSION);
-  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: badEventEnvelope, publicKeys: { "guardian-test-key": publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /event id/);
+  await assert.rejects(() => verifyTelemetryEnvelope({ envelope: badEventEnvelope, publicKeys: { "guardian-test-key": publicKey }, keyBindings: { "guardian-test-key": guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }), /event id/);
 });
 
 test("strict JSON parser rejects duplicates, malformed input, excessive depth, and non-string input", () => {
@@ -354,7 +465,7 @@ test("virtual-time fault corpus covers loss, delay, duplication, reordering, ske
     ["loss", () => classifyGuardianHeartbeat(null, { nowMs: TEST_NOW_MS }), { state: "unreachable", reason: "missing_heartbeat" }],
     ["delay", () => classifyGuardianHeartbeat(base, { nowMs: TEST_NOW_MS + 61_000 }), { state: "unreachable", reason: "heartbeat_expired" }],
     ["duplication", () => guard.accept(base, TEST_NOW_MS), /replayed/],
-    ["reordering", () => guard.accept(makeHeartbeat({ nowMs: TEST_NOW_MS - 1_000, sequence: 2 }), TEST_NOW_MS), /replayed|reordered/],
+    ["reordering", () => guard.accept(makeHeartbeat({ nowMs: TEST_NOW_MS - 1_000, sequence: 1 }), TEST_NOW_MS), /replayed|reordered/],
     ["clock skew", () => validateGuardianHeartbeat(makeHeartbeat({ nowMs: TEST_NOW_MS + 600_000 }), { nowMs: TEST_NOW_MS }), /validity/],
     ["rollback", () => guard.accept(makeHeartbeat({ nowMs: TEST_NOW_MS + 1_000, sequence: 2, checkpointSequence: 41 }), TEST_NOW_MS + 1_000), /rolled back/],
     ["partial rollout", () => aggregateFleetSnapshot({ fleetId: "relief-fleet", ...makeFleet(6), heartbeats: makeFleet(6).heartbeats.slice(0, 3), nowMs: TEST_NOW_MS }).states.unreachable, 3]
@@ -481,6 +592,7 @@ test("signed telemetry parses payload bytes with the signed-policy parser", asyn
   const keyPair = await webcrypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
   const publicKey = new Uint8Array(await webcrypto.subtle.exportKey("raw", keyPair.publicKey));
   const publicKeys = { "guardian-test-key": publicKey };
+  const keyBindings = { "guardian-test-key": guardianBinding() };
   const signPayload = async (payloadSource, publicKeyId = "guardian-test-key") => {
     const payloadBytes = new TextEncoder().encode(payloadSource);
     const signature = await webcrypto.subtle.sign({ name: "Ed25519" }, keyPair.privateKey, payloadBytes);
@@ -495,7 +607,7 @@ test("signed telemetry parses payload bytes with the signed-policy parser", asyn
   };
   const canonical = JSON.stringify(makeHeartbeat());
   const canonicalEnvelope = await signPayload(canonical);
-  assert.equal((await verifyTelemetryEnvelope({ envelope: canonicalEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).payload.sequence, 1);
+  assert.equal((await verifyTelemetryEnvelope({ envelope: canonicalEnvelope, publicKeys, keyBindings, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).payload.sequence, 1);
 
   // Both payloads are accepted by the weaker duplicate-only parser: the first rounds to a safe
   // integer the signed bytes never stated, the second carries a lone surrogate that `\S` matches.
@@ -503,7 +615,7 @@ test("signed telemetry parses payload bytes with the signed-policy parser", asyn
   assert.deepEqual(parseUniqueJson(lossySequence).sequence, 9007199254740991);
   const lossyEnvelope = await signPayload(lossySequence);
   await assert.rejects(
-    () => verifyTelemetryEnvelope({ envelope: lossyEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    () => verifyTelemetryEnvelope({ envelope: lossyEnvelope, publicKeys, keyBindings, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
     /telemetry payload is not strict UTF-8 JSON/
   );
 
@@ -511,27 +623,149 @@ test("signed telemetry parses payload bytes with the signed-policy parser", asyn
   assert.equal(parseUniqueJson(loneSurrogate).guardian_id, "bounder-\ud800");
   const loneSurrogateEnvelope = await signPayload(loneSurrogate);
   await assert.rejects(
-    () => verifyTelemetryEnvelope({ envelope: loneSurrogateEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    () => verifyTelemetryEnvelope({ envelope: loneSurrogateEnvelope, publicKeys, keyBindings, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
     /telemetry payload is not strict UTF-8 JSON/
   );
 
   const duplicate = canonical.replace('{"version"', '{"version":"duplicate","version"');
   const duplicateEnvelope = await signPayload(duplicate);
   await assert.rejects(
-    () => verifyTelemetryEnvelope({ envelope: duplicateEnvelope, publicKeys, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    () => verifyTelemetryEnvelope({ envelope: duplicateEnvelope, publicKeys, keyBindings, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
     /telemetry payload contains duplicate JSON fields/
   );
 
   const longKeyId = "k".repeat(129);
   const longKeyEnvelope = await signPayload(canonical, longKeyId);
   await assert.rejects(
-    () => verifyTelemetryEnvelope({ envelope: longKeyEnvelope, publicKeys: { [longKeyId]: publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+    () => verifyTelemetryEnvelope({ envelope: longKeyEnvelope, publicKeys: { [longKeyId]: publicKey }, keyBindings: { [longKeyId]: guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
     /telemetry public key id is invalid/
   );
   const maximalKeyId = "k".repeat(128);
   const maximalKeyEnvelope = await signPayload(canonical, maximalKeyId);
   assert.equal(
-    (await verifyTelemetryEnvelope({ envelope: maximalKeyEnvelope, publicKeys: { [maximalKeyId]: publicKey }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).public_key_id,
+    (await verifyTelemetryEnvelope({ envelope: maximalKeyEnvelope, publicKeys: { [maximalKeyId]: publicKey }, keyBindings: { [maximalKeyId]: guardianBinding() }, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto })).public_key_id,
     maximalKeyId
   );
+});
+
+test("liveness is bounded by Fleet receive time, and a corrected Guardian clock is not locked out", async () => {
+  // A heartbeat dated 299 s ahead of Fleet's clock is inside the accepted skew.
+  const skewed = makeHeartbeat({ nowMs: TEST_NOW_MS + 299_000 });
+  const guard = createGuardianHeartbeatGuard();
+  guard.accept(skewed, TEST_NOW_MS);
+  assert.equal(guard.state("bounder-000").received_at_ms, TEST_NOW_MS);
+
+  // Declared expiry alone keeps it reachable for about six minutes; receive time caps it at 90 s.
+  assert.notEqual(classifyGuardianHeartbeat(skewed, { nowMs: TEST_NOW_MS + 330_000 }).state, "unreachable");
+  assert.deepEqual(
+    classifyGuardianHeartbeat(skewed, { nowMs: TEST_NOW_MS + 90_000, receivedAtMs: TEST_NOW_MS }),
+    { state: "unreachable", reason: "heartbeat_expired" }
+  );
+  assert.equal(classifyGuardianHeartbeat(skewed, { nowMs: TEST_NOW_MS + 89_999, receivedAtMs: TEST_NOW_MS }).state, "healthy");
+  assert.throws(() => classifyGuardianHeartbeat(skewed, { nowMs: TEST_NOW_MS, receivedAtMs: TEST_NOW_MS + 1 }), /receive time is invalid/);
+  const skewedFleet = aggregateFleetSnapshot({
+    fleetId: "relief-fleet",
+    expectedGuardians: makeExpectedGuardians(1),
+    heartbeats: [skewed],
+    nowMs: TEST_NOW_MS + 95_000,
+    receivedAtMs: new Map([["bounder-000", TEST_NOW_MS]])
+  });
+  assert.equal(skewedFleet.reason_counts.heartbeat_expired, 1);
+  const lost = await deriveFleetEvents({ previousHeartbeat: skewed, previousObservedState: "healthy", observedAtMs: TEST_NOW_MS + 95_000, receivedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  assert.deepEqual(lost.map(({ event_type }) => event_type), ["guardian_unreachable"]);
+
+  // After the clock is corrected, the next signed sequence of the same boot is accepted and the
+  // regression is recorded as a diagnostic. A lower or repeated sequence is still refused.
+  const corrected = setOperationalState(makeHeartbeat({ nowMs: TEST_NOW_MS + 30_000, sequence: 2 }), "held", "rollback_detected");
+  assert.equal(guard.accept(corrected, TEST_NOW_MS + 30_000).state, "held");
+  assert.equal(guard.state("bounder-000").clock_regressions, 1);
+  assert.equal(guard.state("bounder-000").generated_at_ms, TEST_NOW_MS + 30_000);
+  assert.throws(() => guard.accept(makeHeartbeat({ nowMs: TEST_NOW_MS + 31_000, sequence: 2 }), TEST_NOW_MS + 31_000), /sequence was replayed or reordered/);
+  const correctedEvents = await deriveFleetEvents({ previousHeartbeat: skewed, currentHeartbeat: corrected, previousObservedState: "healthy", observedAtMs: TEST_NOW_MS + 30_000, cryptoImpl: webcrypto });
+  assert.deepEqual(correctedEvents.map(({ event_type }) => event_type), ["guardian_held"]);
+
+  // Across a boot change, time ordering stays strict.
+  const newBootEarlier = setOperationalState(makeHeartbeat({ nowMs: TEST_NOW_MS + 29_000, bootId: "boot-1b", sequence: 1 }), "recovering", "guardian_restart");
+  assert.throws(() => guard.accept(newBootEarlier, TEST_NOW_MS + 31_000), /time was replayed or reordered/);
+});
+
+test("the heartbeat guard can retire a Guardian that left the inventory and so release its capacity", () => {
+  const guard = createGuardianHeartbeatGuard({ budgets: { fleet_max_guardians: 1 } });
+  guard.accept(makeHeartbeat({ guardianId: "capacity-0" }), TEST_NOW_MS);
+  assert.throws(() => guard.accept(makeHeartbeat({ guardianId: "capacity-1" }), TEST_NOW_MS), /capacity is exhausted/);
+  assert.equal(guard.retire("capacity-0"), true);
+  assert.equal(guard.state("capacity-0"), null);
+  assert.equal(guard.retire("capacity-0"), false);
+  assert.throws(() => guard.retire(" "), /retired Guardian id is invalid/);
+  guard.accept(makeHeartbeat({ guardianId: "capacity-1" }), TEST_NOW_MS);
+  assert.equal(guard.state("capacity-1").sequence, 1);
+  // A retired id re-entering aggregation is refused by the inventory, not by the guard.
+  assert.throws(() => aggregateFleetSnapshot({
+    fleetId: "relief-fleet",
+    expectedGuardians: [{ guardian_id: "capacity-1", platform: "aerial" }],
+    heartbeats: [makeHeartbeat({ guardianId: "capacity-0" })],
+    nowMs: TEST_NOW_MS
+  }), /unknown Guardian/);
+});
+
+test("telemetry signing keys are bound to one Guardian or to the Fleet aggregator", async () => {
+  const keyPair = await webcrypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+  const publicKey = new Uint8Array(await webcrypto.subtle.exportKey("raw", keyPair.publicKey));
+  const sign = async (payload, publicKeyId) => {
+    const payloadBytes = new TextEncoder().encode(JSON.stringify(payload));
+    const signature = await webcrypto.subtle.sign({ name: "Ed25519" }, keyPair.privateKey, payloadBytes);
+    return {
+      envelope_version: TELEMETRY_ENVELOPE_VERSION,
+      algorithm: "Ed25519",
+      payload_kind: payload.version,
+      payload: Buffer.from(payloadBytes).toString("base64"),
+      signature: Buffer.from(signature).toString("base64"),
+      public_key_id: publicKeyId
+    };
+  };
+  const publicKeys = { "key-a": publicKey, "key-b": publicKey, "fleet-key": publicKey };
+  const keyBindings = {
+    "key-a": guardianBinding("bounder-000"),
+    "key-b": guardianBinding("bounder-001"),
+    "fleet-key": { fleet_id: "relief-fleet", role: "fleet-aggregator" }
+  };
+  const verify = (envelope, bindings = keyBindings) => verifyTelemetryEnvelope({ envelope, publicKeys, keyBindings: bindings, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+
+  // Key A signs a heartbeat for Guardian B with maximal floors: refused before any guard sees it.
+  const forged = makeHeartbeat({ index: 1, policySequence: Number.MAX_SAFE_INTEGER, checkpointSequence: Number.MAX_SAFE_INTEGER });
+  await assert.rejects(async () => verify(await sign(forged, "key-a")), /not bound to the payload subject/);
+  await assert.rejects(async () => verify(await sign(makeHeartbeat(), "fleet-key")), /not bound to the payload subject/);
+  const otherFleet = makeHeartbeat();
+  otherFleet.fleet_id = "other-fleet";
+  await assert.rejects(async () => verify(await sign(otherFleet, "key-a")), /not bound to the payload subject/);
+
+  // Snapshots only from the aggregator key; events from the Guardian itself or the aggregator.
+  const snapshot = aggregateFleetSnapshot({ fleetId: "relief-fleet", ...makeFleet(6), nowMs: TEST_NOW_MS });
+  assert.equal((await verify(await sign(snapshot, "fleet-key"))).payload.fleet_id, "relief-fleet");
+  await assert.rejects(async () => verify(await sign(snapshot, "key-a")), /not bound to the payload subject/);
+  const [event] = await deriveFleetEvents({ currentHeartbeat: makeHeartbeat({ index: 1 }), observedAtMs: TEST_NOW_MS, cryptoImpl: webcrypto });
+  assert.equal((await verify(await sign(event, "key-b"))).payload.guardian_id, "bounder-001");
+  assert.equal((await verify(await sign(event, "fleet-key"))).payload.guardian_id, "bounder-001");
+  await assert.rejects(async () => verify(await sign(event, "key-a")), /not bound to the payload subject/);
+
+  // Missing or malformed bindings fail closed; key ids never resolve through the prototype chain.
+  const genuine = await sign(makeHeartbeat(), "key-a");
+  await assert.rejects(() => verify(genuine, null), /no subject binding/);
+  await assert.rejects(() => verify(genuine, { "key-a": { fleet_id: "relief-fleet" } }), /binding is invalid/);
+  await assert.rejects(() => verify(genuine, { "key-a": { fleet_id: "relief-fleet", role: "operator" } }), /binding role is invalid/);
+  for (const inherited of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
+    await assert.rejects(
+      () => verifyTelemetryEnvelope({ envelope: { ...genuine, public_key_id: inherited }, publicKeys: {}, keyBindings: {}, nowMs: TEST_NOW_MS, cryptoImpl: webcrypto }),
+      /telemetry public key id is unknown/,
+      inherited
+    );
+  }
+
+  // The guard accepts the verified result directly and re-checks its binding.
+  const guard = createGuardianHeartbeatGuard();
+  const verified = await verify(genuine);
+  assert.deepEqual(verified.binding, guardianBinding("bounder-000"));
+  assert.equal(guard.accept(verified, TEST_NOW_MS).guardian_id, "bounder-000");
+  const verifiedSnapshot = await verify(await sign(snapshot, "fleet-key"));
+  assert.throws(() => guard.accept(verifiedSnapshot, TEST_NOW_MS), /not a Guardian heartbeat/);
 });

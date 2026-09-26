@@ -27,3 +27,6 @@ The mockup contains invented branding/account controls and receipt identifiers; 
 
 ## Status
 Completed for the approved local scope. `npm run quality` passed (406 unit tests with configured per-file coverage floors, 25 browser tests, design lint). Built desktop/mobile/Fleet visual QA passed. Public fixtures, historical manifests and producer code remain unchanged. Release sealing, deployment, actual contact delivery and physical/human validation remain separate gates.
+
+## Status note (2026-09-26)
+Recorded as facts after this plan closed; the contract above is unchanged. The work continued past the local scope: v1.2.0, v1.2.1 and v1.2.2 were sealed on 2026-09-07 (commits `c5b6fb5`, `6f7f85a`, `bd42b37`) and reached `main`, and v1.2.3 (source commit `56fdbed`, 2026-09-11) was deployed without a sealed manifest. "Publication authority: none" therefore no longer describes the state of this line. No git tags were created for these versions. The launch-readiness pass continues as the unsealed 1.2.4 candidate.

@@ -3,18 +3,18 @@
 <!-- wiki:type = system -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-05-23 -->
-<!-- wiki:updated = 2026-09-07 -->
+<!-- wiki:updated = 2026-09-26 -->
 <!-- wiki:status = active -->
 
 ## Summary
 
-Bounder.io is the static public verification and presentation layer for a simulation-only physical-interlock reference architecture. The root source includes a Three.js simulator, recorded decision and Fleet evidence, strict browser verification, a signed live continuity view, published JSON Schemas, and an accessible evidence fallback. (`README.md:1-47`; `simulator-bootstrap.js:28-49`)
+Bounder.io is the static public verification and presentation layer for a simulation-only physical-interlock reference architecture. The root source includes a Three.js simulator, recorded decision and Fleet evidence, strict browser verification, a signed live continuity view, published JSON Schemas, and an accessible evidence fallback. (`README.md:1-50`; `simulator-bootstrap.js:28-49`)
 
 ## Source and Archive Boundary
 
-The root pages and modules are the only active site source. The `docs/` tree is a preserved Squarespace-era snapshot with search exclusion and no production support. (`README.md:47-53 "preserved Squarespace-era clone"`; `SECURITY.md:3-10`; `tests/site-quality.test.js:48-54`)
+The root pages and modules are the only active site source. The `docs/` tree is a preserved Squarespace-era snapshot with search exclusion and no production support. (`README.md:57-63 "preserved Squarespace-era clone"`; `SECURITY.md:3-10`; `tests/site-quality.test.js:48-54`)
 
-The publication build uses an explicit recursive allowlist that excludes `docs/`, tests, repository automation, temporary design assets, and the wiki. It copies the accepted tree into `_site/` and verifies the promoted artifact byte for byte. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:350-362`; `README.md:151-157 "deliberately allowlisted artifact"`)
+The publication build uses an explicit recursive allowlist that excludes `docs/`, tests, repository automation, temporary design assets, and the wiki. It copies the accepted tree into `_site/` and verifies the promoted artifact byte for byte. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:350-362`; `README.md:167-173 "deliberately allowlisted artifact"`)
 
 The build takes an exclusive publication lock at `<output>.lock` and records its owner pid inside it. Ownership begins at the `mkdir`, not at the owner write, so an owner write that fails on a full or read-only filesystem still leaves a lock this build knows it holds and will release, rather than an ownerless directory that blocks every later build. A lock with no recorded owner is treated as held, because a peer may be between its `mkdir` and its owner write and stealing it there would let two builds promote at once. Only `ESRCH` proves the owner exited; `EPERM` is a live process owned by another user. (`scripts/build-site.mjs:540-541 "LOCK_OWNER_FILE"`; `scripts/build-site.mjs:682-689 "Ownership begins at mkdir"`; `scripts/build-site.mjs:555-563 "Only ESRCH proves the owner is gone."`; `scripts/build-site.mjs:713-729 "a peer may be between its mkdir"`)
 
@@ -40,41 +40,41 @@ simulator.html
         +-- runtime/json/policy-json.js + runtime/transport/bounded-json.js
 ```
 
-The controller and UI imports establish this dependency shape. (`simulator/controller.js:4 "createTownScene"`; `ui/policy-panel.js:1-6`; `ui/policy-roundtrip-panel.js:1 "policy-panel.js"`) The UI seam, not the policy runtime, mounts the round-trip panel. (`simulator.html:529 "ui/policy-roundtrip-panel.js"`; `simulator-bootstrap.js:28-49`; `simulator/controller.js:1-14`; `simulator-fallback.js:1-8`; `runtime/simulator/contracts-core.js:1-1`; `staging-feed.js:1-1`)
+The controller and UI imports establish this dependency shape. (`simulator/controller.js:4 "createTownScene"`; `ui/policy-panel.js:1-6`; `ui/policy-roundtrip-panel.js:1 "policy-panel.js"`) The UI seam, not the policy runtime, mounts the round-trip panel. (`simulator.html:464 "ui/policy-roundtrip-panel.js"`; `simulator-bootstrap.js:28-49`; `simulator/controller.js:1-14`; `simulator-fallback.js:1-8`; `runtime/simulator/contracts-core.js:1-1`; `staging-feed.js:1-1`)
 
 ## Component Map
 
 | Surface | Responsibility | Inputs | Output or effect | Safe failure |
 |---|---|---|---|---|
-| `continuity-evidence.js` | Verify and lease signed aggregate live proof | Bounded cross-origin evidence envelope | `LIVE_VERIFIED` homepage status | Recorded or unavailable state |
+| `continuity-evidence.js` | Verify, lease and refresh signed aggregate live proof | Bounded cross-origin evidence envelope | `LIVE_VERIFIED` homepage status | Named unavailable state (feed offline, proof expired, cannot verify here, not verified) with em-dash metrics and a link to the recorded run |
 | `policy-roundtrip.js` | Strict JSON, exact policy signature, schema relations, request re-evaluation | Published or local policy vector | Local verification result | Authority held |
 | `simulator-contracts.js` | Exact receipt, Fleet, resilience, URL, and transport contracts | Same-origin JSON and optional streams | Immutable validated models | Reject input |
 | `staging-feed.js` | Load optional read-only staging pilot evidence | Configured URL or recorded fallback | Validated Fleet projection | Recorded fallback |
 | `simulator-world.js` | Own finite world geometry and collision checks | Canonical route waypoints | Collision-free route model | Explicit rejection |
 | `simulator.js` | Render scene, evidence, tour, Fleet, and resilience state | Validated models | Interactive evidence presentation | Stop animation and fallback |
-| `simulator-fallback.js` | Present receipts without WebGL | Same receipt bundle | Accessible evidence view | Unavailable state |
+| `simulator-fallback.js` | Present receipts and the recorded Fleet pilot without WebGL | Same receipt bundle and staging pilot | Accessible evidence view | Unavailable state; the bootstrap shows `bootstrap_unavailable` with a reload control when no view can load |
 | `scripts/build-site.mjs` | Assemble the public inventory | Explicit root allowlist | Verified `_site` tree | Preserve prior valid artifact |
 | `scripts/generate-release-manifest-v2.mjs` | Seal a release from an existing publisher commit plus producer and verification receipts | Publisher commit, producer-derivation receipt, verification receipt | Immutable manifest v2 | Refuse to seal on receipt or provenance mismatch |
 | `scripts/generate-release-manifest.js` | Historical v1 generator, retained only for the byte-immutable v1 records | Version, source commit, pinned paths | Immutable v1 manifest | Exclusive rollback and no target |
 
-The module exports, browser structure, and build code define these roles. (`continuity-evidence.js:198-503`; `runtime/policy/contracts.js:144 "verifyEnvelope"`; `runtime/policy/roundtrip.js:44 "validateRoundTripEvidence"`; `runtime/simulator/contracts-core.js:197-849`; `staging-feed.js:112-463`; `simulator-world.js:7-143`; `scripts/build-site.mjs:365-520`; `scripts/generate-release-manifest.js:715-928`; `scripts/generate-release-manifest-v2.mjs:101-170`)
+The module exports, browser structure, and build code define these roles. (`continuity-evidence.js:158 "verifyContinuityEnvelope"`; `continuity-evidence.js:505 "startContinuityMonitor"`; `runtime/policy/contracts.js:145 "verifyEnvelope"`; `runtime/policy/roundtrip.js:44 "validateRoundTripEvidence"`; `runtime/simulator/contracts-core.js:197-849`; `staging-feed.js:117 "validatePilotEvidence"`; `staging-feed.js:438 "loadPilotEvidence"`; `simulator-world.js:7-143`; `scripts/build-site.mjs:365-520`; `scripts/generate-release-manifest.js:715-928`; `scripts/generate-release-manifest-v2.mjs:148-224 "buildManifestV2"`)
 
 ## Contact and rendering lifecycle
 
-The contact page progressively enhances its existing Formspree form through `ui/contact-form.js`. A successful HTTP response must also contain a string `next` and no error fields before the page displays acceptance; the browser does not follow that returned URL. Query parameters cannot display success. Failure keeps the entered message and exposes an explicit hosted submission option, with a warning that retrying an unconfirmed submission could duplicate a message. Native form submission remains available without JavaScript. This describes source behavior only; actual provider acceptance and recipient delivery require separate live evidence. (`contact.html:97 "https://formspree.io/f/xqalyykn"`; `ui/contact-form.js:8-12`; `ui/contact-form.js:26-40`)
+The contact page progressively enhances its existing Formspree form through `ui/contact-form.js`. A successful HTTP response must also contain a string `next` and no error fields before the page displays acceptance; the browser does not follow that returned URL. Query parameters cannot display success. Failure keeps the entered message and exposes an explicit hosted submission option, with a warning that retrying an unconfirmed submission could duplicate a message. Native form submission remains available without JavaScript. This describes source behavior only; actual provider acceptance and recipient delivery require separate live evidence. (`contact.html:101 "https://formspree.io/f/xqalyykn"`; `ui/contact-form.js:13-17`; `ui/contact-form.js:25-54`)
 
-The contact CSP permits connections to the same origin and Formspree. That submission channel is separate from local policy-file inspection. (`contact.html:8 "connect-src"`; `guides/INTEGRATION.md:101 "Selecting a JSON file reads its contents in the browser and does not upload it."`)
+The contact CSP permits connections to the same origin and Formspree. That submission channel is separate from local policy-file inspection. (`contact.html:8 "connect-src"`; `guides/INTEGRATION.md:128 "Selecting a JSON file reads its contents in the browser and does not upload it."`)
 
-The simulator schedules rendering on demand: after a frame it continues when playback, navigation keys, or camera damping require work, otherwise marks the animation idle. The scheduler waits for evidence bootstrap to settle and for a visible, operational scene; interaction can request another frame while paused. An initially open fault disclosure selects its first recorded fault after Fleet evidence is ready. These are presentation transitions, never changes to policy authority. (`simulator/controller.js:916 "if (playing || pressedNavigationKeys.size || cameraChanged)"`; `simulator/controller.js:926 "bootstrapSettled"`; `simulator/controller.js:1176 "bootstrapSettled = true"`; `simulator/controller.js:1169 "fault-replay"`)
+The simulator schedules rendering on demand: after a frame it continues only while a flight plays (never under reduced motion, where Play jumps to the recorded decision), a navigation key is held, or the camera is moving, otherwise it marks the animation idle; a finished flight stops playback so the loop idles on the recorded state. The scheduler waits for evidence bootstrap to settle and for a visible, operational scene; interaction can request another frame while paused. An initially open fault disclosure selects its first recorded fault after Fleet evidence is ready. These are presentation transitions, never changes to policy authority. (`simulator/controller.js:1223 "if ((playing && !reduceMotion) || pressedNavigationKeys.size"`; `simulator/controller.js:1378 "Reduced motion: no flight"`; `simulator/controller.js:1233 "bootstrapSettled"`; `simulator/controller.js:1601 "bootstrapSettled = true"`; `simulator/controller.js:1594 "fault-replay"`)
 
 ## Evidence Modes
 
-1. **Recorded receipts:** deterministic same-origin decisions drive every simulator scenario. (`README.md:30 "Deterministic decisions generated by the canonical Go interlock"`; `simulator/controller.js:1125 "loadReceiptBundle"`)
-2. **Recorded Fleet pilot:** a local evidence bundle supports fleet and resilience views. (`README.md:28 "Recorded 100-Guardian pilot"`; `simulator/controller.js:627 "loadPilotEvidence"`)
-3. **Optional staging feed:** bounded external data can replace the recorded pilot only after validation; failure retains the fallback. (`staging-feed.js:277-463`)
-4. **Optional resilience stream:** same-origin or loopback events can drive the lab; malformed or absent streams fall back to the committed timeline. (`runtime/simulator/contracts-core.js:763-849`; `simulator/controller.js:527 "resilience stream timed out"`)
-5. **Live continuity proof:** the homepage verifies a signed aggregate envelope and expires it when its lease ends. (`index.html:14-16`; `continuity-evidence.js:260-295`; `continuity-evidence.js:439-503`)
-6. **Local policy laboratory:** the browser verifies the published Fleet vector and recorded round trip without creating authority. (`guides/INTEGRATION.md:47-57 "Inspection is entirely local"`)
+1. **Recorded receipts:** deterministic same-origin decisions drive every simulator scenario. (`README.md:30 "Deterministic decisions generated by the canonical Go interlock"`; `simulator/controller.js:1544 "loadReceiptBundle"`)
+2. **Recorded Fleet pilot:** a local evidence bundle supports fleet and resilience views. (`README.md:28 "Recorded 100-Guardian pilot"`; `simulator/controller.js:726 "loadPilotEvidence"`)
+3. **Optional staging feed:** bounded external data can replace the recorded pilot only after validation; failure retains the fallback. The recorded fallback loads from any same-origin http(s) page, while the live URL stays behind the host allowlist. (`staging-feed.js:283 "resolveFeedURL"`; `staging-feed.js:300 "resolveRecordedURL"`; `staging-feed.js:438 "loadPilotEvidence"`)
+4. **Optional resilience stream:** same-origin or loopback events can drive the lab; malformed or absent streams fall back to the committed timeline. (`runtime/simulator/contracts-core.js:763-849`; `simulator/controller.js:616 "resilience stream timed out"`)
+5. **Live continuity proof:** the homepage verifies a signed aggregate envelope and expires it when its lease ends. A monitor re-reads the feed a minute before the lease ends and at least every five minutes, backs off after failures, pauses in hidden tabs, and keeps a still-valid proof on screen until its own expiry; a repeated proof counts as no newer proof, and rollback is still refused. Each failure is named rather than shown as recorded figures in live cells, and a browser without Ed25519 WebCrypto reads "Cannot verify here". Without JavaScript, a `<noscript>` note replaces the loading state. (`index.html:18-20 "bounder-continuity-feed"`; `index.html:456 "continuity-noscript"`; `continuity-evidence.js:390 "createContinuityLeaseController"`; `continuity-evidence.js:481-489 "CONTINUITY_REFRESH"`; `continuity-evidence.js:491 "classifyContinuityFailure"`; `continuity-evidence.js:505 "startContinuityMonitor"`)
+6. **Local policy laboratory:** the browser verifies the published Fleet vector and recorded round trip without creating authority. (`guides/INTEGRATION.md:74-84 "Inspection is entirely local"`)
 
 ## Publication Pipeline
 
@@ -94,7 +94,7 @@ source tree
 
 The Pages workflow keeps verification in an unprivileged job and grants Pages and identity permissions only to the dependent deploy job. (`.github/workflows/deploy-pages.yml:19-58`)
 
-Every published page carries a `Content-Security-Policy` `<meta>` element. GitHub Pages emits no response headers, so a meta policy is the only enforcement route available, and each inline script is allowed by its own SHA-256 hash rather than by `'unsafe-inline'`. `tests/page-security.test.js` recomputes those hashes, rejects a hash left behind after its script is gone, forbids reintroduced inline handlers and style attributes, and requires the configured continuity-feed origin to match the origin `connect-src` permits. Directives a meta policy cannot carry — `frame-ancestors` and `report-to` — are therefore undelivered, so the site claims no clickjacking protection or violation reporting. (`index.html:8 "Content-Security-Policy"`; `tests/page-security.test.js:8-11 "GitHub Pages cannot emit response headers"`; `tests/page-security.test.js:49-63 "dead policy weight"`; `SECURITY.md:37-40 "not delivered"`)
+Every published page carries a `Content-Security-Policy` `<meta>` element. GitHub Pages emits no response headers, so a meta policy is the only enforcement route available, and each inline script is allowed by its own SHA-256 hash rather than by `'unsafe-inline'`. `tests/page-security.test.js` recomputes those hashes, rejects a hash left behind after its script is gone, forbids reintroduced inline handlers and style attributes, and requires the configured continuity-feed origin to match the origin `connect-src` permits. Directives a meta policy cannot carry — `frame-ancestors` and `report-to` — are therefore undelivered, so the site claims no clickjacking protection or violation reporting. (`index.html:8 "Content-Security-Policy"`; `tests/page-security.test.js:8-11 "GitHub Pages cannot emit response headers"`; `tests/page-security.test.js:49-63 "dead policy weight"`; `SECURITY.md:38-41 "not delivered"`)
 
 Playwright always builds and serves an isolated `_site` artifact, uses one Chromium worker, disables retries, and refuses reuse of an unrelated server. (`playwright.config.js:3-24`)
 
@@ -102,16 +102,16 @@ Failure traces retain DOM snapshots and sources without automatic filmstrip scre
 
 ## Design System
 
-The root CSS defines system-font families for sans, condensed display, and monospace roles. It applies those tokens across the shared pages and simulator presentation. (`styles.css:12-14 "--font-mono"`; `styles.css:25-29 "font-family: var(--font-sans)"`)
+The root CSS defines font tokens for sans, condensed display, and monospace roles: system stacks led by Avenir Next and Menlo, plus a self-hosted OFL condensed fallback (`assets/fonts/`) for the display role on systems without Avenir Next Condensed. It applies those tokens across the shared pages and simulator presentation. (`styles.css:12-19 "--font-mono"`; `styles.css:27-29 "Bounder Display"`; `styles.css:46-50 "font-family: var(--font-sans)"`)
 
-The current canonical domain file contains `www.bounder.io`, matching page canonical and Open Graph metadata. (`CNAME:1`; `README.md:46 "custom domain"`)
+The current canonical domain file contains `www.bounder.io`, matching page canonical and Open Graph metadata. (`CNAME:1`; `README.md:49 "custom domain"`)
 
 ## Current Friction
 
-1. Compatibility facades preserve existing imports while named policy modules own validation, evaluation, round-trip matching, and presentation state. The controller delegates scene creation and Fleet row rendering; controller orchestration and the simulator contract implementation remain broader maintenance surfaces. (`runtime/policy/contracts.js:144 "verifyEnvelope"`; `runtime/policy/roundtrip.js:44 "validateRoundTripEvidence"`; `runtime/simulator/contracts-core.js:197-849`; `simulator/controller.js:4 "createTownScene"`; `ui/policy-panel.js:8 "bootstrapPolicyRoundTrip"`)
-2. The same evidence concept appears in recorded, staging, continuity, resilience-stream, and policy-laboratory forms. Their proof strength needs one shared state vocabulary. (`index.html:448-470 "continuity-proof"`; `simulator.html:152-253`)
+1. Compatibility facades preserve existing imports while named policy modules own validation, evaluation, round-trip matching, and presentation state. The controller delegates scene creation and Fleet row rendering; controller orchestration and the simulator contract implementation remain broader maintenance surfaces. (`runtime/policy/contracts.js:145 "verifyEnvelope"`; `runtime/policy/roundtrip.js:44 "validateRoundTripEvidence"`; `runtime/simulator/contracts-core.js:197-849`; `simulator/controller.js:4 "createTownScene"`; `ui/policy-panel.js:19 "bootstrapPolicyRoundTrip"`)
+2. The same evidence concept appears in recorded, staging, continuity, resilience-stream, and policy-laboratory forms. Their proof strength needs one shared state vocabulary. (`index.html:450-472 "continuity-proof"`; `simulator.html:296 "fleet-evidence"`; `simulator.html:328 "policy-roundtrip-title"`; `simulator.html:365 "fault-replay"`; `simulator.html:389 "continuity-proof-title"`)
 3. Public independent producer regeneration still requires access to the private producer revision or a future public mirror or reviewable source bundle. ([[bounder:seams/evidence-provenance]])
-4. Internal guidance previously described the source as having no build system, while release acceptance actually depends on an allowlisted build. (`README.md:88-91 "assembles the exact GitHub Pages payload"`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`)
+4. Internal guidance previously described the source as having no build system, while release acceptance actually depends on an allowlisted build. (`README.md:103-106 "assembles the exact GitHub Pages payload"`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`)
 
 ## Working If
 

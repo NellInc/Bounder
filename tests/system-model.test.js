@@ -48,6 +48,7 @@ test("descriptor semantic validation rejects duplicate ids, unknown references, 
     ["uncovered", (model) => { model.components.push({ ...clone(model.components.at(-1)), id: "uncovered_component", source_paths: ["package.json"] }); }, /no impact rule/],
     ["interval", (model) => { model.budgets.attention_interval_ms = 70_000; }, /out of order/],
     ["expiry", (model) => { model.budgets.stable_interval_ms = 90_000; }, /expire/],
+    ["one lost report", (model) => { model.budgets.stable_interval_ms = 60_000; }, /one lost report/],
     ["payload", (model) => { model.budgets.event_max_bytes = 20_000; }, /payload budgets/],
     ["missing script", (model) => { model.commands[0].argv = ["npm", "run", "missing"]; }, /missing package script/]
   ];
@@ -76,8 +77,32 @@ test("path matching is anchored and changed-path plans accumulate overlapping ru
   assert.equal(contractPlan.release_sensitive, true);
   const unmatched = planForPaths(descriptor, ["unknown.file"]);
   assert.deepEqual(unmatched.unmatched_paths, ["unknown.file"]);
+  // Fail closed: an undescribed path selects the complete gate rather than an empty plan.
+  assert.deepEqual(unmatched.commands, ["verify"]);
+  assert.equal(unmatched.release_sensitive, true);
+  const mixed = planForPaths(descriptor, ["unknown.file", "runtime/observability/guardian-fleet-state.js"]);
+  assert.ok(mixed.commands.includes("verify") && mixed.commands.includes("observability_test"));
   assert.throws(() => planForPaths(descriptor, ["package.json"], { claim: "missing" }), /unknown proof claim/);
   assert.throws(() => planForPaths(descriptor, [null]), /invalid/);
+});
+
+/* The reverse of the declared-path check: every file the repository tracks must be described by
+   some impact rule. A new file outside every rule would otherwise reach the complete gate only
+   through the fail-closed fallback, and its owner and documentation route would stay unknown. */
+test("every tracked path is covered by an impact rule", async () => {
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const { stdout } = await promisify(execFile)("/usr/bin/git", ["-C", repositoryRoot, "ls-files", "-z", "--cached", "--others", "--exclude-standard"], { maxBuffer: 16 * 1024 * 1024 });
+  const tracked = stdout.split("\0").filter(Boolean);
+  const { access } = await import("node:fs/promises");
+  const present = [];
+  for (const path of tracked) {
+    // A path deleted in the working tree but still in the index has nothing left to route.
+    if (await access(new URL(`../${path}`, import.meta.url)).then(() => true, () => false)) present.push(path);
+  }
+  assert.ok(present.length > 100, "the repository inventory looks truncated");
+  const plan = planForPaths(await loadSystemModel(), present);
+  assert.deepEqual(plan.unmatched_paths, [], "extend an impact rule in system/bounder-system.v1.json, then run npm run system:generate");
 });
 
 test("working-tree changed-path discovery is read only and parses status and base-diff output", async () => {

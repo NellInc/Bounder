@@ -23,7 +23,8 @@ export const parseRFC3339 = (value, label = "timestamp") => {
   if (!match) throw new Error(`${label} is not strict RFC3339`);
   const [, yearText, monthText, dayText, hourText, minuteText, secondText, fraction = ""] = match;
   const [year, month, day, hour, minute, second] = [yearText, monthText, dayText, hourText, minuteText, secondText].map(Number);
-  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month) || hour > 23 || minute > 59 || second > 59) {
+  // Year 0000 matches the published schemas' "(?!0000-)" guard; any such instant is long expired.
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month) || hour > 23 || minute > 59 || second > 59) {
     throw new Error(`${label} is not a valid calendar time`);
   }
   const date = new Date(0);

@@ -9,6 +9,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
 import { canonicalPublicPaths, inspectPublicTree } from "./build-site.mjs";
+import { COMPLETE_VERIFICATION_CLAIMS, DEFAULT_VERIFICATION_PHASES, PRODUCER_VERIFICATION_CLAIMS } from "./verify.mjs";
 
 export const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 export const PUBLISHER_REPOSITORY = "https://github.com/NellInc/Bounder";
@@ -29,6 +30,18 @@ export const HISTORICAL_MANIFEST_SHA256 = Object.freeze({
 const execFileAsync = promisify(execFile);
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const compare = (left, right) => left.localeCompare(right, "en");
+// public_inventory_sha256 is sha256(JSON.stringify(files) + "\n") over the `files` array exactly
+// as the manifest records it, so a verifier hashes the recorded array and never re-sorts it.
+// Manifests v1.1.0 to v1.2.2 recorded `files` in ICU "en" collation, which a Go or Python
+// verifier cannot reproduce from a tree; from v1.2.4 the order is UTF-16 code-unit order (the
+// order build-site.mjs already uses), which every language can reproduce exactly.
+export const compareInventoryPaths = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
+export const MIRRORED_CONTRACT_PATHS = Object.freeze([
+  "data/creedspace-bounder-manipulator-golden-v1.json",
+  "data/creedspace-bounder-manipulator-profile-v1.example.json",
+  "schemas/creedspace-bounder-manipulator-profile-v1.schema.json"
+]);
+const MIRRORED_CONTRACT_LIMITATION = "Mirrored Creed Space manipulator contract preview. It is not in the decision producer's evidence statement, so no producer derivation covers these bytes.";
 
 async function git(root, args, { encoding = "utf8", maxBuffer = 64 * 1024 * 1024 } = {}) {
   const { stdout } = await execFileAsync("/usr/bin/git", ["--no-optional-locks", "-C", root, ...args], {
@@ -73,11 +86,54 @@ export async function fileReceipt(path, expectedVersion, label) {
   return { value, sha256: hash(bytes) };
 }
 
+// A seal cites exactly one verification receipt, and the manifest keeps only its hash, so the
+// receipt itself has to prove the complete gate ran against this producer tree. A receipt from a
+// focused `--phase` run, a timed-out phase or a producer re-run after verification is refused.
+export function assertCompleteVerification(receipt, producerCommit) {
+  if (receipt.scope !== undefined && receipt.scope !== "complete") {
+    throw new Error(`publisher verification receipt is a ${receipt.scope} run, not the complete gate`);
+  }
+  const phases = new Map((Array.isArray(receipt.phases) ? receipt.phases : []).map((phase) => [phase?.id, phase]));
+  for (const { id } of DEFAULT_VERIFICATION_PHASES) {
+    const phase = phases.get(id);
+    if (!phase) throw new Error(`publisher verification receipt did not run the ${id} phase`);
+    if (phase.exit_code !== 0 || phase.timed_out !== false) throw new Error(`publisher verification receipt records a failed ${id} phase`);
+  }
+  const claims = new Set(Array.isArray(receipt.claims) ? receipt.claims : []);
+  for (const claim of [...COMPLETE_VERIFICATION_CLAIMS, ...PRODUCER_VERIFICATION_CLAIMS]) {
+    if (!claims.has(claim)) throw new Error(`publisher verification receipt does not claim ${claim}`);
+  }
+  const producerCommits = Array.isArray(receipt.candidate?.producer_commits) ? receipt.candidate.producer_commits : [];
+  if (!producerCommits.includes(producerCommit)) {
+    throw new Error(`publisher verification receipt was not produced against producer commit ${producerCommit}`);
+  }
+}
+
+// The producer statement hashes the evidence it exported; the publisher inventory hashes the
+// bytes being sealed. Where both name a path they must agree, or the manifest would pin one
+// file under two different digests.
+export function assertStatementMatchesInventory(statement, files) {
+  const byPath = new Map(files.map((file) => [file.path, file]));
+  for (const record of [...(statement.contracts || []), ...(statement.outputs || [])]) {
+    const file = byPath.get(record.path);
+    if (file && (file.sha256 !== record.sha256 || file.bytes !== record.bytes)) {
+      throw new Error(`producer statement and publisher inventory disagree on ${record.path}`);
+    }
+  }
+}
+
 export async function assertPublisherCommit(root, commit, files) {
   if (!/^[0-9a-f]{40}$/u.test(commit)) throw new Error("publisher commit must be a full lowercase Git SHA");
   const type = (await git(root, ["cat-file", "-t", commit])).trim();
   if (type !== "commit") throw new Error("publisher commit does not resolve to a commit");
   for (const file of files) {
+    // An untracked or ignored file under a public path would otherwise surface as a bare
+    // `git show` failure that names no cause.
+    try {
+      await git(root, ["cat-file", "-e", `${commit}:${file.path}`]);
+    } catch {
+      throw new Error(`untracked or ignored file under a public path: ${file.path} is not in commit ${commit}; remove it or commit it before sealing`);
+    }
     const committed = Buffer.from(await git(root, ["show", `${commit}:${file.path}`], { encoding: null, maxBuffer: file.bytes + 1024 }));
     if (committed.byteLength !== file.bytes || hash(committed) !== file.sha256) {
       throw new Error(`publisher source differs from commit ${commit}: ${file.path}`);
@@ -112,11 +168,14 @@ export async function buildManifestV2({
   if (!statement || statement.version !== "bounder-evidence-provenance/v1") throw new Error("producer receipt has no complete evidence statement");
   if (producerReceipt.value.producer.commit !== statement.producer_source.commit) throw new Error("producer receipt commit disagreement");
 
-  const files = publicEntries.filter(({ type }) => type === "file").map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })).sort((left, right) => compare(left.path, right.path));
+  const files = publicEntries.filter(({ type }) => type === "file").map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })).sort((left, right) => compareInventoryPaths(left.path, right.path));
   await assertPublisherCommit(root, publisherCommit, files);
-  if (verificationReceipt.value.candidate.publisher_commit !== publisherCommit || verificationReceipt.value.candidate.dirty !== false) {
+  if (verificationReceipt.value.candidate?.publisher_commit !== publisherCommit || verificationReceipt.value.candidate?.dirty !== false) {
     throw new Error("publisher verification receipt is not for the clean source commit");
   }
+  assertCompleteVerification(verificationReceipt.value, statement.producer_source.commit);
+  assertStatementMatchesInventory(statement, files);
+  const producerPaths = new Set([...(statement.contracts || []), ...(statement.outputs || [])].map(({ path }) => path));
   const timestamp = Number((await git(root, ["show", "-s", "--format=%ct", publisherCommit])).trim());
   if (!Number.isSafeInteger(timestamp) || timestamp < 0) throw new Error("publisher commit timestamp is invalid");
   const byPath = new Map(files.map((file) => [file.path, file]));
@@ -152,7 +211,12 @@ export async function buildManifestV2({
     live_observation: { status: "unverified", reason: "Live bytes and continuity evidence require a separate authorized observation after deployment." },
     observations: [
       observation("data/bounder-fleet-evidence.v1.json", "Recorded 16-Guardian Fleet laboratory evidence; it is not the deterministic producer Fleet fixture."),
-      observation("data/bounder-staging-pilot.v1.json", "Recorded 100-Guardian staging pilot; it is not current live health or deployment proof.")
+      observation("data/bounder-staging-pilot.v1.json", "Recorded 100-Guardian staging pilot; it is not current live health or deployment proof."),
+      // Published mirrors outside the producer statement are labelled rather than left to read
+      // as producer-derived by proximity. A path the producer later exports drops out here.
+      ...MIRRORED_CONTRACT_PATHS
+        .filter((path) => byPath.has(path) && !producerPaths.has(path))
+        .map((path) => observation(path, MIRRORED_CONTRACT_LIMITATION))
     ],
     files
   };

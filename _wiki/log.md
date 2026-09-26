@@ -55,3 +55,51 @@ Rebased the UI mounting citations after the restored illustrated hero moved the 
 ## [2026-09-07] reconciliation | Concise testbed presentation
 Updated: systems/site-architecture, systems/system-architecture and index
 Rebased simulator mounting citations after removing repetitive presentation disclaimers. Development status is stated once on the homepage; verification and decision behavior are unchanged.
+
+## [2026-09-26] reconciliation | Contact form, icons and legal pages
+Updated: systems/site-architecture, domain/physical-interlock and index
+Rebased the contact-form and homepage citations after the contact form gained a required-fields note, the submit label moved into its own span, and every page gained ICO and touch-icon links. The contact submission boundary is unchanged: only a provider-confirmed response shows acceptance.
+
+## [2026-09-26] reconciliation | Observability reference hardening
+Updated: systems/runtime-observability, systems/system-architecture, systems/site-architecture, domain/physical-interlock and index
+Recorded: evidence lag judged at the heartbeat's generation time rather than re-aged at observation; liveness capped by Fleet receive time; same-boot clock regressions as a diagnostic, not a lockout; telemetry keys bound to one Guardian or the Fleet aggregator; guard retirement; snapshot expiry folding policy and lease deadlines; strict and quarantining aggregation; one evaluation per Guardian before public projection; `signed_audits` as a per-cohort count; the stable interval lowered to 40 seconds so one lost report cannot mark a stable Guardian unreachable; and the three distinct continuity freshness bounds.
+Rebased observability, policy-contract and integration-guide citations moved by these edits. The telemetry-envelope `public_key_id` pattern is still unanchored in the producer-owned schema and is recorded as a producer change.
+Boundary: reference-model and documentation changes only. Heartbeat loss still changes Fleet classification only; local authority rules are unchanged. guides/INTEGRATION.md is release-pinned and needs release-aware validation before sealing.
+
+## [2026-09-26] reconciliation | Homepage typography tokens
+Updated: systems/site-architecture
+Rebased the font-token citations after the mono stack gained Menlo and the per-platform monospaces, and the display role gained a self-hosted OFL condensed fallback (`assets/fonts/open-sans-condensed-latin.woff2`, licence in `assets/fonts/OFL.txt`). Apple visitors keep Avenir Next and never fetch the fallback.
+Boundary: presentation only; no evidence, contract or authority rule changed.
+
+## [2026-09-26] implementation | Tooling, CI and publication hardening
+Updated: flows/agent-operating-loop, seams/evidence-provenance, systems/system-architecture and index
+Recorded: changed-path plans fail closed (an undescribed path selects the complete gate) and a unit test requires every tracked path to match an impact rule; the dead `release:manifest` v1 entry point is removed; `test:coverage` gates Node modules per file and reports browser-only modules without gating, in a private temporary directory it removes; focused `verify --phase` runs claim nothing and never replace `latest.json`; sealing refuses incomplete verification receipts, producer-commit mismatches and producer-statement hashes that disagree with the inventory; new manifests record `files` in code-unit order and the inventory hash is defined over the array as recorded; the publication walk skips operating-system metadata and rejects other stray dotfiles; browser acceptance serves `_site` through a keep-alive Node server; every checkout drops its persisted credential and the unconfigured producer token is reported as a warning.
+Rebased the receipt-drift, descriptor and agent-command citations these edits moved.
+Boundary: tooling and CI only. No authority, evidence or deployment trigger changed; deploy gating on sealed manifests remains an owner decision.
+
+## [2026-09-26] implementation | Simulator page shell and accessible evidence view
+Updated: systems/site-architecture, systems/system-architecture
+The simulator page now leads with its own heading and hands over to the workbench (`#scenario-lab`, the skip-link and tour deep-link target). The accessible evidence view renders the recorded 100-Guardian pilot as well as the receipts; when neither entry module can load, the bootstrap retries the accessible entry once and otherwise resolves every panel to `bootstrap_unavailable` with no command authority and a reload control. Rebased the `simulator.html` and `ui/policy-panel.js` citations these edits moved.
+Boundary: presentation only; no evidence, contract or authority rule changed. simulator.html, README.md, SECURITY.md and guides/INTEGRATION.md are release-pinned and need release-aware validation before sealing.
+
+## [2026-09-26] implementation | Simulator scene fidelity, motion and recovery
+Updated: systems/site-architecture, systems/system-architecture
+The render loop now idles once a flight reaches its recorded decision and never throttles user input; under reduced motion Play jumps to the recorded decision instead of flying the route. Fault replay events re-render the envelope from the recorded timeline, including when scrubbed back. A lost WebGL context pauses fail-closed and recovers when the browser restores it; recorded receipts stay inspectable from the scenario buttons meanwhile. Rebased the `simulator/controller.js` citations these edits moved.
+Boundary: presentation only; no evidence, contract or authority rule changed.
+
+## [2026-09-26] reconciliation | Integration of the launch-readiness pass
+Updated: domain/physical-interlock, systems/site-architecture
+Rebased the homepage boundary citation and the contact-form action citation after the parallel page edits moved them.
+Boundary: citation positions only; no claim, authority or evidence rule changed.
+
+## [2026-09-26] reconciliation | Backfill for unlogged 2026-09-11 and 2026-09-20 changes
+Recorded after the fact; these changes were made without a log entry or index update.
+2026-09-11 (commit 56fdbed, v1.2.3 source): the visitor-facing copy pass moved SECURITY.md lines, and citations in domain/physical-interlock, seams/evidence-provenance, systems/site-architecture and systems/system-architecture were repointed without bumping their `wiki:updated` markers.
+2026-09-20 (commit bd8daec, local only): the manipulator profile schema, example and signed golden vector were mirrored from the private producer under `schemas/`; the example and vector have since moved to `data/`, and the schema `$id` now sits under `https://www.bounder.io/schemas/`.
+Boundary: no page content changed by those commits beyond citation positions.
+
+## [2026-09-26] reconciliation | Documentation and release-status pass for the 1.2.4 candidate
+Updated: seams/evidence-provenance, systems/runtime-observability, systems/site-architecture, flows/agent-operating-loop, domain/physical-interlock, systems/system-architecture and index
+Recorded: the mirrored manipulator preview and why it sits outside producer derivation (manifest observation, SHA-256 pin, `$id` ahead of the producer, verifier rejection, no payload schema); the `public_inventory_sha256` definition and the switch to code-unit order from v1.2.4; release status (1.0.0 to 1.2.2 sealed, 1.2.3 deployed without a manifest, 1.2.4 the unsealed candidate, tags stopping at v1.1.1); the changelog relabel convention and its unit test; the staging continuity feed's observed cadence and why the reference model would reject it; the continuity monitor and named failure states; the same-origin recorded fallback; the `npm run system:check` command in place of an argument npm swallows.
+Rebased every README, SECURITY and integration-guide citation moved by the manipulator section, the published-surface table and the release-step text, and repointed drifted unanchored citations into the manifest generator, continuity verifier, staging feed, fallback and Playwright configuration, mostly to anchored form. Replaced the stale simulator citation that pointed at hero markup with anchored evidence-section ids.
+Boundary: documentation and release labelling only. No authority, evidence or contract byte changed. README.md, SECURITY.md, CHANGELOG.md, VERSION, guides/INTEGRATION.md and the new `.well-known/security.txt` are release-pinned and need release-aware validation before sealing.

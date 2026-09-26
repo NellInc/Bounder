@@ -1,6 +1,8 @@
 # Bounder workspace design QA
 
-Self-review: this implementation and the selected mockup were produced with my input.
+Design review record for the simulator workspace, September 2026. It compares the
+built page with the selected mockup; neither the mockup nor the captures are
+committed to this repository.
 
 ## Iteration 1
 Compared the approved Option 1 image (1488 × 1058) and the first built desktop capture (1440 × 1024) together. The small viewport mismatch prevents pixel-level scoring; these are visible composition findings.
@@ -17,7 +19,7 @@ Iteration 1 result: blocked
 Revised matched-viewport capture, mobile review and final regression gates are pending.
 
 ## Iteration 2, desktop
-Compared the selected target and revised `artifacts/verification/workspace-desktop.png` together at 1488 × 1058, device scale 1, civilian-buffer selected, receipt collapsed.
+Compared the selected target and the revised local capture `workspace-desktop.png` (not committed) together at 1488 × 1058, device scale 1, civilian-buffer selected, receipt collapsed.
 
 - The canonical wordmark is legible on the corrected dark header.
 - The scene, decision and camera controls are now visible together in the desktop capture.
@@ -38,8 +40,8 @@ All five fidelity surfaces were checked: existing display/sans/mono typography, 
 
 Mobile controls wrap without horizontal overflow; the recorded response remains readable after the scene, and secondary tools remain collapsed until requested. Expanded evidence passes the browser accessibility check. Fleet inspection exposes the complete reason and receipt after platform/outcome/search filtering. Its source limits remain visible. Remaining P3: an optional compact mobile site header and a tighter subject-first default camera could be explored in a future design iteration.
 
-Source target (local): `/Users/nellwatson/.codex/generated_images/01a07b0a-b48e-7da1-9d01-50e4d3f4045a/exec-34c31d79-2df5-4881-bcd7-be3944b3df6e.png`.
-Captures (local): `artifacts/verification/workspace-desktop.png`, `artifacts/verification/workspace-mobile.png`, `artifacts/verification/fleet-detail.png`.
+Source target: the selected Option 1 mockup, a generated image kept outside the repository.
+Captures: `workspace-desktop.png`, `workspace-mobile.png` and `fleet-detail.png`, written to the git-ignored `artifacts/verification/` directory of the reviewing checkout and not committed.
 The formal repository Playwright runner produced these captures because the in-app and Chrome connectors were unavailable. It checked the built site; this is not a deployment claim or a physical-device test.
 
 final result: passed

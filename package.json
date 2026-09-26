@@ -1,6 +1,11 @@
 {
   "name": "bounder-website",
   "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NellInc/Bounder.git"
+  },
   "type": "module",
   "scripts": {
     "build": "node scripts/build-site.mjs",
@@ -9,14 +14,13 @@
     "inspect": "node scripts/system-inspect.mjs",
     "check:changed": "node scripts/check-changed.mjs",
     "docs:check": "node scripts/docs-check.mjs",
-    "release:manifest": "node scripts/generate-release-manifest.js",
     "release:manifest:v2": "node scripts/generate-release-manifest-v2.mjs",
     "test": "node --test tests/*.test.js",
     "test:observability": "node --test tests/guardian-fleet-observability.test.js tests/observability-benchmark.test.js",
     "benchmark:observability": "node scripts/benchmark-observability.mjs",
     "verify:producer": "node scripts/verify-producer-derivation.mjs",
     "verify:changed": "node scripts/verify-changed.mjs",
-    "test:coverage": "c8 --all --clean --temp-directory=\"$(mktemp -d \"${TMPDIR:-/tmp}/bounder-c8-XXXXXX\")\" --reporter=text --check-coverage --per-file --lines=85 --branches=75 --functions=85 --include='*.js' --include='runtime/**/*.js' --include='scripts/**/*.{js,mjs}' --exclude='playwright.config.js' --exclude='simulator-bootstrap.js' --exclude='simulator-fallback.js' --exclude='simulator.js' --exclude='site.js' node --test tests/*.test.js",
+    "test:coverage": "node scripts/coverage.mjs",
     "test:browser": "playwright test",
     "quality": "npm run test:coverage && npm run test:browser && node_modules/.bin/impeccable detect .",
     "verify": "node scripts/verify.mjs"

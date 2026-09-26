@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
@@ -52,7 +52,7 @@ test("every historical page is excluded from search indexing", async () => {
   }
 });
 
-test("canonical pages publish complete metadata and valid local references", async () => {
+test("canonical pages publish complete metadata", async () => {
   const pages = ["index.html", "simulator.html", "contact.html", "privacy.html", "terms.html"];
   for (const path of pages) {
     const html = await readSiteFile(path);
@@ -61,10 +61,41 @@ test("canonical pages publish complete metadata and valid local references", asy
     assert.match(html, /<link rel="canonical" href="https:\/\/www\.bounder\.io\//i, `${path} lost its canonical URL`);
     assert.equal((html.match(/<h1\b/gi) ?? []).length, 1, `${path} must contain one h1`);
     assert.doesNotMatch(html, /class="copyright">©\s+\d{4}/, `${path} reintroduced a maintenance-sensitive footer year`);
+  }
+});
 
-    for (const [, reference] of html.matchAll(/(?:href|src)="([^"#?]+)(?:[?#][^"]*)?"/gi)) {
-      if (/^(?:[a-z]+:|\/\/)/i.test(reference)) continue;
-      await access(new URL(reference, new URL(path, root)));
+const SITE_ORIGIN = "https://www.bounder.io";
+const linkedPages = ["index.html", "simulator.html", "contact.html", "privacy.html", "terms.html", "404.html"];
+const elementIds = (html) => new Set([...html.matchAll(/\sid="([^"]+)"/g)].map(([, id]) => id));
+
+/* A reference is valid only if the file it names is in the publication allowlist: a file that
+   exists in the repository but outside canonicalPublicPaths passes an existence check and then
+   404s on Pages. A `page.html#id` reference must also land on an element the page declares. */
+test("every local reference resolves to a published file and every fragment to a declared id", async () => {
+  const { inspectPublicTree } = await import("../scripts/build-site.mjs");
+  const published = new Set((await inspectPublicTree()).filter(({ type }) => type === "file").map(({ path }) => path));
+  const pages = new Map(await Promise.all(linkedPages.map(async (path) => [path, await readSiteFile(path)])));
+  for (const [path, html] of pages) {
+    // href/src may be relative; a meta content= value counts only as a same-origin absolute URL
+    // (canonical Open Graph images and endpoints), since it carries many non-URL values too.
+    const references = [
+      ...[...html.matchAll(/\s(?:href|src)="([^"]*)"/gi)].map(([, value]) => value),
+      ...[...html.matchAll(/\scontent="(https:\/\/www\.bounder\.io\/[^"]*)"/gi)].map(([, value]) => value)
+    ];
+    for (const raw of references) {
+      const reference = raw.replaceAll("&amp;", "&");
+      if (!reference) continue;
+      if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(reference) && !reference.startsWith(`${SITE_ORIGIN}/`)) continue;
+      const url = new URL(reference, `${SITE_ORIGIN}/${path}`);
+      if (url.origin !== SITE_ORIGIN) continue;
+      let target = decodeURIComponent(url.pathname.slice(1));
+      if (target === "" || target.endsWith("/")) target += "index.html";
+      assert.ok(published.has(target), `${path} references ${reference}, which is not in the published tree`);
+      const fragment = decodeURIComponent(url.hash.slice(1));
+      if (fragment && target.endsWith(".html")) {
+        const targetHtml = pages.get(target) ?? await readSiteFile(target);
+        assert.ok(elementIds(targetHtml).has(fragment), `${path} links ${reference}, but ${target} declares no id="${fragment}"`);
+      }
     }
   }
 });
@@ -75,17 +106,99 @@ test("repository guidance names only the canonical repository", async () => {
   assert.doesNotMatch(security, /docs\/(?:THREAT_MODEL|LEGACY_STATUS)\.md/);
 });
 
-test("privileged workflow actions are pinned to immutable commits", async () => {
-  for (const path of [
-    ".github/workflows/deploy-pages.yml",
-    ".github/workflows/receipt-drift.yml",
-    ".github/workflows/site-quality.yml"
-  ]) {
+const workflowPaths = async () => (await readdir(new URL(".github/workflows/", root)))
+  .filter((name) => /\.ya?ml$/.test(name))
+  .sort()
+  .map((name) => `.github/workflows/${name}`);
+
+test("every workflow action is pinned to an immutable commit", async () => {
+  const paths = await workflowPaths();
+  assert.ok(paths.includes(".github/workflows/codeql.yml"), "the workflow inventory lost CodeQL");
+  for (const path of paths) {
     const workflow = await readSiteFile(path);
     for (const [, action] of workflow.matchAll(/uses:\s*([^\s#]+)/g)) {
       assert.match(action, /^[^@\s]+@[0-9a-f]{40}$/, `${path} contains a mutable action reference: ${action}`);
     }
   }
+});
+
+/* actions/checkout otherwise writes its token into .git/config, where every later step --
+   including pull-request-head code and third-party devDependencies -- can read it. No step
+   here fetches or pushes after checkout, so no step needs the persisted credential. */
+test("every checkout leaves no credential behind in the workspace", async () => {
+  for (const path of await workflowPaths()) {
+    const lines = (await readSiteFile(path)).split("\n");
+    lines.forEach((line, index) => {
+      if (!/uses:\s*actions\/checkout@/.test(line)) return;
+      const indent = line.match(/^\s*/)[0].length;
+      const step = [];
+      for (let next = index + 1; next < lines.length; next += 1) {
+        const text = lines[next];
+        if (text.trim() && text.match(/^\s*/)[0].length <= indent && !/^\s*with:/.test(text)) break;
+        if (/^\s*- /.test(text) && text.match(/^\s*/)[0].length < indent) break;
+        step.push(text);
+      }
+      assert.match(step.join("\n"), /^\s+persist-credentials: false$/m, `${path}:${index + 1} checkout persists its credential`);
+    });
+  }
+});
+
+/* Expression values interpolated into run: are pasted into the shell script before it runs,
+   so they are routed through env: and quoted instead. The pattern covers event data and step
+   outputs, whose derivation could change to include untrusted input later. */
+test("workflow shell scripts receive expressions through the environment, not by interpolation", async () => {
+  for (const path of await workflowPaths()) {
+    const lines = (await readSiteFile(path)).split("\n");
+    let inRun = false;
+    let runIndent = 0;
+    lines.forEach((line, index) => {
+      const indent = line.match(/^\s*/)[0].length;
+      if (inRun && line.trim() && indent <= runIndent) inRun = false;
+      const run = line.match(/^(\s*)(?:- )?run:\s*(.*)$/);
+      if (run) {
+        inRun = true;
+        runIndent = run[1].length;
+        assert.doesNotMatch(run[2], /\$\{\{/, `${path}:${index + 1} interpolates an expression into run:`);
+        return;
+      }
+      if (inRun) assert.doesNotMatch(line, /\$\{\{/, `${path}:${index + 1} interpolates an expression into run:`);
+    });
+  }
+});
+
+test("pull-request workflows cancel superseded runs without cancelling main or deployments", async () => {
+  for (const path of await workflowPaths()) {
+    const workflow = await readSiteFile(path);
+    assert.match(workflow, /^concurrency:/m, `${path} declares no concurrency group`);
+    if (path.endsWith("deploy-pages.yml")) {
+      assert.match(workflow, /group: github-pages\n\s+cancel-in-progress: false/, "a deployment may never be cancelled mid-flight");
+    } else {
+      assert.match(workflow, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/, `${path} may cancel runs on main`);
+    }
+  }
+});
+
+test("CodeQL analyses the workflows as well as the JavaScript", async () => {
+  const workflow = await readSiteFile(".github/workflows/codeql.yml");
+  assert.match(workflow, /language: \[javascript-typescript, actions\]/);
+  assert.match(workflow, /category: "\/language:\$\{\{ matrix\.language \}\}"/);
+  const dependabot = await readSiteFile(".github/dependabot.yml");
+  assert.match(dependabot, /codeql-action:\n\s+patterns:\n\s+- "github\/codeql-action\*"/, "CodeQL init and analyze must be bumped together");
+});
+
+test("an unavailable producer token is reported as unverified, never as a silent pass", async () => {
+  const workflow = await readSiteFile(".github/workflows/receipt-drift.yml");
+  assert.match(workflow, /^name: Contract drift \(producer derivation when token present\)$/m);
+  assert.match(workflow, /::warning title=Producer derivation unverified::/);
+  assert.match(workflow, /\$GITHUB_STEP_SUMMARY/);
+});
+
+test("the issue tracker routes security reports to private disclosure", async () => {
+  const config = await readSiteFile(".github/ISSUE_TEMPLATE/config.yml");
+  assert.match(config, /url: https:\/\/github\.com\/NellInc\/Bounder\/security\/advisories\/new/);
+  const template = await readSiteFile(".github/ISSUE_TEMPLATE/operator-demo.yml");
+  assert.match(template, /security\/advisories\/new/, "the simulator finding form does not redirect security reports");
+  assert.doesNotMatch(template, /placeholder: "\d+\.\d+\.\d+"/, "a version placeholder goes stale at the next release");
 });
 
 /* GitHub Pages serves 404.html for any unmatched path while leaving the requested URL in the
@@ -178,8 +291,13 @@ test("home page distinguishes public browser source from the private decision pr
   const html = await readSiteFile("index.html");
   const hero = html.match(/<div class="hero-content">([\s\S]*?)<\/section>/)?.[1];
   assert.ok(hero);
-  assert.match(hero, /href="https:\/\/github\.com\/NellInc\/Bounder"[^>]*>Explore the code/);
-  assert.match(hero, /Open physical interlocks/);
+  // The public repository holds the website and contracts; the decision engine is private,
+  // so the call to action names what the link actually opens.
+  assert.match(hero, /href="https:\/\/github\.com\/NellInc\/Bounder"[^>]*>Source and contracts/);
+  assert.doesNotMatch(hero, /Explore the code/);
+  assert.match(hero, /An open physical-interlock architecture\./);
+  // No unqualified safety guarantee for a simulation-only testbed.
+  assert.doesNotMatch(html, /authorised and safe|device-safe action/);
   assert.doesNotMatch(hero, /Local by design|hero-note/);
   assert.match(html, /Development testbed/);
   assert.match(html, /working towards deployment/);
@@ -192,23 +310,48 @@ test("home page distinguishes public browser source from the private decision pr
 
 test("contact intent guidance adds no mandatory field and is associated with the message", async () => {
   const html = await readSiteFile("contact.html");
-  assert.match(html, /id="message-hint">Optional starting point:/);
+  // The hint suggests content; it must not read as if the required field were optional.
+  assert.match(html, /id="message-hint" class="form-hint">It helps to say whether/);
+  assert.doesNotMatch(html, /Optional starting point/);
+  assert.match(html, /<p class="form-hint form-required-note">All fields are required\.<\/p>/);
+  assert.match(html, /<form\b[^>]*aria-labelledby="contact-form-title"/);
   assert.match(html, /<textarea[^>]*aria-describedby="message-hint"[^>]*required/);
   const required = [...html.matchAll(/<(?:input|textarea)\b[^>]*\brequired[^>]*>/g)];
   assert.equal(required.length, 4);
   assert.match(html, /We welcome research collaborations and contributions/);
 });
 
-test("standalone simulator restores the original animated hero without duplicating the embedded hero", async () => {
+test("standalone simulator leads with its own heading and hands straight over to the workbench", async () => {
   const html = await readSiteFile("simulator.html");
   const home = await readSiteFile("index.html");
   const hero = html.match(/<section class="hero"[\s\S]*?<\/section>/)[0];
-  const original = home.match(/<section class="hero"[\s\S]*?<\/section>/)[0];
-  assert.equal(hero, original.replace('href="#architecture"', 'href="index.html#architecture"'));
-  assert.ok(html.indexOf(hero) < html.indexOf('<section class="simulator-intro"'));
+  const heading = (page) => page.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)[1];
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  assert.notEqual(heading(html), heading(home), "the simulator page must not repeat the home page's h1");
+  assert.doesNotMatch(hero, /hero-interlock/, "the home page's interlock argument is not repeated here");
+  // The skip link and the in-page call to action land on the workbench, not the hero.
+  assert.match(html, /<a class="skip-link" href="#scenario-lab">Skip to simulator<\/a>/);
+  assert.match(html, /<section class="simulator-workbench" id="scenario-lab" tabindex="-1"/);
+  assert.match(hero, /href="#scenario-lab"/);
+  assert.doesNotMatch(html, /class="simulator-intro"/);
+  assert.equal((html.match(/Scenario laboratory/g) || []).length, 0);
   assert.match(html, /interlockObserver.observe\(interlock\)/);
   assert.match(await readSiteFile("simulator.css"), /\.simulator-embed \.hero,/);
+});
+
+test("simulator evidence and schema files open outside the page, including inside the home-page embed", async () => {
+  const html = await readSiteFile("simulator.html");
+  const workbench = html.match(/<section class="simulator-workbench"[\s\S]*?<section class="rules-context/)[0];
+  const anchors = [...workbench.matchAll(/<a\b[^>]*>/g)].map(([tag]) => tag);
+  assert.ok(anchors.length > 10);
+  for (const tag of anchors) {
+    const href = tag.match(/href="([^"]*)"/)?.[1] ?? "";
+    if (href.startsWith("#")) continue;
+    // A download does not navigate the frame; everything else must leave it.
+    if (/\bdownload\b/.test(tag)) continue;
+    assert.match(tag, /target="_blank"/, `${href} would replace the embedded simulator`);
+    assert.match(tag, /rel="noopener noreferrer"/, `${href} lacks rel="noopener noreferrer"`);
+  }
 });
 
 test("public presentation keeps development status concise without repeated disclaimer blocks", async () => {
@@ -219,6 +362,28 @@ test("public presentation keeps development status concise without repeated disc
   assert.doesNotMatch(home, /Optional evidence is never|Reference software, honestly|not certified flight-control|Live hardware is outside project scope/);
   assert.doesNotMatch(simulator, /No actuator connected|Permission to operate is never|Demonstrator, not deployment assurance|not certified safety software/);
   const continuity = await readSiteFile("continuity-evidence.js");
-  assert.match(continuity, /Live feed unavailable\. Explore the recorded run below\./);
+  assert.match(continuity, /The recorded 100-Guardian run remains available to inspect\./);
+  // The fallback never points "below" at a link that sits beside it, and never shouts
+  // "Unavailable" in the live-metric cells.
+  assert.doesNotMatch(continuity, /Explore the recorded run below|textContent = "Unavailable"/);
   assert.doesNotMatch(continuity, /does not treat network failure as authority/);
+});
+
+/* The browser reflow test renders one width per declared breakpoint band. A breakpoint added to
+   a stylesheet without a matching width would leave its band unrendered by any test. */
+test("the browser breakpoint sweep renders a width inside every declared max-width band", async () => {
+  const breakpoints = new Set();
+  for (const path of ["styles.css", "simulator.css"]) {
+    for (const [, value] of (await readSiteFile(path)).matchAll(/@media[^{]*max-width:\s*(\d+)px/g)) breakpoints.add(Number(value));
+  }
+  const spec = await readSiteFile("tests/browser/site.spec.js");
+  const sweep = spec.slice(spec.indexOf("across every declared breakpoint band"));
+  const passes = sweep.slice(sweep.indexOf("const passes = ["), sweep.indexOf("for (const { width, height, paths } of passes)"));
+  const widths = [...passes.matchAll(/\{ width: (\d+), height: \d+, paths: (?:everyPath|complexPaths) \}/g)].map(([, width]) => Number(width));
+  assert.ok(widths.includes(320), "the sweep must render the WCAG 1.4.10 reflow width of 320px");
+  const edges = [0, ...[...breakpoints].sort((left, right) => left - right)];
+  for (let index = 1; index < edges.length; index += 1) {
+    const [low, high] = [edges[index - 1] + 1, edges[index]];
+    assert.ok(widths.some((width) => width >= low && width <= high), `no browser width renders the ${low}-${high}px band`);
+  }
 });

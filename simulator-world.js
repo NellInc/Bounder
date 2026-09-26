@@ -7,6 +7,47 @@ const deepFreeze = (value) => {
 export const WORLD_BOUNDS = deepFreeze({ width: 34, depth: 26 });
 export const MAX_POLYLINE_WAYPOINTS = 4096;
 
+// One scene unit is about 2.7 metres: a storey is 1.12 units and a door 0.9 units, so people,
+// vehicles and street furniture are sized from this constant rather than by eye.
+export const METRES_PER_UNIT = 2.7;
+export const metres = (value) => value / METRES_PER_UNIT;
+
+// Illustrative protection boundaries drawn around the relevant scenario subjects. Their
+// geometry only places the held drone; the recorded receipt owns the outcome.
+export const PROTECTION_BOUNDARIES = deepFreeze({
+  civilian: { x: -2.0, z: 3.6, radius: 2.65 },
+  friendly: { x: -6.6, z: -4.2, radius: 2.35 },
+  protected: { x: 8.9, z: -0.2, radius: 2.8 },
+  humanitarian: { x: 8.3, z: 3.6, radius: 2.5 }
+});
+
+// Every boundary receipt says the vehicle holds outside the boundary, so the drawn hold point
+// keeps at least this horizontal margin from the boundary wall.
+export const HOLD_CLEARANCE = 0.3;
+
+// Route curves are centripetal Catmull-Rom splines through ROUTE_WAYPOINTS.
+export const ROUTE_CURVE = deepFreeze({ curveType: "centripetal", tension: 0.35 });
+
+// Fraction of each route's arc length at which the drone is drawn when the recorded decision
+// applies. Boundary stops are the largest fraction that keeps HOLD_CLEARANCE outside the wall.
+export const ROUTE_STOPS = deepFreeze({
+  safe: 1,
+  civilian: 0.94,
+  friendly: 0.86,
+  protected: 0.94,
+  humanitarian: 0.94,
+  surrender: 0.94,
+  incapacitated: 0.94,
+  identification: 0.94,
+  proportionality: 0.94,
+  human_authorization: 0.94,
+  altitude: 0.57,
+  weather: 0.48,
+  window: 0.22,
+  link: 0.3,
+  replay: 0
+});
+
 const RAW_BUILDING_SPECS = [
   { x: -11.5, z: -6.7, width: 3.0, depth: 2.7, height: 3.8, colour: "#d7b98d", roof: "#a95f43", name: "Bakery" },
   { x: -7.6, z: -6.6, width: 2.6, depth: 2.8, height: 2.9, colour: "#b9c9b0", roof: "#6f7d67", name: "Townhouse" },
@@ -31,8 +72,11 @@ const AWNING_FRONT_OVERHANG = 0.24 + Math.cos(0.18) * (0.42 / 2) + Math.sin(0.18
 const AWNING_HALF_WIDTH = 0.9 / 2;
 const CHIMNEY_TOP_OFFSET = 0.55 + 0.75 / 2;
 
+// Buildings front the nearest street. The southern row (z > 5) faces north toward the road
+// at z = 3.6; every other row faces south (+z).
 export const BUILDING_SPECS = deepFreeze(RAW_BUILDING_SPECS.map((spec, index) => {
   const hasChimney = index % 3 === 0;
+  const facing = spec.z > 5 ? -1 : 1;
   const halfVisibleWidth = Math.max(
     spec.width / 2 + FOUNDATION_OVERHANG,
     spec.width / 2 + ROOF_OVERHANG,
@@ -43,13 +87,14 @@ export const BUILDING_SPECS = deepFreeze(RAW_BUILDING_SPECS.map((spec, index) =>
   return {
     ...spec,
     hasChimney,
+    facing,
     visibleBounds: {
       minX: spec.x - halfVisibleWidth,
       maxX: spec.x + halfVisibleWidth,
       minY: 0,
       maxY: spec.height + (hasChimney ? CHIMNEY_TOP_OFFSET : ROOF_TOP_OFFSET),
-      minZ: spec.z - rearVisibleDepth,
-      maxZ: spec.z + frontVisibleDepth
+      minZ: spec.z - (facing === 1 ? rearVisibleDepth : frontVisibleDepth),
+      maxZ: spec.z + (facing === 1 ? frontVisibleDepth : rearVisibleDepth)
     }
   };
 }));

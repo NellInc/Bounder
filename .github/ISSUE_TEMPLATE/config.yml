@@ -1,0 +1,6 @@
+# Blank issues stay available for questions and site problems that are not simulator findings.
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/NellInc/Bounder/security/advisories/new
+    about: Report verification bypasses and other vulnerabilities privately, as SECURITY.md describes. Public issues are visible to everyone.

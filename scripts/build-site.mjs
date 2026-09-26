@@ -8,7 +8,7 @@ export const MAX_PUBLIC_ENTRIES = 10_000;
 export const MAX_PUBLIC_TOTAL_BYTES = 512 * 1024 * 1024;
 
 export const canonicalPublicPaths = Object.freeze([
-  "404.html", "CNAME", "CHANGELOG.md", "LICENSE", "NOTICE", "README.md",
+  ".well-known", "404.html", "CNAME", "CHANGELOG.md", "LICENSE", "NOTICE", "README.md",
   "SECURITY.md", "VERSION", "contact.html", "continuity-evidence.js",
   "favicon.ico", "index.html", "policy-roundtrip.js", "privacy.html",
   "robots.txt", "simulator-bootstrap.js", "simulator-contracts.js",
@@ -225,7 +225,7 @@ async function inspectEntry({ absoluteRoot, relativePath, fsApi, maxFileBytes, r
       throw new Error(`Public tree exceeds the ${limits.maxEntries}-entry limit`);
     }
     for (const name of names) {
-      validateSafeRelativePath(name, `entry under ${relativePath}`);
+      if (isPublicationJunk(validateSafeRelativePath(name, `entry under ${relativePath}`), relativePath)) continue;
       await inspectEntry({
         absoluteRoot,
         relativePath: `${relativePath}/${name}`,
@@ -296,7 +296,7 @@ export async function inspectTree({
   const entries = [];
   const limits = { maxEntries, maxTotalBytes, totalBytes: 0 };
   for (const name of names) {
-    validateSafeRelativePath(name, "tree entry");
+    if (isPublicationJunk(validateSafeRelativePath(name, "tree entry"), ".")) continue;
     await inspectEntry({
       absoluteRoot,
       relativePath: name,
@@ -830,6 +830,25 @@ export async function buildSite({
     // A diagnostic sink must never turn a committed artifact into a failed build.
   }
   return result;
+}
+
+// Metadata that Finder, Spotlight and Explorer write into any folder they open. It is never
+// publishable, and it reappears whenever a folder is browsed, so failing on it would make every
+// local build and `npm test` intermittently red: directory walks skip it. Any other dot-prefixed
+// or editor-backup name (an .env copy, a swap file) is a stray file that silently publishing and
+// silently dropping would both misrepresent, so it fails the walk with its path. Explicitly
+// allowlisted top-level paths are named by the allowlist and never pass through this filter;
+// `.well-known` (RFC 8615) is the one dot-prefixed directory a published tree may contain.
+export const OS_METADATA_NAMES = Object.freeze([".DS_Store", ".Spotlight-V100", ".Trashes", ".fseventsd", "Thumbs.db", "ehthumbs.db", "desktop.ini", "Desktop.ini"]);
+
+export function isPublicationJunk(name, parent) {
+  if (OS_METADATA_NAMES.includes(name) || name.startsWith("._")) return true;
+  if (name === ".well-known") return false;
+  if (name.startsWith(".") || name.endsWith("~") || /\.(?:swp|swo|swx|tmp|orig|rej)$/iu.test(name)) {
+    const path = parent === "." ? name : `${parent}/${name}`;
+    throw new Error(`Stray file under a public path: ${path}. Dot-prefixed files and editor artefacts are never published; remove it or move it out of the allowlisted tree.`);
+  }
+  return false;
 }
 
 export function isMainModule(argvPath = process.argv[1]) {

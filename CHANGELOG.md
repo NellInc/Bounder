@@ -1,25 +1,77 @@
 # Changelog
 
-## 1.2.3 · 2026-09-11 (source candidate, unsealed)
+## 1.2.4 · 2026-09-26 (source candidate, unsealed)
 
-- Copy pass across all visitor-facing prose: replaced dry noun-lists with sentences that carry stakes, added one-line "why" to README and integration guide, tightened legal prose, reformatted SECURITY threat model.
+Launch-readiness pass across the site, simulator, reference runtime, tooling and documentation.
+
+### Fixed
+
+- The homepage continuity proof refreshes before its lease lapses, pauses in background tabs and names each failure plainly (feed offline, proof expired, cannot verify here, proof not verified) without placing recorded figures in live cells. Visitors without JavaScript see a short note instead of a permanent loading state.
+- Fault replay re-renders the scene from the recorded timeline, including when scrubbed back. "Ready" no longer shows a held state, and closing Fault replay restores the scenario shown before it opened.
+- A scenario chosen while Fleet evidence is still loading is no longer replaced. Choosing a scenario by hand closes the tour and updates the address, so a reload shows the same view.
+- The embedded simulator shrinks again when its disclosures close, and evidence and schema files open outside the embedded frame.
+- A lost WebGL context pauses the scene with no command authority and recovers when the browser restores it. If neither the 3D view nor the accessible view can load, every panel holds with no command authority and offers a reload.
+- The accessible view loads the recorded 100-Guardian run. A failed load reads "Unavailable" rather than staying on "Loading".
+- A network failure after a verified signature is reported as unavailable evidence, not a rejected envelope. A browser without Ed25519 support is told so rather than shown a rejection.
+- Fleet search matches only text a visitor can read. Rows no longer repeat their outcome code, and a rejected policy update is stated in the row.
+- The recorded fallback loads on any same-origin host, and the optional staging feed tolerates a visitor clock up to five minutes slow.
+- The contact form keeps its arrow after a failed send, shows failures in the warning colour and hides its heading once delivery is confirmed.
+- Scene fidelity: drones face along their route, the Guardian formation no longer stacks, low-power mode drops shadows, the weather scenario shows wind rather than fog, the camera cannot look beneath the ground, marker labels stay legible at phone width and objects share one scale.
+
+### Changed
+
+- Site copy describes restraint only, drops unqualified safety claims and uses British English. The "Safety" navigation item is now "Roadmap".
+- The simulator page has its own compact introduction. The skip link, calls to action and tour links land on the workbench.
+- Reduced motion jumps to the recorded decision instead of flying the route. The mouse wheel scrolls the page unless the scene has focus, and the plus and minus keys zoom the scene.
+- The favicon and a new touch icon are drawn from the current mark, now in the site palette. Pages share a dedicated social card, and a self-hosted condensed fallback font (SIL Open Font Licence) is used where Avenir Next is unavailable. Two unreferenced legacy images were removed.
+- The privacy notice names the controller (Nell Watson, Inc.), the host, the lawful basis, processing in the United States, visitors' rights and the right to complain to the ICO.
+- Mirrored preview of the Creed Space manipulator profile contract: its schema, an example profile and a signed golden vector, with the example and vector under `data/` beside the other fixtures. They come from the private producer but are not yet covered by producer derivation, and the browser verifier does not inspect them.
+- Observability reference: each telemetry key is bound to one subject, liveness is capped by receive time, snapshots expire with the policies and leases they summarise, aggregation can quarantine a bad heartbeat, and the stable heartbeat interval is 40 seconds so that one lost report cannot expire a Guardian.
+- Tooling: the build refuses stray dotfiles, sealing requires a complete verification receipt and tracked public files, new manifests list their inventory in code-unit order, coverage reports browser-only modules separately and browser acceptance runs on a local Node server.
+- Release notes: 1.2.0 to 1.2.2 now name their sealing manifests, and 1.2.3 is recorded as published without one.
+
+### Security
+
+- Workflows keep no checkout credentials, pass expressions to shell steps through the environment and cancel superseded pull-request runs. CodeQL also analyses the workflows.
+- The issue tracker routes vulnerability reports to private disclosure, and the site publishes `/.well-known/security.txt`.
+- Policy snapshots keep an own `__proto__` member so that it is rejected rather than silently dropped, policies dated in year 0000 are rejected, and inherited property names never resolve as telemetry keys.
+
+### Accessibility
+
+- Stable control names with a pressed state, a polite scene announcer, spoken tour steps, a focus ring around the scene, a named 3D scene linked to its explanation, and resilience codes that wrap instead of being cut off.
+- Forced-colours support, a spoken new-tab cue on every link that opens one, the current page marked in navigation, a mobile header that no longer covers the headline and a readable line length on long-form pages.
+
+### Proof limits
+
+- The manipulator contract remains a preview until the producer exports it under derivation.
+- Deployed Guardian performance, Fleet backend integration, hardware safety and human or regulatory review remain unverified.
+
+## 1.2.3 · 2026-09-11 (published without a sealed manifest)
+
+Deployed from source commit `56fdbed`. No release manifest was sealed for this version; its changes are carried into 1.2.4.
+
+- Copy pass across visitor-facing prose: a clearer homepage, README, integration guide and legal pages, and a reformatted SECURITY threat model.
 - Updated wiki citations to match shifted SECURITY.md line numbers.
 
-## 1.2.2 · 2026-09-07 (source candidate, unsealed)
+## 1.2.2 · 2026-09-07
+
+Sealed by `release/bounder-reference-v1.2.2.manifest.json`.
 
 - Added a 16px left inset to the homepage demo’s light area while keeping its dark evidence sections flush left.
 
-## 1.2.1 · 2026-09-07 (source candidate, unsealed)
+## 1.2.1 · 2026-09-07
+
+Sealed by `release/bounder-reference-v1.2.1.manifest.json`.
 
 - Removed repetitive presentation disclaimers and consolidated homepage status as a development testbed working towards deployment.
 - Shortened live-feed fallback text and replaced the warning section with a development roadmap.
 - Preserved the v1.2.0 source seal and recorded the final presentation changes in a new release.
 
-## 1.2.0 · 2026-09-07 (source candidate, unsealed)
+## 1.2.0 · 2026-09-07
 
-Local experience update. This candidate has not been published or release-sealed.
+Sealed by `release/bounder-reference-v1.2.0.manifest.json`.
 
-- Restored original illustrated, animated hero and headline; removed the unwanted tagline.
+- Restored the illustrated, animated hero and headline.
 - Refined mobile navigation, keyboard focus and evidence targets; added one-click Fleet filter reset.
 - Scene and recorded decision share a responsive workspace, with secondary evidence tools.
 - Grouped scenarios, guided progression, full-text Fleet inspection and platform/outcome filters.
@@ -28,8 +80,6 @@ Local experience update. This candidate has not been published or release-sealed
 - Policy, parsing, signature and round-trip implementations moved into their existing module boundaries.
 - Clearer simulation status, public/private source ownership, and developer contract examples.
 - Contact failure recovery, provider-confirmed acceptance and explicit hosted-form fallback.
-
-Producer derivation, immutable source/manifest commits and live-byte verification remain release gates.
 
 ## 1.1.2 · 2026-09-03
 

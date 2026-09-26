@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
 test("stable browser entries are small composition facades", async () => {
@@ -63,6 +63,21 @@ test("policy implementations form an acyclic graph and keep the compatibility fa
     visited.add(url.href);
   };
   await visit(coreURL);
+
+  // Every runtime module, not only the policy graph, must import narrow seams directly: the
+  // facade re-exports the UI policy panel, so importing it drags UI code into runtime contracts.
+  const runtimeRoot = new URL("../runtime/", import.meta.url);
+  const runtimeFiles = (await readdir(runtimeRoot, { recursive: true })).filter((path) => path.endsWith(".js"));
+  assert.ok(runtimeFiles.length > 10);
+  for (const path of runtimeFiles) {
+    const url = new URL(path, runtimeRoot);
+    if (url.href === coreURL.href) continue;
+    const source = await readFile(url, "utf8");
+    for (const match of source.matchAll(/(?:import|export)\s+[\s\S]*?\bfrom\s+["']([^"']+)["']/g)) {
+      assert.notEqual(new URL(match[1], url).href, coreURL.href, `${path} must not import the compatibility facade`);
+      assert.doesNotMatch(new URL(match[1], url).pathname, /\/ui\//, `${path} must not import UI modules`);
+    }
+  }
   const panel = await readFile(new URL("../ui/policy-panel.js", import.meta.url), "utf8");
   assert.doesNotMatch(panel, /bootstrapPolicyRoundTrip\(document\)/);
   for (const [path, symbol] of [

@@ -996,9 +996,12 @@ test("the current release line has either a sealed v2 manifest or an explicit so
     source = await fs.readFile(target, "utf8");
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
-    assert.equal(version, "1.2.3");
+    // Commit A cannot describe its own seal, so an unsealed VERSION must be the newest changelog
+    // entry and must say so in its heading.
     const changelog = await fs.readFile(join(root, "CHANGELOG.md"), "utf8");
-    assert.match(changelog, /1\.2\.3.*source candidate, unsealed/);
+    const [topHeading] = changelog.match(/^## .*$/mu) ?? [];
+    const escaped = version.replaceAll(".", "\\.");
+    assert.match(topHeading ?? "", new RegExp(`^## ${escaped} · \\d{4}-\\d{2}-\\d{2} \\(source candidate, unsealed\\)$`, "u"));
     await Promise.all([
       fs.access(join(root, "scripts", "generate-release-manifest-v2.mjs")),
       fs.access(join(root, "schemas", "bounder-release-manifest-v2.schema.json"))
@@ -1014,4 +1017,51 @@ test("the current release line has either a sealed v2 manifest or an explicit so
     assert.equal(bytes.byteLength, file.bytes, file.path);
     assert.equal(hash(bytes), file.sha256, file.path);
   }
+});
+
+// A sealed release must not keep its candidate label, with one exception. The current VERSION
+// is sealed by manifest commit B, but CHANGELOG.md is pinned by source commit A, which must say
+// "(source candidate, unsealed)". That heading can only be relabelled in the next release's
+// commit A, so the current VERSION may carry the label whether or not its manifest exists.
+const sealedCandidateLabels = (changelog, sealedVersions, currentVersion) => {
+  const headings = new Map(
+    [...changelog.matchAll(/^## (\d+\.\d+\.\d+) · .*$/gmu)].map(([line, version]) => [version, line])
+  );
+  const problems = [];
+  for (const version of sealedVersions) {
+    const heading = headings.get(version);
+    if (!heading) problems.push(`CHANGELOG.md has no entry for sealed release ${version}`);
+    else if (version !== currentVersion && /unsealed|source candidate/u.test(heading)) {
+      problems.push(`sealed release ${version} is labelled as a candidate`);
+    }
+  }
+  return problems;
+};
+
+test("sealed-label check passes at commits A and B and fails for an older mislabelled release", () => {
+  const changelog = [
+    "# Changelog",
+    "## 1.3.0 · 2026-10-01 (source candidate, unsealed)",
+    "## 1.2.9 · 2026-09-20 · sealed by `release/bounder-reference-v1.2.9.manifest.json`",
+    ""
+  ].join("\n");
+  // Commit A: the candidate has no manifest yet.
+  assert.deepEqual(sealedCandidateLabels(changelog, ["1.2.9"], "1.3.0"), []);
+  // Commit B: the candidate's manifest now exists, but its commit-A heading must stand.
+  assert.deepEqual(sealedCandidateLabels(changelog, ["1.2.9", "1.3.0"], "1.3.0"), []);
+  // The next release's commit A: 1.3.0 is no longer current and must have been relabelled.
+  assert.deepEqual(sealedCandidateLabels(changelog, ["1.2.9", "1.3.0"], "1.3.1"), ["sealed release 1.3.0 is labelled as a candidate"]);
+  assert.deepEqual(sealedCandidateLabels(changelog, ["1.2.8"], "1.3.0"), ["CHANGELOG.md has no entry for sealed release 1.2.8"]);
+});
+
+test("the changelog never calls a sealed release unsealed", async () => {
+  const root = fileURLToPath(repositoryRoot);
+  const changelog = await fs.readFile(join(root, "CHANGELOG.md"), "utf8");
+  const currentVersion = (await fs.readFile(join(root, "VERSION"), "utf8")).trim();
+  const sealed = (await fs.readdir(join(root, "release")))
+    .map((name) => /^bounder-reference-v(\d+\.\d+\.\d+)\.manifest\.json$/u.exec(name)?.[1])
+    .filter(Boolean);
+  assert.ok(sealed.length > 0, "no sealed manifests found");
+  assert.deepEqual(sealedCandidateLabels(changelog, sealed, currentVersion), []);
+  assert.doesNotMatch(changelog, /has not been published or release-sealed/u);
 });

@@ -18,17 +18,20 @@ test('scene and consequence lead; camera and text views preserve the recorded de
   const resultBox = await page.locator('.decision-panel').boundingBox();
   expect(resultBox.x).toBeGreaterThan(sceneBox.x + sceneBox.width);
   expect(Math.abs(resultBox.y - sceneBox.y)).toBeLessThan(2);
-  for (const [name, view] of [['Top-down', 'top'], ['Focus subject', 'focus'], ['Overview', 'overview']]) {
+  for (const [name, view] of [['Top-down', 'top'], ['Focus on drone', 'focus'], ['Overview', 'overview']]) {
     await page.getByRole('button', { name, exact: true }).click();
     await expect(stage).toHaveAttribute('data-camera-view', view);
     await expect(page.locator('.decision-code')).toHaveText(before);
   }
   await page.getByLabel('Scene detail').selectOption('low');
   await expect(stage).toHaveAttribute('data-render-quality', 'low');
-  await page.getByRole('button', { name: 'Text view', exact: true }).click();
+  const textView = page.getByRole('button', { name: 'Text view', exact: true });
+  await textView.click();
+  await expect(textView).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.scene-explanation')).toContainText('Hold outside civilian buffer');
   await expect(stage).toHaveAttribute('data-animation-state', 'offscreen');
-  await page.getByRole('button', { name: 'Scene view', exact: true }).click();
+  await textView.click();
+  await expect(textView).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('.scene-explanation')).toBeHidden();
   await expect(stage).toHaveAttribute('data-animation-state', 'idle');
   await expect(page.locator('.decision-code')).toHaveText(before);
@@ -39,7 +42,7 @@ test('scene and consequence lead; camera and text views preserve the recorded de
   await expect(stage).toHaveAttribute('data-animation-state', 'offscreen');
   await page.getByRole('button', { name: 'Top-down', exact: true }).focus();
   await stage.locator('canvas').dispatchEvent('webglcontextlost');
-  await expect(stage).toHaveAttribute('data-webgl', 'runtime-error');
+  await expect(stage).toHaveAttribute('data-webgl', 'context-lost');
   await expect(page.locator('.receipt-details > summary')).toBeFocused();
   await expect(page.getByRole('button', { name: 'Top-down', exact: true })).toBeDisabled();
 });
@@ -118,10 +121,17 @@ test('contact retains failed submissions and requires provider acceptance for su
   await page.locator('#privacy_consent').check();
   await page.getByRole('button', { name: 'Send enquiry', exact: false }).click();
   await expect(page.locator('#form-error')).toBeVisible();
+  await expect(page.locator('#form-error')).toBeFocused();
   await expect(page.locator('#message')).toHaveValue('Test message intercepted by the browser test.');
+  // The idle label, including its decorative arrow, is restored after a failed send.
+  const primarySubmit = page.locator('#contact-form button[type="submit"]:not([data-hosted-submit])');
+  await expect(primarySubmit.locator('[data-label]')).toHaveText('Send enquiry');
+  await expect(primarySubmit.locator('span[aria-hidden="true"]')).toHaveText('→');
   accepted = true;
   await page.getByRole('button', { name: 'Send enquiry', exact: false }).click();
   await expect(page.locator('#form-success')).toBeVisible();
   await expect(page.locator('#contact-form')).toBeHidden();
+  await expect(page.locator('#contact-form-title')).toBeHidden();
+  await expect(page.locator('.form-required-note')).toBeHidden();
   expect(requests).toBe(2);
 });

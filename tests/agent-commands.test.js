@@ -67,7 +67,8 @@ test("agent inspection and changed-path commands expose compact human and stable
   const emptyHuman = [];
   await runCheckChangedCli(["--paths", "unknown.file"], { log: (message) => emptyHuman.push(message) });
   assert.match(emptyHuman[0], /Components: none/);
-  assert.match(emptyHuman[0], /Unmatched paths: unknown.file/);
+  assert.match(emptyHuman[0], /Unmatched paths \(no impact rule, so the complete gate is selected\): unknown\.file/);
+  assert.match(emptyHuman[0], /\* verify/);
 });
 
 test("documentation and descriptor CLIs validate the compiled knowledge graph while surfacing exact held claims", async () => {
@@ -251,7 +252,7 @@ test("verification receipts are atomic, hash logs, stop after failure, and label
   assert.ok(result.receipt.unverified.some(({ proof_class }) => proof_class === "physical_safety"));
   const saved = JSON.parse(await readFile(result.receiptPath, "utf8"));
   assert.equal(saved.phases[0].log_sha256.length, 64);
-  assert.equal(JSON.parse(await readFile(join(root, "receipts", "latest.json"), "utf8")).success, false);
+  await assert.rejects(readFile(join(root, "receipts", "latest.json")), { code: "ENOENT" }, "a focused run replaced the release receipt");
 
   await assert.rejects(() => runVerification({ root, phases: [], outputRoot: join(root, "empty") }), /empty/);
   await assert.rejects(() => runVerification({ root, phases: [phases[0], phases[0]], outputRoot: join(root, "dupe") }), /duplicate/);
@@ -303,6 +304,12 @@ test("inspection reads verification receipts and manifests from the checkout it 
   const root = join(base, "clone");
   await execFileAsync("git", ["clone", "--quiet", "--shared", "--no-checkout", repositoryRoot, root]);
   await execFileAsync("git", ["-C", root, "checkout", "--quiet", "HEAD", "--", "."]);
+  // The inspector under test is this working tree's code, so the clone carries this working
+  // tree's descriptor too; a committed descriptor may predate an uncommitted budget rule.
+  await writeFile(
+    join(root, "system", "bounder-system.v1.json"),
+    await readFile(join(repositoryRoot, "system", "bounder-system.v1.json"))
+  );
 
   const bare = await inspectSystem({ root });
   assert.equal(bare.health.last_aggregate_verification, null, "a clone without artifacts reports no aggregate verification");
@@ -372,4 +379,44 @@ test("a failed test phase pulls every TAP failure block ahead of the summary", (
     "  1) tests/browser/site.spec.js:78:1 › homepage reveal\n    Error: expect(locator).toHaveCount(expected) failed",
     "::error file=tests/browser/site.spec.js::boom"
   ]);
+});
+
+test("only a complete verification run claims proof and becomes the receipt that release sealing reads", async (t) => {
+  const { DEFAULT_VERIFICATION_PHASES, COMPLETE_VERIFICATION_CLAIMS, isCompletePhaseSet } = await import("../scripts/verify.mjs");
+  const root = await mkdtemp(join(tmpdir(), "bounder-verification-scope-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const outputRoot = join(root, "receipts");
+  const run = (phases, producerCommits = []) => runVerification({
+    root,
+    outputRoot,
+    phases,
+    phaseRunner: async () => ({ exit_code: 0, signal: null, timed_out: false, duration_ms: 1, stdout: "ok", stderr: "" }),
+    candidateReader: async () => ({ publisher_commit: "a".repeat(40), producer_commits: producerCommits, dirty: false }),
+    artifactPaths: [],
+    logger: { log() {}, error() {} }
+  });
+
+  assert.equal(isCompletePhaseSet(DEFAULT_VERIFICATION_PHASES), true);
+  assert.equal(isCompletePhaseSet(DEFAULT_VERIFICATION_PHASES.slice(1)), false);
+
+  const complete = await run(DEFAULT_VERIFICATION_PHASES, ["b".repeat(40)]);
+  assert.equal(complete.receipt.scope, "complete");
+  assert.deepEqual(complete.receipt.claims, [...COMPLETE_VERIFICATION_CLAIMS, "producer_derivation", "cross_repository_compatibility"]);
+  const latest = await readFile(join(outputRoot, "latest.json"), "utf8");
+  assert.equal(latest, await readFile(complete.receiptPath, "utf8"));
+
+  // A focused re-check after the complete gate must not replace the receipt a seal will cite.
+  const logs = [];
+  const focused = await runVerifyCli(["--phase", "documentation"], { log: (line) => logs.push(line) }, {
+    outputRoot,
+    phaseRunner: async () => ({ exit_code: 0, signal: null, timed_out: false, duration_ms: 1, stdout: "ok", stderr: "" }),
+    candidateReader: async () => ({ publisher_commit: "a".repeat(40), producer_commits: ["b".repeat(40)], dirty: false }),
+    artifactPaths: []
+  });
+  assert.equal(focused.receipt.success, true);
+  assert.equal(focused.receipt.scope, "focused");
+  assert.deepEqual(focused.receipt.claims, [], "a single phase may not claim browser, build or producer proof");
+  assert.ok(focused.receipt.unverified.some(({ proof_class, reason }) => proof_class === "complete_verification" && /documentation/.test(reason)));
+  assert.equal(await readFile(join(outputRoot, "latest.json"), "utf8"), latest, "the focused run replaced latest.json");
+  assert.match(logs.at(-1), /focused run; latest\.json left unchanged/);
 });

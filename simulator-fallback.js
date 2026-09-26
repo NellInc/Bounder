@@ -4,6 +4,13 @@ import {
   fetchSimulatorJSON,
   validateReceiptBundle
 } from "./simulator-contracts.js";
+import { renderFleetRows, renderFleetSummary, showFleetUnavailable } from "./ui/fleet-view.js";
+import { asSentence } from "./ui/text.js";
+
+// Must stay the first statement of the module body. Static imports evaluate before it, so
+// the mark proves every dependency loaded and this view began running; the bootstrap only
+// retries this entry when the mark is absent.
+document.querySelector(".simulator-stage").dataset.fallbackStarted = "true";
 
 const root = document.querySelector(".simulator-workbench");
 const stage = root.querySelector(".simulator-stage");
@@ -43,7 +50,7 @@ const renderReceipt = (scenario) => {
   outcomeElement.textContent = receipt.allowed ? "Request allowed" : "Request denied";
   outcomeElement.dataset.outcome = receipt.allowed ? "allowed" : "held";
   decisionCode.textContent = receipt.code;
-  reasonElement.textContent = receipt.reason;
+  reasonElement.textContent = asSentence(receipt.reason);
   adapterOutput.textContent = receipt.adapter.output;
   receiptFields.engine.textContent = bundle.engine;
   receiptFields.signature.textContent = receipt.signature_verified ? "Recorded as verified by Go engine" : "Recorded verification failed";
@@ -51,7 +58,7 @@ const renderReceipt = (scenario) => {
   receiptFields.issuer.textContent = receipt.issuer;
   receiptFields.subject.textContent = receipt.subject;
   receiptFields.sequence.textContent = String(receipt.sequence);
-  receiptFields.evidence.textContent = `${receipt.evidence.age_seconds}s old · ${receipt.evidence.tier} evidence`;
+  receiptFields.evidence.textContent = `${receipt.evidence.tier} · ${receipt.evidence.auditor} · ${receipt.evidence.age_seconds}s old`;
   receiptFields.evaluated.textContent = receipt.evaluated_at;
   receiptFields.hash.textContent = receipt.policy_hash;
   setRuleState(receipt.allowed ? "all" : receipt.rule);
@@ -100,3 +107,28 @@ try {
 } catch (error) {
   failClosed(error instanceof Error ? error.message : "The recorded receipt bundle could not be loaded.");
 }
+
+// Fleet evidence is plain DOM, so this view renders the recorded 100-Guardian pilot too.
+// It is independent of the receipts above: a Fleet failure resolves the panel to an
+// explicit unavailable state and never touches the receipt controls. The 3D Fleet view
+// and the fault replay need the renderer and stay disabled here. It is not awaited, so the
+// module (and the bootstrap's embedded-height reporting after it) settles on the receipts.
+const fleetSource = root.querySelector("[data-fleet-source]");
+const loadFleetEvidence = async () => {
+  try {
+    const { loadPilotEvidence } = await import("./staging-feed.js");
+    const configuredURL = document.querySelector('meta[name="bounder-staging-feed"]')?.content ?? "";
+    const configuredIntegrity = document.querySelector('meta[name="bounder-staging-feed-integrity"]')?.content ?? "";
+    const pilot = await loadPilotEvidence({ configuredURL, configuredIntegrity });
+    renderFleetSummary(root, pilot.evidence);
+    renderFleetRows(root.querySelector("[data-fleet-nodes]"), pilot.evidence);
+    fleetSource.textContent = `${pilot.warning ? `${pilot.sourceLabel} · ${pilot.warning}` : pilot.sourceLabel} · accessible evidence view`;
+    fleetSource.dataset.source = pilot.source;
+    stage.dataset.fleetGuardians = String(pilot.evidence.summary.devices);
+    stage.dataset.fleetReady = "true";
+  } catch (error) {
+    console.warn("Bounder Fleet evidence unavailable in the accessible evidence view", error);
+    showFleetUnavailable(root, "Fleet evidence unavailable · the recorded receipts remain available");
+  }
+};
+loadFleetEvidence();

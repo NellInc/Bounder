@@ -145,7 +145,13 @@ test("v1 policy and profile validators match the published closed and bounded co
     ["long source version", (value) => { value.source_policies[0].version = "v".repeat(65); }, /version/],
     ["schema-excess altitude", (value) => { value.constraints.max_altitude_metres = 1_000_001; }, /altitude/],
     ["unallowlisted ROE action", (value) => { value.constraints.allowed_actions = ["loiter"]; }, /allowlisted/],
-    ["unallowlisted evidence-only action", (value) => { value.constraints.allowed_actions = ["loiter"]; value.constraints.rules_of_engagement_actions = []; }, /allowlisted/]
+    ["unallowlisted evidence-only action", (value) => { value.constraints.allowed_actions = ["loiter"]; value.constraints.rules_of_engagement_actions = []; }, /allowlisted/],
+    ["safeguards without a scoped action", (value) => { delete value.constraints.rules_of_engagement_actions; }, /require a scoped action/],
+    ["safeguards with an empty scope", (value) => { value.constraints.rules_of_engagement_actions = []; }, /require a scoped action/],
+    ["unknown required Mettle tier", (value) => { value.constraints.required_mettle_tier = "copper"; }, /Mettle tier/],
+    ["unknown source policy level", (value) => { value.source_policies[0].level = "global"; }, /source policy level/],
+    ["year 0000 issuance", (value) => { value.issued_at = "0000-01-01T00:00:00Z"; }, /calendar time/],
+    ["year 0000 activation", (value) => { value.issued_at = "0000-01-01T00:00:00Z"; value.not_before = "0000-01-01T00:00:00Z"; }, /calendar time/]
   ];
   for (const [name, mutate, pattern] of cases) {
     await t.test(name, () => {
@@ -208,6 +214,63 @@ test("the deterministic policy evaluator enforces global boundaries and exact ev
       const request = clone(evidenceFixture.request);
       mutate(request);
       assert.equal(evaluatePolicyRequest(policy, request, evaluatedAt).code, expectedCode);
+    });
+  }
+});
+
+test("the evaluator holds outside the signed validity window and for actions the policy does not allow", async () => {
+  const { policy } = await verifiedFixture();
+  const request = clone(evidenceFixture.request);
+  // Half-open window [not_before, expires_at), exact to the nanosecond.
+  assert.equal(evaluatePolicyRequest(policy, request, "2026-07-13T12:05:00Z").code, "policy_inactive");
+  assert.equal(evaluatePolicyRequest(policy, request, "2026-07-13T11:59:59.999999999Z").code, "policy_inactive");
+  assert.equal(evaluatePolicyRequest(policy, request, "2026-07-13T12:00:00Z").code, "allowed");
+  assert.notEqual(evaluatePolicyRequest(policy, request, "2026-07-13T12:04:59.999999999Z").code, "policy_inactive");
+  const inactive = evaluatePolicyRequest(policy, request, "2026-07-13T12:05:00Z");
+  assert.deepEqual(inactive, { allowed: false, code: "policy_inactive", reason: "the signed policy is not active at the evaluation time" });
+
+  const narrowed = clone(policy);
+  narrowed.constraints.allowed_actions = ["loiter", "intercept"];
+  for (const action of ["land", "rtl"]) {
+    const outside = { ...clone(request), action };
+    assert.deepEqual(
+      evaluatePolicyRequest(narrowed, outside, evidenceFixture.receipt.evaluated_at),
+      { allowed: false, code: "action_not_allowed", reason: "the signed policy does not allow this action" },
+      action
+    );
+  }
+  assert.equal(evaluatePolicyRequest(narrowed, request, evidenceFixture.receipt.evaluated_at).code, "allowed");
+});
+
+test("an own __proto__ member is kept and rejected at the envelope stage, not silently dropped", async () => {
+  const text = new TextDecoder().decode(vectorBytes);
+  for (const [name, patched] of [
+    ["top level", text.replace(/^\{/, '{"__proto__":null,')],
+    ["envelope", text.replace(/"envelope":\s*\{/, '"envelope":{"__proto__":null,')]
+  ]) {
+    assert.notEqual(patched, text, name);
+    const parsed = parseStrictJSON(encoder.encode(patched), name);
+    assert.ok(Reflect.ownKeys(name === "envelope" ? parsed.envelope : parsed).includes("__proto__"), name);
+    await assert.rejects(
+      verifyEnvelope(parsed),
+      (error) => /missing or unsupported fields/.test(error.message) && error.verificationStage === "envelope",
+      name
+    );
+  }
+});
+
+test("round-trip evidence rejects a held allowed code, a mismatched receipt action, and a moved generation time", async (t) => {
+  const options = await evidenceOptions();
+  const cases = [
+    ["held decision with the allowed code", (value) => { value.receipt.allowed = false; }, /held decision code is inconsistent/],
+    ["receipt action differs from the request", (value) => { value.receipt.action = "rtl"; }, /request and receipt actions are inconsistent/],
+    ["generation time differs from evaluation", (value) => { value.generated_at = "2026-07-13T12:00:31Z"; }, /evidence timestamps are inconsistent/]
+  ];
+  for (const [name, mutate, pattern] of cases) {
+    await t.test(name, async () => {
+      const candidate = clone(evidenceFixture);
+      mutate(candidate);
+      await assert.rejects(validateRoundTripEvidence(candidate, options), pattern);
     });
   }
 });
@@ -818,6 +881,49 @@ test("unavailable published vector offers a retry and local inspection without g
   controller.cancel();
 });
 
+test("a receipt-evidence transport failure after verification is unavailable, not a rejected envelope", async () => {
+  const ui = fakePolicyPanel();
+  const verified = {
+    envelope: { public_key_id: "creed-fleet-simulation-2026" },
+    payloadBytes: encoder.encode("payload"),
+    policy: {
+      issuer: "issuer",
+      subject: "bounder-alpha",
+      fleet_id: "relief-fleet",
+      sequence: 9,
+      policy_id: "policy",
+      constraints: { allowed_actions: ["loiter"] },
+      source_policies: [{ id: "source", version: "1", level: "team" }]
+    },
+    payloadSha256: "digest",
+    validity: { notBeforeNanoseconds: 0n, expiresAtNanoseconds: 2_000_000n }
+  };
+  let validations = 0;
+  const controller = bootstrapPolicyRoundTrip(ui.root, {
+    fetchJSON: async (url) => {
+      if (url.includes("golden")) return { bytes: encoder.encode('{"run":1}') };
+      throw new Error("recorded round-trip evidence request timed out");
+    },
+    verifyVector: async () => verified,
+    validateEvidence: async () => { validations += 1; },
+    now: () => 0
+  });
+  await controller.loadPublishedExample();
+  assert.equal(validations, 0);
+  assert.equal(ui.status.dataset.state, "rejected");
+  assert.equal(ui.status.querySelector("span").textContent, "Unavailable");
+  assert.match(ui.status.querySelector("strong").textContent, /^Recorded round-trip evidence request timed out\. Check your connection/);
+  for (const step of ["envelope", "signature", "policy"]) {
+    const element = ui.root.querySelector("[data-policy-roundtrip]").querySelectorAll("[data-policy-step]").find((item) => item.dataset.policyStep === step);
+    assert.equal(element.dataset.state, "verified", `${step} should stay verified`);
+  }
+  const receipt = ui.root.querySelector("[data-policy-roundtrip]").querySelectorAll("[data-policy-step]").find((item) => item.dataset.policyStep === "receipt");
+  assert.equal(receipt.dataset.state, "unavailable");
+  assert.equal(ui.fields.subject.textContent, "bounder-alpha");
+  assert.equal(ui.fields.receipt.textContent, "Not loaded");
+  controller.cancel();
+});
+
 test("authority classification preserves explicit instant and legacy millisecond inputs", () => {
   const validity = { notBefore: 1000, expiresAt: 2000 };
   assert.equal(classifyAuthority(validity, 1500), "current");
@@ -829,4 +935,28 @@ test("authority classification preserves explicit instant and legacy millisecond
   for (const invalid of [null, {}, NaN, Infinity, false]) {
     assert.throws(() => classifyAuthority(validity, invalid), /authority evaluation time is invalid/);
   }
+});
+
+test("a browser without Ed25519 WebCrypto is labelled unsupported, not as a rejected vector", async () => {
+  const ui = fakePolicyPanel();
+  const unsupported = new Error("this browser cannot verify Ed25519 signatures");
+  Object.defineProperty(unsupported, "verificationStage", { value: "signature", enumerable: false });
+  const controller = bootstrapPolicyRoundTrip(ui.root, {
+    fetchJSON: async () => ({ bytes: encoder.encode("{}") }),
+    verifyVector: async () => { throw unsupported; }
+  });
+  await controller.loadPublishedExample();
+  assert.equal(ui.status.dataset.state, "rejected");
+  assert.equal(ui.status.querySelector("span").textContent, "Unsupported");
+
+  const invalid = new Error("Ed25519 signature verification failed");
+  Object.defineProperty(invalid, "verificationStage", { value: "signature", enumerable: false });
+  const rejected = bootstrapPolicyRoundTrip(ui.root, {
+    fetchJSON: async () => ({ bytes: encoder.encode("{}") }),
+    verifyVector: async () => { throw invalid; }
+  });
+  await rejected.loadPublishedExample();
+  assert.equal(ui.status.querySelector("span").textContent, "Rejected", "a bad signature is still a rejection");
+  controller.cancel();
+  rejected.cancel();
 });

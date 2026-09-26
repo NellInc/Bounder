@@ -6,55 +6,48 @@
   --route: #69a63c;
 }
 
-.simulator-intro {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr) minmax(250px, 0.32fr);
-  gap: clamp(2rem, 5vw, 5rem);
-  width: min(calc(100% - 3rem), var(--content));
-  margin: 0 auto;
-  padding: clamp(4.5rem, 7vw, 7rem) 0 clamp(3.5rem, 5vw, 5rem);
+/* One content grid for the whole page: header, hero, workbench, context and footer share
+   the 1440px measure, so their left edges line up at every width. */
+.simulator-page {
+  --content: 1440px;
 }
 
-.simulator-intro h2 {
-  max-width: 900px;
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(3.7rem, 7.2vw, 7.2rem);
-  font-weight: 760;
-  letter-spacing: -0.045em;
+/* The page leads with the simulator: a compact hero names the page and hands straight
+   over to the workbench instead of repeating the home page's full-height statement. */
+.simulator-page .hero {
+  height: auto;
+  min-height: 0;
+}
+
+.simulator-page .hero-content {
+  align-self: end;
+  margin: 0 auto;
+  padding-block: clamp(3rem, 6vw, 5rem) clamp(2.25rem, 4vw, 3.25rem);
+}
+
+.simulator-page .hero .section-label {
+  color: var(--signal);
+}
+
+.simulator-page .hero h1 {
+  margin: 0.9rem 0 1.2rem;
+  font-size: clamp(3.2rem, 6.4vw, 5.8rem);
   line-height: 0.88;
 }
 
-.simulator-intro > div > p {
-  max-width: 720px;
-  margin: 1.5rem 0 0;
-  color: var(--ink-soft);
-  font-size: 1.15rem;
+.simulator-page .hero-actions {
+  flex-wrap: wrap;
+  margin-top: 1.8rem;
 }
 
-.simulator-intro aside {
-  align-self: end;
-  padding-top: 1rem;
-  border-top: 2px solid var(--safety);
-}
-
-.simulator-intro aside span {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.simulator-intro aside p {
-  margin: 0.75rem 0 0;
-  color: var(--ink-soft);
-  font-size: 0.88rem;
+/* The skip link and hero CTA land here programmatically; the section is not a control. */
+.simulator-workbench:focus {
+  outline: none;
 }
 
 .simulator-workbench {
   --focus-ring: var(--signal);
-  padding: clamp(2.5rem, 5vw, 5rem) max(1.5rem, calc((100vw - 1500px) / 2));
+  padding: clamp(2.5rem, 5vw, 5rem) max(1.5rem, calc((100vw - var(--content)) / 2));
   color: white;
   background: var(--ink);
 }
@@ -108,13 +101,22 @@
   font-size: 0.8rem;
 }
 
-.sim-control:hover,
 .sim-control[aria-pressed="true"],
-.scenario-button:hover,
 .scenario-button[aria-pressed="true"] {
   color: var(--ink);
   background: var(--signal);
   border-color: var(--signal);
+}
+
+/* Fills on hover only where hover exists: on touch screens a tapped control would keep
+   the fill and read as selected. Pressed and focus states stay unconditional. */
+@media (hover: hover) {
+  .sim-control:hover,
+  .scenario-button:hover {
+    color: var(--ink);
+    background: var(--signal);
+    border-color: var(--signal);
+  }
 }
 
 .sim-control:disabled,
@@ -134,7 +136,7 @@
   margin: 2.2rem 0 0;
   padding: 2rem;
   color: var(--ink);
-  background: linear-gradient(120deg, var(--signal), #d9f7ad);
+  background: #d9eeaa;
   border: 1px solid var(--signal);
 }
 
@@ -155,7 +157,7 @@
   display: block;
   height: 3px;
   overflow: hidden;
-  background: rgba(19, 28, 27, 0.22);
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
 .operator-tour-progress b {
@@ -169,7 +171,7 @@
 }
 
 .operator-tour-copy .fleet-kicker {
-  color: rgba(19, 28, 27, 0.66);
+  color: color-mix(in srgb, var(--ink) 66%, transparent);
 }
 
 .operator-tour-copy h3 {
@@ -186,7 +188,7 @@
 }
 
 .operator-tour-proof {
-  color: rgba(19, 28, 27, 0.7);
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
   font-size: 0.88rem;
 }
 
@@ -206,7 +208,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-width: 250px;
-  border: 1px solid rgba(19, 28, 27, 0.42);
+  border: 1px solid color-mix(in srgb, var(--ink) 42%, transparent);
 }
 
 .operator-tour-actions button {
@@ -224,18 +226,20 @@
 }
 
 .operator-tour-actions button + button {
-  border-left: 1px solid rgba(19, 28, 27, 0.42);
+  border-left: 1px solid color-mix(in srgb, var(--ink) 42%, transparent);
 }
 
 .operator-tour-actions button:last-child {
   grid-column: 1 / -1;
-  border-top: 1px solid rgba(19, 28, 27, 0.42);
+  border-top: 1px solid color-mix(in srgb, var(--ink) 42%, transparent);
   border-left: 0;
 }
 
-.operator-tour-actions button:hover:not(:disabled) {
-  color: var(--signal);
-  background: var(--ink);
+@media (hover: hover) {
+  .operator-tour-actions button:hover:not(:disabled) {
+    color: var(--signal);
+    background: var(--ink);
+  }
 }
 
 .operator-tour-actions button:disabled {
@@ -244,9 +248,7 @@
 }
 
 .scenario-controls {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  margin: 2.8rem 0 1rem;
+  margin: 1rem 0 0.5rem;
 }
 
 .scenario-button {
@@ -254,18 +256,6 @@
   padding: 0.8rem;
   font-size: 0.78rem;
   text-align: center;
-}
-
-.scenario-button + .scenario-button {
-  border-left: 0;
-}
-
-.scenario-button:nth-child(6) {
-  border-left: 1px solid var(--line-light);
-}
-
-.scenario-button:nth-child(n+6) {
-  border-top: 0;
 }
 
 .fleet-control-panel {
@@ -326,7 +316,7 @@
 
 .fleet-source[data-source="live"]::before {
   background: var(--signal);
-  box-shadow: 0 0 0 3px rgba(179, 235, 117, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 12%, transparent);
 }
 
 .fleet-source[data-source="recorded"]::before {
@@ -371,9 +361,6 @@
 
 .fleet-nodes {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(11, minmax(64px, 1fr));
-  gap: 0.35rem;
 }
 
 .fleet-node {
@@ -393,12 +380,12 @@
   height: 0.42rem;
   border-radius: 50%;
   background: var(--signal);
-  box-shadow: 0 0 0 3px rgba(179, 235, 117, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 12%, transparent);
 }
 
 .fleet-node.is-held i {
   background: var(--safety);
-  box-shadow: 0 0 0 3px rgba(255, 107, 69, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--safety) 14%, transparent);
 }
 
 .fleet-node b,
@@ -423,11 +410,34 @@
   margin: 0;
   color: rgba(255, 255, 255, 0.56);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.78rem;
 }
 
 .fleet-contract-links a {
   color: var(--signal);
+}
+
+/* Evidence file links are a list of separate targets, not prose: each gets its own
+   comfortably tappable row height and a gap instead of a middle-dot separator. */
+.evidence-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+  align-items: center;
+}
+
+.evidence-links a {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  min-height: 32px;
+  text-underline-offset: 0.2em;
+}
+
+@media (pointer: coarse) {
+  .evidence-links a {
+    min-height: 44px;
+  }
 }
 
 .policy-roundtrip {
@@ -480,13 +490,20 @@
   cursor: pointer;
 }
 
-.policy-roundtrip-actions button:hover,
 .policy-roundtrip-actions button:focus-visible,
-.policy-file-control:hover,
 .policy-file-control:focus-within {
   color: var(--ink);
   background: var(--signal);
   border-color: var(--signal);
+}
+
+@media (hover: hover) {
+  .policy-roundtrip-actions button:hover,
+  .policy-file-control:hover {
+    color: var(--ink);
+    background: var(--signal);
+    border-color: var(--signal);
+  }
 }
 
 .policy-roundtrip-actions button:disabled {
@@ -572,14 +589,20 @@
 .policy-roundtrip-steps li[data-state="evidenced"] i {
   background: var(--signal);
   border-color: var(--signal);
-  box-shadow: 0 0 0 4px rgba(179, 235, 117, 0.12);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--signal) 12%, transparent);
 }
 
 .policy-roundtrip-steps li[data-state="unmatched"] i,
 .policy-roundtrip-steps li[data-state="rejected"] i {
   background: var(--safety);
   border-color: var(--safety);
-  box-shadow: 0 0 0 4px rgba(255, 107, 69, 0.12);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--safety) 14%, transparent);
+}
+
+/* Evidence that could not be fetched is neither verified nor rejected. */
+.policy-roundtrip-steps li[data-state="unavailable"] i {
+  border-style: dashed;
+  border-color: #efc178;
 }
 
 .policy-roundtrip-steps strong,
@@ -692,10 +715,12 @@
   text-transform: uppercase;
 }
 
-.resilience-download:hover {
-  color: var(--ink);
-  background: var(--signal);
-  border-color: var(--signal);
+@media (hover: hover) {
+  .resilience-download:hover {
+    color: var(--ink);
+    background: var(--signal);
+    border-color: var(--signal);
+  }
 }
 
 .resilience-scenarios {
@@ -731,11 +756,18 @@
   border-top: 0;
 }
 
-.resilience-scenario:hover,
 .resilience-scenario[aria-pressed="true"] {
   color: var(--ink);
   background: var(--signal);
   border-color: var(--signal);
+}
+
+@media (hover: hover) {
+  .resilience-scenario:hover {
+    color: var(--ink);
+    background: var(--signal);
+    border-color: var(--signal);
+  }
 }
 
 .resilience-console {
@@ -802,8 +834,8 @@
   grid-template-columns: none;
   margin-top: 1rem;
   padding: 0.8rem;
-  border: 1px solid rgba(179, 235, 117, 0.24);
-  background: linear-gradient(145deg, rgba(179, 235, 117, 0.07), rgba(255, 255, 255, 0.015));
+  border: 1px solid color-mix(in srgb, var(--signal) 24%, transparent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--signal) 7%, transparent), rgba(255, 255, 255, 0.015));
 }
 
 .continuity-proof[hidden] {
@@ -856,12 +888,12 @@
   height: 10px;
   border: 2px solid var(--signal);
   border-radius: 50%;
-  box-shadow: 0 0 12px rgba(179, 235, 117, 0.42);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--signal) 42%, transparent);
 }
 
 .continuity-rail span {
   height: 2px;
-  background: linear-gradient(90deg, var(--signal), rgba(179, 235, 117, 0.28), var(--signal));
+  background: linear-gradient(90deg, var(--signal), color-mix(in srgb, var(--signal) 28%, transparent), var(--signal));
 }
 
 .continuity-proof.is-held .continuity-local {
@@ -902,10 +934,12 @@
   cursor: pointer;
 }
 
-.resilience-transport button:hover:not(:disabled) {
-  color: var(--ink);
-  background: var(--signal);
-  border-color: var(--signal);
+@media (hover: hover) {
+  .resilience-transport button:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--signal);
+    border-color: var(--signal);
+  }
 }
 
 .resilience-transport button:disabled {
@@ -962,7 +996,7 @@
 }
 
 .resilience-event.is-current {
-  background: rgba(179, 235, 117, 0.07);
+  background: color-mix(in srgb, var(--signal) 7%, transparent);
 }
 
 .resilience-event.is-fault,
@@ -970,12 +1004,12 @@
   border-color: var(--safety);
 }
 
+/* Event labels and codes wrap rather than truncate: a clipped code is lost evidence. */
 .resilience-event time,
 .resilience-event b,
 .resilience-event code {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .resilience-event time {
@@ -987,14 +1021,12 @@
   margin-top: 0.32rem;
   font-size: 0.72rem;
   text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .resilience-event code {
   margin-top: 0.28rem;
   color: inherit;
   font-size: 0.7rem;
-  white-space: nowrap;
 }
 
 .fleet-node.is-affected {
@@ -1035,9 +1067,23 @@
   cursor: grabbing;
 }
 
+/* The scene can be any colour, including a pale sky that swallows a lime ring, so the
+   focus ring sits outside the canvas: ink against the page, with a signal inner band. */
 .simulator-stage canvas:focus-visible {
-  outline: 3px solid var(--signal);
+  outline: 3px solid var(--ink);
   outline-offset: -3px;
+}
+
+@supports selector(:has(*)) {
+  .simulator-stage canvas:focus-visible {
+    outline: none;
+  }
+
+  .simulator-stage:has(canvas:focus-visible) {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px var(--signal);
+  }
 }
 
 .stage-status {
@@ -1168,13 +1214,7 @@
 }
 
 .decision-panel {
-  display: grid;
-  grid-template-areas:
-    "header rules actuation"
-    "header rules receipt";
-  grid-template-columns: minmax(270px, 0.9fr) minmax(460px, 1.8fr) minmax(250px, 0.85fr);
   min-width: 0;
-  border: 1px solid var(--line-light);
 }
 
 .decision-header {
@@ -1363,41 +1403,16 @@
 .rules-context-grid h3 { margin: 2rem 0 0.7rem; }
 .rules-context-grid p { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
 
-.simulator-boundary-note {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.3fr) 1fr;
-  gap: 2rem;
-  margin-top: 4rem;
-  padding-top: 1.4rem;
-  border-top: 2px solid var(--safety);
-}
-
-.simulator-boundary-note p {
-  max-width: 68ch;
-  margin: 0;
-  color: var(--ink-soft);
-}
-
 @media (max-width: 1050px) {
-  .simulator-intro { grid-template-columns: 150px 1fr; }
-  .simulator-intro aside { grid-column: 2; }
-  .scenario-controls { grid-template-columns: repeat(2, 1fr); }
-  .scenario-button:nth-child(odd) { border-left: 1px solid var(--line-light); }
-  .scenario-button:nth-child(n+3) { border-top: 0; }
   .fleet-control-panel { grid-template-columns: 1fr; }
   .operator-tour { grid-template-columns: 100px 1fr; }
   .operator-tour-actions { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
-  .operator-tour-actions button:last-child { grid-column: auto; border-top: 0; border-left: 1px solid rgba(19, 28, 27, 0.42); }
-  .fleet-nodes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .operator-tour-actions button:last-child { grid-column: auto; border-top: 0; border-left: 1px solid color-mix(in srgb, var(--ink) 42%, transparent); }
   .resilience-scenarios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .resilience-scenario:nth-child(odd) { border-left: 1px solid var(--line-light); }
   .resilience-scenario:nth-child(n + 3) { border-top: 0; }
   .resilience-console { grid-template-columns: 1fr; }
   .resilience-detail { border-right: 0; border-bottom: 1px solid var(--line-light); }
-  .decision-panel {
-    grid-template-areas: "header" "rules" "actuation" "receipt";
-    grid-template-columns: 1fr;
-  }
   .decision-header,
   .rule-stack { border-right: 0; border-bottom: 1px solid var(--line-light); }
   .decision-reason { min-height: 0; }
@@ -1405,17 +1420,13 @@
 }
 
 @media (max-width: 680px) {
-  .simulator-intro { grid-template-columns: 1fr; }
-  .simulator-intro aside { grid-column: 1; }
   .workbench-heading { grid-template-columns: 1fr; gap: 1.5rem; align-items: flex-start; }
-  .workbench-actions { width: 100%; flex-wrap: wrap; }
+  .workbench-actions { width: 100%; flex-wrap: wrap; align-items: stretch; }
   .workbench-actions .sim-control { flex: 1; }
   .operator-tour { grid-template-columns: 1fr; padding: 1.25rem; }
   .operator-tour-actions { grid-column: 1; grid-template-columns: 1fr 1fr; min-width: 0; }
-  .operator-tour-actions button:last-child { grid-column: 1 / -1; border-top: 1px solid rgba(19, 28, 27, 0.42); border-left: 0; }
-  .scenario-controls { grid-template-columns: 1fr 1fr; }
+  .operator-tour-actions button:last-child { grid-column: 1 / -1; border-top: 1px solid color-mix(in srgb, var(--ink) 42%, transparent); border-left: 0; }
   .fleet-metrics { grid-template-columns: 1fr 1fr; }
-  .fleet-nodes { grid-template-columns: 1fr 1fr; }
   .resilience-heading { display: grid; gap: 1rem; }
   .resilience-download { justify-self: start; }
   .resilience-scenarios { grid-template-columns: 1fr 1fr; }
@@ -1428,7 +1439,6 @@
   .rules-context-grid article:first-child,
   .rules-context-grid article:last-child { padding: 1.8rem 0; border-right: 0; border-bottom: 1px solid var(--line); }
   .rules-context-grid article:last-child { border-bottom: 0; }
-  .simulator-boundary-note { grid-template-columns: 1fr; }
 }
 
 .simulator-embed body {
@@ -1438,7 +1448,6 @@
 
 .simulator-embed .hero,
 .simulator-embed .site-header,
-.simulator-embed .simulator-intro,
 .simulator-embed .rules-context,
 .simulator-embed .site-footer {
   display: none;
@@ -1471,23 +1480,15 @@
 
 /* Boundary workspace: the scene and its recorded consequence share one reading surface. */
 .simulator-page { color-scheme: light; --focus-ring: var(--ink); }
-.simulator-intro { grid-template-columns: minmax(0, 1fr) 260px; gap: 1rem 3rem; padding: 2.8rem 0 1.5rem; width: min(calc(100% - 3rem), 1440px); }
-.simulator-intro > .section-label { grid-column: 1 / -1; }
-.simulator-intro h2 { font-size: clamp(3rem, 5.6vw, 5.4rem); line-height: 1; }
-.simulator-intro > div > p { margin-top: 1rem; font-size: 1rem; }
-.simulator-intro aside { align-self: center; }
-.simulator-workbench { --focus-ring: var(--ink); color: var(--ink); background: var(--paper); padding: 1.5rem max(1.5rem, calc((100vw - 1440px) / 2)) 3rem; }
-.simulator-workbench > .workbench-heading .section-label { display: none; }
+.simulator-workbench { --focus-ring: var(--ink); color: var(--ink); background: var(--paper); padding: 1.5rem max(1.5rem, calc((100vw - var(--content)) / 2)) 3rem; }
 .workbench-heading { gap: 1rem; align-items: center; }
 .workbench-heading h2 { margin: 0; font-family: var(--font-sans); font-size: 1.15rem; line-height: 1.4; }
 .workbench-summary { color: var(--ink-soft); margin: .35rem 0 0; }
 .workbench-actions { flex-wrap: wrap; gap: .5rem; }
 .sim-control, .scenario-button { font-family: var(--font-sans); border-color: var(--line); letter-spacing: 0; }
 .sim-control:disabled, .scenario-button:disabled { color: #60665a; border-color: var(--line); }
-.scenario-controls { display: block; margin: 1.3rem 0 1rem; }
 .scenario-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .scenario-button { min-height: 52px; padding: .85rem 1rem; font-size: .9rem; }
-.scenario-button + .scenario-button, .scenario-button:nth-child(6), .scenario-button:nth-child(n+6) { border: 1px solid var(--line); }
 .scenario-button[aria-pressed="true"] { color: var(--signal); background: var(--ink); border-color: var(--ink); }
 .scenario-more summary { padding: .75rem 0; cursor: pointer; font-size: .85rem; }
 .scenario-more fieldset { border: 0; padding: .75rem 0; margin: 0; }
@@ -1534,7 +1535,6 @@
 .rule-stack li.is-failed { background: transparent; }
 .rule-stack li.is-failed strong { color: #9b3020; }
 .rule-stack li.is-monitoring strong { color: #745208; }
-.workspace-proof { padding: 1.3rem 0; margin: 1.3rem 0 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: .85rem; }
 .evidence-nav { display: flex; gap: 1.5rem; flex-wrap: wrap; padding: .75rem 0 1.5rem; font-weight: 600; }
 .evidence-tools { color-scheme: dark; --focus-ring: var(--signal); color: white; background: var(--ink); }
 .evidence-disclosure { padding: 0 clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--line-light); scroll-margin-top: 1rem; }
@@ -1557,11 +1557,9 @@
 .fleet-node .fleet-device-reason { margin: .5rem 1rem 1rem; line-height: 1.6; }
 .fleet-node.is-held summary small { color: #efc178; }
 .fleet-metrics dd { overflow-wrap: anywhere; white-space: normal; }
-.operator-tour { background: #d9eeaa; margin-top: 1rem; }
+.operator-tour { margin-top: 1rem; }
 .simulator-embed .workbench-heading { gap: 1rem; }
 @media (max-width: 1050px) {
-  .simulator-intro { grid-template-columns: minmax(0, 1fr); }
-  .simulator-intro aside { display: none; }
   .simulator-grid { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 1.2rem; }
   .decision-panel { padding-left: 1.2rem; }
   .workbench-heading { grid-template-columns: 1fr; }
@@ -1577,38 +1575,37 @@
 }
 @media (max-width: 420px) {
   .simulator-workbench { padding-left: 1rem; padding-right: 1rem; }
-  .simulator-intro { width: calc(100% - 2rem); padding-top: 2rem; }
-  .simulator-intro h2 { font-size: 3rem; }
   .sim-control { padding: .65rem .7rem; }
   .scenario-button { font-size: .85rem; padding: .65rem; }
   .stage-legend { display: none; }
 }
 
 /* Fallback copy shares the light scene surface and must remain legible. */
-.simulator-stage.is-unavailable .webgl-fallback { color: #263934; }
+.simulator-stage.is-unavailable .webgl-fallback,
+.noscript-fallback { color: var(--ink); }
+.noscript-fallback a { color: var(--ink); }
+@media (scripting: none) {
+  /* Without scripting nothing is loading and no scene control can act: say so once. */
+  .webgl-fallback:not(.noscript-fallback),
+  .stage-status,
+  .stage-legend,
+  .scene-toolbar { display: none; }
+}
 
 /* Matched-viewport polish: preserve the canonical mark and keep the scene controls in view. */
-.simulator-page .site-header { width: 100%; padding: 1.4rem max(1.5rem, calc((100vw - 1440px) / 2)); background: var(--ink); color: var(--paper-bright); border: 0; }
+.simulator-page .site-header { width: 100%; padding: 1.4rem max(1.5rem, calc((100vw - var(--content)) / 2)); background: var(--ink); color: var(--paper-bright); border: 0; }
 .simulator-page .header-nav a::after { background: var(--signal); }
-.simulator-intro { grid-template-columns: minmax(0, 1fr); padding: 1.2rem 0; gap: .7rem 3rem; }
-.simulator-intro h2 { font-size: clamp(3rem, 5vw, 4.6rem); }
-.simulator-intro > .section-label { grid-column: 1; text-transform: none; }
-.simulator-intro aside { grid-column: 2; grid-row: 1 / 3; }
 .simulator-workbench { padding-top: 1rem; }
-.scenario-controls { margin-top: 1rem; margin-bottom: .5rem; }
 .simulator-stage { aspect-ratio: 16 / 9; }
 .decision-outcome[data-outcome="held"] { color: #9b3020; }
 .decision-outcome[data-outcome="allowed"] { color: #356419; }
 @media (max-width: 760px) {
   .simulator-stage { aspect-ratio: 4 / 3; }
-  .simulator-intro { padding: 1.4rem 0; }
 }
 
 .simulator-stage.is-explaining .webgl-fallback { display: none; }
 
-.simulator-intro > .section-label { letter-spacing: .04em; }
-
-/* Finish the restored hero and keep secondary inspection comfortable at every width. */
+/* Finish the page hero and keep secondary inspection comfortable at every width. */
 .simulator-page .hero, .simulator-page .site-header { --focus-ring: var(--signal); }
 .simulator-page .header-nav [aria-current="page"] { color: var(--signal); }
 .simulator-page .header-nav [aria-current="page"]::after { transform: scaleX(1); }
@@ -1623,8 +1620,6 @@
   .fleet-reset:not(:disabled):hover { color: var(--signal); border-color: var(--signal); }
 }
 @media (max-width: 1050px) {
-  .simulator-intro aside { display: block; grid-column: 1; grid-row: auto; max-width: 65ch; border-top: 1px solid var(--line); padding-top: .75rem; }
-  .simulator-intro aside p { margin-top: .35rem; }
   .fleet-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fleet-filters label:first-child { grid-column: 1 / -1; }
   .fleet-reset { grid-column: 1 / -1; justify-self: start; }
@@ -1637,4 +1632,34 @@
 }
 @media (max-width: 360px) {
   .fleet-filters { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Fault replay needs the renderer and the Fleet evidence. Until the laboratory is shown,
+   the disclosure explains why it is empty instead of opening onto nothing. */
+.evidence-unavailable {
+  max-width: 72ch;
+  margin: 0 0 1.5rem;
+  color: #b8c1b0;
+  font-size: 0.875rem;
+}
+
+.evidence-unavailable a {
+  color: var(--signal);
+}
+
+.resilience-lab:not([hidden]) + .evidence-unavailable {
+  display: none;
+}
+
+/* Bootstrap failure: the stage names the problem and offers the one recovery that works. */
+.webgl-fallback button {
+  display: block;
+  min-height: 44px;
+  margin: 1rem auto 0;
+  padding: 0.6rem 1.1rem;
+  color: var(--signal);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  font: 700 0.85rem/1.2 var(--font-sans);
+  cursor: pointer;
 }

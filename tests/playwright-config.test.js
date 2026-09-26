@@ -10,7 +10,8 @@ test("browser acceptance always builds and serves an isolated publication artifa
   assert.equal(config.webServer?.url, `${config.use?.baseURL}/`);
   assert.equal(
     config.webServer?.command,
-    "npm run build && python3 -m http.server 4173 --bind 127.0.0.1 --directory _site"
+    "npm run build && node scripts/serve-site.mjs --root _site --host 127.0.0.1 --port 4173",
+    "browser acceptance must use the keep-alive loopback server; python's http.server resets module fetches under load"
   );
   assert.ok(
     config.webServer?.timeout >= 120_000,

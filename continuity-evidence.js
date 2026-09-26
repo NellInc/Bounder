@@ -1,3 +1,5 @@
+import { DuplicateJsonMemberError, parseUniqueJson } from "./runtime/json/strict-json.js";
+
 const ENVELOPE_VERSION = "bounder-continuity-envelope/v1";
 const EVIDENCE_VERSION = "bounder-continuity-evidence/v1";
 const EXPECTED_FLEET = "relief-fleet";
@@ -9,7 +11,6 @@ const ED25519_SIGNATURE_BYTES = 64;
 const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const MAX_VALIDITY_MS = 30 * 60 * 1000;
 const NANOSECONDS_PER_MILLISECOND = 1_000_000n;
-const MAX_JSON_DEPTH = 32;
 const MAX_TIMER_DELAY_MS = 2_147_483_647;
 const UTC_TIMESTAMP = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z$/;
 
@@ -80,121 +81,6 @@ const continuityTimestampOrderKey = (value, label) => {
   return `${match[1]}${match[2]}${match[3]}${match[4]}${match[5]}${match[6]}${fraction}`;
 };
 
-class DuplicateJsonMemberError extends Error {}
-
-const rejectDuplicateJsonMembers = (source) => {
-  let index = 0;
-  const numberPattern = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
-  const syntaxError = () => { throw new SyntaxError("invalid JSON"); };
-  const skipWhitespace = () => {
-    while (index < source.length && /[\t\n\r ]/.test(source[index])) index += 1;
-  };
-  const readString = () => {
-    if (source[index] !== '"') syntaxError();
-    const start = index;
-    index += 1;
-    while (index < source.length) {
-      const character = source[index];
-      if (character === '"') {
-        index += 1;
-        return JSON.parse(source.slice(start, index));
-      }
-      if (character === "\\") {
-        index += 1;
-        if (index >= source.length) syntaxError();
-        if (source[index] === "u") {
-          if (!/^[0-9a-fA-F]{4}$/.test(source.slice(index + 1, index + 5))) syntaxError();
-          index += 5;
-        } else if ('"\\/bfnrt'.includes(source[index])) {
-          index += 1;
-        } else {
-          syntaxError();
-        }
-      } else {
-        if (source.charCodeAt(index) <= 0x1f) syntaxError();
-        index += 1;
-      }
-    }
-    syntaxError();
-  };
-  const scanValue = (depth) => {
-    if (depth > MAX_JSON_DEPTH) syntaxError();
-    skipWhitespace();
-    const character = source[index];
-    if (character === "{") {
-      index += 1;
-      const names = new Set();
-      skipWhitespace();
-      if (source[index] === "}") {
-        index += 1;
-        return;
-      }
-      while (index < source.length) {
-        skipWhitespace();
-        const name = readString();
-        if (names.has(name)) throw new DuplicateJsonMemberError();
-        names.add(name);
-        skipWhitespace();
-        if (source[index] !== ":") syntaxError();
-        index += 1;
-        scanValue(depth + 1);
-        skipWhitespace();
-        if (source[index] === "}") {
-          index += 1;
-          return;
-        }
-        if (source[index] !== ",") syntaxError();
-        index += 1;
-      }
-      syntaxError();
-    }
-    if (character === "[") {
-      index += 1;
-      skipWhitespace();
-      if (source[index] === "]") {
-        index += 1;
-        return;
-      }
-      while (index < source.length) {
-        scanValue(depth + 1);
-        skipWhitespace();
-        if (source[index] === "]") {
-          index += 1;
-          return;
-        }
-        if (source[index] !== ",") syntaxError();
-        index += 1;
-      }
-      syntaxError();
-    }
-    if (character === '"') {
-      readString();
-      return;
-    }
-    numberPattern.lastIndex = index;
-    const number = numberPattern.exec(source);
-    if (number) {
-      index = numberPattern.lastIndex;
-      return;
-    }
-    for (const literal of ["true", "false", "null"]) {
-      if (source.startsWith(literal, index)) {
-        index += literal.length;
-        return;
-      }
-    }
-    syntaxError();
-  };
-  scanValue(0);
-  skipWhitespace();
-  if (index !== source.length) syntaxError();
-};
-
-const parseUniqueJson = (source) => {
-  rejectDuplicateJsonMembers(source);
-  return JSON.parse(source);
-};
-
 export const validateContinuityEvidence = (evidence, nowMs = Date.now()) => {
   if (!Number.isSafeInteger(nowMs)) throw new Error("continuity evidence clock is invalid");
   const evidenceFields = [
@@ -239,14 +125,26 @@ export const validateContinuityEvidence = (evidence, nowMs = Date.now()) => {
   return Object.freeze({ ...snapshot, platform_counts: Object.freeze(platformCounts) });
 };
 
-export const createContinuityReplayGuard = (initialGeneratedAt = null) => {
+// A browser that cannot run Ed25519 verification has not seen bad evidence; it cannot judge
+// any. Callers tell the two apart so the page never reports a healthy feed as unavailable.
+export class ContinuityUnsupportedError extends Error {
+  constructor(message = "this browser cannot verify Ed25519 signatures") {
+    super(message);
+    this.name = "ContinuityUnsupportedError";
+  }
+}
+
+// allowRepeat lets a refreshing page re-read the proof it already holds ("no newer proof
+// yet") without treating it as a replay. A strictly older generated_at is still rejected.
+export const createContinuityReplayGuard = (initialGeneratedAt = null, { allowRepeat = false } = {}) => {
   let latestGeneratedAtKey = initialGeneratedAt === null
     ? null
     : continuityTimestampOrderKey(initialGeneratedAt, "continuity replay guard state");
   return Object.freeze({
     accept(evidence) {
       const generatedAtKey = continuityTimestampOrderKey(evidence?.generated_at, "continuity generated_at");
-      if (latestGeneratedAtKey !== null && generatedAtKey <= latestGeneratedAtKey) {
+      if (latestGeneratedAtKey !== null
+        && (generatedAtKey < latestGeneratedAtKey || (generatedAtKey === latestGeneratedAtKey && !allowRepeat))) {
         throw new Error("continuity evidence was replayed or rolled back");
       }
       latestGeneratedAtKey = generatedAtKey;
@@ -270,14 +168,22 @@ export const verifyContinuityEnvelope = async ({
   if (typeof publicKeyID !== "string" || publicKeyID.trim().length === 0 || envelope.version !== ENVELOPE_VERSION || envelope.algorithm !== "Ed25519" || envelope.public_key_id !== publicKeyID) {
     throw new Error("continuity envelope metadata is invalid");
   }
-  if (!cryptoImpl?.subtle) throw new Error("continuity signature verification is unavailable");
+  if (!cryptoImpl?.subtle) throw new ContinuityUnsupportedError("continuity signature verification is unavailable");
   const payloadBytes = decodeBase64(envelope.payload, "continuity payload", MAX_PAYLOAD_BYTES);
   const signature = decodeBase64(envelope.signature, "continuity signature", ED25519_SIGNATURE_BYTES);
   if (signature.length !== ED25519_SIGNATURE_BYTES) throw new Error("continuity envelope size is invalid");
-  const publicKey = await cryptoImpl.subtle.importKey("raw", decodeHex(publicKeyHex, "continuity public key"), { name: "Ed25519" }, false, ["verify"]);
-  if (!await cryptoImpl.subtle.verify({ name: "Ed25519" }, publicKey, signature, payloadBytes)) {
-    throw new Error("continuity evidence signature is invalid");
+  const publicKeyBytes = decodeHex(publicKeyHex, "continuity public key");
+  let signatureValid;
+  try {
+    const publicKey = await cryptoImpl.subtle.importKey("raw", publicKeyBytes, { name: "Ed25519" }, false, ["verify"]);
+    signatureValid = await cryptoImpl.subtle.verify({ name: "Ed25519" }, publicKey, signature, payloadBytes);
+  } catch (error) {
+    // WebCrypto reports an unrecognised algorithm as NotSupportedError (Chromium before 137,
+    // Firefox before 129, Safari before 17). Anything else stays an ordinary failure.
+    if (error?.name === "NotSupportedError") throw new ContinuityUnsupportedError();
+    throw error;
   }
+  if (!signatureValid) throw new Error("continuity evidence signature is invalid");
   let evidence;
   try {
     evidence = parseUniqueJson(new TextDecoder("utf-8", { fatal: true }).decode(payloadBytes));
@@ -414,26 +320,71 @@ export const fetchContinuityEnvelope = async (url, {
   }
 };
 
+const METRIC_SELECTORS = Object.freeze([
+  "[data-continuity-devices]", "[data-continuity-policies]", "[data-continuity-checkpoints]",
+  "[data-continuity-decisions]", "[data-continuity-updated]"
+]);
+const NO_FIGURE = "—";
+const NBSP = " ";
+
 const renderEvidence = (root, evidence) => {
   root.dataset.state = "verified";
+  delete root.dataset.reason;
   root.querySelector("[data-continuity-state]").textContent = "Verified live";
   root.querySelector("[data-continuity-state]").setAttribute("aria-label", "Live staging evidence verified");
   root.querySelector("[data-continuity-devices]").textContent = String(evidence.device_count);
   root.querySelector("[data-continuity-policies]").textContent = String(evidence.policies_verified);
   root.querySelector("[data-continuity-checkpoints]").textContent = String(evidence.checkpoints_verified);
-  root.querySelector("[data-continuity-decisions]").textContent = `${evidence.allowed} allow / ${evidence.held} hold`;
+  // Non-breaking spaces keep each count with its word when the narrow cell wraps.
+  root.querySelector("[data-continuity-decisions]").textContent = `${evidence.allowed}${NBSP}allow / ${evidence.held}${NBSP}hold`;
   root.querySelector("[data-continuity-updated]").textContent = formatEvidenceTime(evidence.generated_at);
   root.querySelector("[data-continuity-note]").textContent = "Exact Ed25519 payload verified in this browser. All 100 software Guardians completed policy sync, signed checkpoint verification, and local interlock evaluation.";
 };
 
-const renderUnavailable = (root) => {
-  root.dataset.state = "unavailable";
-  root.querySelector("[data-continuity-state]").textContent = "Recorded proof";
-  root.querySelector("[data-continuity-state]").setAttribute("aria-label", "Live staging evidence unavailable, recorded proof remains available");
-  for (const selector of ["[data-continuity-devices]", "[data-continuity-policies]", "[data-continuity-checkpoints]", "[data-continuity-decisions]", "[data-continuity-updated]"]) {
-    root.querySelector(selector).textContent = "Unavailable";
+const RECORDED_RUN = "The recorded 100-Guardian run remains available to inspect.";
+
+// Every state other than "verified" is a fail-closed placeholder: no figure from an
+// unverified, expired or unreachable feed is ever shown, and each says truthfully why.
+const unavailableStates = Object.freeze({
+  offline: {
+    badge: "Live feed offline",
+    label: "Live staging feed offline; the recorded run remains available",
+    note: () => `The live staging feed did not return a usable response, so no live figures are shown. ${RECORDED_RUN}`
+  },
+  expired: {
+    badge: "Proof expired",
+    label: "Last live proof expired; the recorded run remains available",
+    note: ({ expiresAt }) => `The last verified proof expired${expiresAt ? ` at ${formatEvidenceTime(expiresAt)}` : ""}, and no newer proof has been verified yet. ${RECORDED_RUN}`
+  },
+  unsupported: {
+    badge: "Cannot verify here",
+    label: "This browser cannot verify the live proof; the recorded run remains available",
+    note: () => `This browser cannot verify Ed25519 signatures, so no live figures are shown. The signed payload can still be inspected. ${RECORDED_RUN}`
+  },
+  invalid: {
+    badge: "Proof not verified",
+    label: "Live proof failed verification; the recorded run remains available",
+    note: () => `The live feed responded, but its proof did not pass verification in this browser, so no live figures are shown. ${RECORDED_RUN}`
+  },
+  preview: {
+    badge: "Live proof unavailable",
+    label: "Live verification runs only on bounder.io; the recorded run remains available",
+    note: () => `Live verification runs only on www.bounder.io. ${RECORDED_RUN}`
   }
-  root.querySelector("[data-continuity-note]").textContent = "Live feed unavailable. Explore the recorded run below.";
+});
+
+const renderUnavailable = (root, reason = "offline", { expiresAt, detail } = {}) => {
+  const state = unavailableStates[reason] ? reason : "offline";
+  const copy = unavailableStates[state];
+  root.dataset.state = "unavailable";
+  root.dataset.reason = state;
+  // Kept for diagnosis only; nothing reads it back as a signal.
+  if (typeof detail === "string" && detail) root.dataset.reasonDetail = detail.slice(0, 200);
+  else delete root.dataset.reasonDetail;
+  root.querySelector("[data-continuity-state]").textContent = copy.badge;
+  root.querySelector("[data-continuity-state]").setAttribute("aria-label", copy.label);
+  for (const selector of METRIC_SELECTORS) root.querySelector(selector).textContent = NO_FIGURE;
+  root.querySelector("[data-continuity-note]").textContent = copy.note({ expiresAt });
 };
 
 export const createContinuityLeaseController = (root, {
@@ -447,6 +398,8 @@ export const createContinuityLeaseController = (root, {
   let generation = 0;
   let timerHandle;
   let timerActive = false;
+  let status = "idle";
+  let lease = null;
 
   const clearTimer = () => {
     if (!timerActive) return;
@@ -455,22 +408,28 @@ export const createContinuityLeaseController = (root, {
     timerActive = false;
   };
 
-  const scheduleExpiry = (expiresAtMs, expectedGeneration, sampledNowMs = clock()) => {
+  const expire = (expiresAt) => {
+    status = "expired";
+    lease = null;
+    renderUnavailable(root, "expired", { expiresAt });
+  };
+
+  const scheduleExpiry = (expiresAtMs, expiresAt, expectedGeneration, sampledNowMs = clock()) => {
     if (generation !== expectedGeneration) return;
     if (!Number.isFinite(sampledNowMs)) {
-      renderUnavailable(root);
+      expire(expiresAt);
       return;
     }
     const remainingMs = expiresAtMs - sampledNowMs;
     if (remainingMs <= 0) {
-      renderUnavailable(root);
+      expire(expiresAt);
       return;
     }
     timerHandle = timers.setTimeout(() => {
       timerActive = false;
       timerHandle = undefined;
-      scheduleExpiry(expiresAtMs, expectedGeneration);
-    }, remainingMs);
+      scheduleExpiry(expiresAtMs, expiresAt, expectedGeneration);
+    }, Math.min(remainingMs, MAX_TIMER_DELAY_MS));
     timerActive = true;
   };
 
@@ -481,17 +440,36 @@ export const createContinuityLeaseController = (root, {
       const expiresAtMs = parseUtcTimestamp(evidence?.expires_at, "continuity expires_at").milliseconds;
       const nowMs = clock();
       if (!Number.isFinite(nowMs) || expiresAtMs <= nowMs) {
-        renderUnavailable(root);
+        expire(evidence.expires_at);
         return false;
       }
+      status = "verified";
+      lease = { expiresAtMs, expiresAt: evidence.expires_at, generation: expectedGeneration };
       renderEvidence(root, evidence);
-      scheduleExpiry(expiresAtMs, expectedGeneration, nowMs);
+      scheduleExpiry(expiresAtMs, evidence.expires_at, expectedGeneration, nowMs);
       return true;
     },
-    showUnavailable() {
+    showUnavailable(reason = "offline", detail) {
       generation += 1;
       clearTimer();
-      renderUnavailable(root);
+      status = "unavailable";
+      lease = null;
+      renderUnavailable(root, reason, { detail });
+    },
+    // Background tabs throttle timers, so a page returning to view re-checks its lease at
+    // once instead of showing an expired proof as live until the throttled timer fires.
+    checkExpiry() {
+      if (status !== "verified" || !lease) return status;
+      const nowMs = clock();
+      if (!Number.isFinite(nowMs) || lease.expiresAtMs <= nowMs) {
+        generation += 1;
+        clearTimer();
+        expire(lease.expiresAt);
+      }
+      return status;
+    },
+    status() {
+      return status;
     },
     dispose() {
       generation += 1;
@@ -500,23 +478,194 @@ export const createContinuityLeaseController = (root, {
   });
 };
 
-const bootstrap = async () => {
+export const CONTINUITY_REFRESH = Object.freeze({
+  // Re-read the feed a minute before the lease ends, and at least every five minutes
+  // (the producer publishes a new proof roughly every five minutes with a 15-minute lease).
+  leadMs: 60_000,
+  intervalMs: 5 * 60_000,
+  minDelayMs: 20_000,
+  // Bounded backoff after a failed read; the last value repeats while the page is visible.
+  retryDelaysMs: Object.freeze([15_000, 30_000, 60_000, 120_000, 300_000])
+});
+
+export const classifyContinuityFailure = (error) => {
+  if (error instanceof ContinuityUnsupportedError) return "unsupported";
+  if (error?.continuityStage === "transport") return "offline";
+  return "invalid";
+};
+
+/*
+ * Keeps the live proof current without ever broadening what is shown:
+ * - a strictly newer verified proof replaces the current one and re-arms its lease;
+ * - the same proof again is "no newer proof yet", never a failure;
+ * - a failed read leaves a still-valid proof in place until its own expiry, which the lease
+ *   controller enforces independently; only then does the page fall back;
+ * - reads pause while the page is hidden and resume, due or not, when it returns.
+ */
+export const startContinuityMonitor = ({
+  controller,
+  load,
+  clock = Date.now,
+  timers = globalThis,
+  visibility = null,
+  schedule = CONTINUITY_REFRESH,
+  classify = classifyContinuityFailure
+} = {}) => {
+  if (!controller || typeof controller.showVerified !== "function" || typeof controller.status !== "function"
+    || typeof load !== "function" || typeof clock !== "function"
+    || typeof timers?.setTimeout !== "function" || typeof timers?.clearTimeout !== "function") {
+    throw new Error("continuity monitor is unavailable");
+  }
+  let disposed = false;
+  let timerHandle;
+  let timerActive = false;
+  let dueAtMs = null;
+  let inFlight = null;
+  let failures = 0;
+  let latestGeneratedAtKey = null;
+  let unsubscribe = null;
+
+  const isHidden = () => Boolean(visibility && typeof visibility.isHidden === "function" && visibility.isHidden());
+
+  const clearTimer = () => {
+    if (!timerActive) return;
+    timers.clearTimeout(timerHandle);
+    timerHandle = undefined;
+    timerActive = false;
+  };
+
+  const startTimer = (delayMs) => {
+    clearTimer();
+    timerHandle = timers.setTimeout(() => {
+      timerActive = false;
+      timerHandle = undefined;
+      void refresh();
+    }, Math.max(0, Math.min(delayMs, MAX_TIMER_DELAY_MS)));
+    timerActive = true;
+  };
+
+  const arm = (delayMs) => {
+    if (disposed) return;
+    const nowMs = clock();
+    dueAtMs = Number.isFinite(nowMs) ? nowMs + delayMs : null;
+    if (isHidden()) {
+      clearTimer();
+      return;
+    }
+    startTimer(delayMs);
+  };
+
+  const delayAfterProof = (evidence) => {
+    const expiresAtMs = parseUtcTimestamp(evidence.expires_at, "continuity expires_at").milliseconds;
+    const untilLead = expiresAtMs - schedule.leadMs - clock();
+    return Math.max(schedule.minDelayMs, Math.min(schedule.intervalMs, Number.isFinite(untilLead) ? untilLead : schedule.minDelayMs));
+  };
+
+  const retryDelay = () => schedule.retryDelaysMs[Math.min(failures, schedule.retryDelaysMs.length) - 1];
+
+  const settle = async () => {
+    let evidence;
+    try {
+      evidence = await load();
+    } catch (error) {
+      if (disposed) return "disposed";
+      failures += 1;
+      const reason = classify(error);
+      // A still-valid proof stays until its own lease ends, and an expired one keeps its
+      // more specific "expired at" note; only a page with nothing verified is downgraded.
+      if (controller.status() !== "verified" && controller.status() !== "expired") {
+        controller.showUnavailable(reason, error instanceof Error ? error.message : "");
+      }
+      if (reason !== "unsupported") arm(retryDelay());
+      return "failed";
+    }
+    if (disposed) return "disposed";
+    const generatedAtKey = continuityTimestampOrderKey(evidence?.generated_at, "continuity generated_at");
+    if (latestGeneratedAtKey !== null && generatedAtKey <= latestGeneratedAtKey) {
+      failures = 0;
+      arm(delayAfterProof(evidence));
+      return "unchanged";
+    }
+    latestGeneratedAtKey = generatedAtKey;
+    if (!controller.showVerified(evidence)) {
+      failures += 1;
+      arm(retryDelay());
+      return "expired";
+    }
+    failures = 0;
+    arm(delayAfterProof(evidence));
+    return "verified";
+  };
+
+  const refresh = () => {
+    if (disposed) return Promise.resolve("disposed");
+    if (inFlight) return inFlight;
+    clearTimer();
+    dueAtMs = null;
+    inFlight = settle().finally(() => {
+      inFlight = null;
+    });
+    return inFlight;
+  };
+
+  const onVisibilityChange = () => {
+    if (disposed) return;
+    if (isHidden()) {
+      clearTimer();
+      return;
+    }
+    if (typeof controller.checkExpiry === "function") controller.checkExpiry();
+    if (inFlight || dueAtMs === null) return;
+    const remainingMs = dueAtMs - clock();
+    if (!Number.isFinite(remainingMs) || remainingMs <= 0) void refresh();
+    else startTimer(remainingMs);
+  };
+
+  if (visibility && typeof visibility.subscribe === "function") unsubscribe = visibility.subscribe(onVisibilityChange);
+
+  return Object.freeze({
+    refresh,
+    dispose() {
+      disposed = true;
+      clearTimer();
+      if (typeof unsubscribe === "function") unsubscribe();
+    }
+  });
+};
+
+const bootstrap = () => {
   const root = document.querySelector("[data-continuity]");
   if (!root) return;
+  // Read by site.js: a page whose verifier never started says so instead of "Checking" forever.
+  root.dataset.continuityStarted = "true";
   const leaseController = createContinuityLeaseController(root);
   if (!new Set(["bounder.io", "www.bounder.io"]).has(window.location.hostname)) {
-    leaseController.showUnavailable();
+    leaseController.showUnavailable("preview");
     return;
   }
   const configuredURL = document.querySelector('meta[name="bounder-continuity-feed"]')?.content || "";
   const publicKeyHex = document.querySelector('meta[name="bounder-continuity-public-key"]')?.content || "";
   const publicKeyID = document.querySelector('meta[name="bounder-continuity-key-id"]')?.content || "";
-  try {
-    const envelope = await fetchContinuityEnvelope(configuredURL);
-    leaseController.showVerified(await verifyContinuityEnvelope({ envelope, publicKeyHex, publicKeyID }));
-  } catch {
-    leaseController.showUnavailable();
-  }
+  const replayGuard = createContinuityReplayGuard(null, { allowRepeat: true });
+  const load = async () => {
+    let envelope;
+    try {
+      envelope = await fetchContinuityEnvelope(configuredURL);
+    } catch (error) {
+      const failure = new Error(error instanceof Error ? error.message : "continuity feed failed");
+      failure.continuityStage = "transport";
+      throw failure;
+    }
+    return verifyContinuityEnvelope({ envelope, publicKeyHex, publicKeyID, replayGuard });
+  };
+  const visibility = {
+    isHidden: () => document.visibilityState === "hidden",
+    subscribe(listener) {
+      document.addEventListener("visibilitychange", listener);
+      return () => document.removeEventListener("visibilitychange", listener);
+    }
+  };
+  void startContinuityMonitor({ controller: leaseController, load, visibility }).refresh();
 };
 
 const isNodeRuntime = typeof process !== "undefined" && Boolean(process.versions?.node);

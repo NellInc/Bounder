@@ -35,7 +35,7 @@ function renderHuman(plan) {
   for (const command of plan.commands) lines.push(`  * ${command}`);
   lines.push(`Proof classes: ${plan.proof_classes.length ? plan.proof_classes.join(", ") : "none"}`);
   if (plan.documentation_refresh.length) lines.push(`Documentation refresh: ${plan.documentation_refresh.join(", ")}`);
-  if (plan.unmatched_paths.length) lines.push(`Unmatched paths: ${plan.unmatched_paths.join(", ")}`);
+  if (plan.unmatched_paths.length) lines.push(`Unmatched paths (no impact rule, so the complete gate is selected): ${plan.unmatched_paths.join(", ")}`);
   return lines.join("\n");
 }
 
