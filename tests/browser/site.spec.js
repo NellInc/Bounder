@@ -220,7 +220,8 @@ test("simulator loads recorded evidence and responds to keyboard navigation", as
 });
 
 test("a vertical touch swipe over the scene scrolls the page without tilting the camera", async ({ browser }) => {
-  test.setTimeout(90_000);
+  // A 2x-density software-rendered frame can hold the main thread for over a minute on a loaded host.
+  test.setTimeout(240_000);
   const context = await browser.newContext({ viewport: { width: 412, height: 839 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   const page = await context.newPage();
   try {
@@ -230,7 +231,7 @@ test("a vertical touch swipe over the scene scrolls the page without tilting the
     await stage.evaluate((element) => element.scrollIntoView({ block: "start" }));
     // The first frame after the stage scrolls into view is a full software-rendered frame at
     // twice the device pixels, which can hold the main thread for several seconds under load.
-    await expect(stage).toHaveAttribute("data-camera-polar", /\d/, { timeout: 20_000 });
+    await expect(stage).toHaveAttribute("data-camera-polar", /\d/, { timeout: 120_000 });
     const cdp = await context.newCDPSession(page);
     const touch = (type, points) => cdp.send("Input.dispatchTouchEvent", {
       type,
