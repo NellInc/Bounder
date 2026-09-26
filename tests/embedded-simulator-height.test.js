@@ -3,8 +3,17 @@ import test from "node:test";
 
 // site.js is a DOM entry point rather than a module with exports, so it is exercised here against
 // a minimal fake window: the listener it registers is captured and driven directly.
-const contentWindow = { name: "embedded simulator" };
-const iframe = { style: { height: "980px" }, contentWindow };
+const heightRequests = [];
+const contentWindow = {
+  name: "embedded simulator",
+  postMessage: (data, targetOrigin) => heightRequests.push({ data, targetOrigin })
+};
+const frameListeners = {};
+const iframe = {
+  style: { height: "980px" },
+  contentWindow,
+  addEventListener: (type, listener) => { frameListeners[type] = listener; }
+};
 let post;
 
 globalThis.document = {
@@ -31,6 +40,15 @@ const height = ({ height: value, ...rest } = {}) => {
 
 test("site.js subscribes for embedded simulator height messages", () => {
   assert.equal(typeof post, "function");
+});
+
+test("site.js asks the frame for a height report when it starts listening and when the frame loads", () => {
+  // A frame that reported before the listener existed would otherwise keep its stale CSS height.
+  const request = { data: { type: "bounder-simulator-height-request" }, targetOrigin: "https://www.bounder.io" };
+  assert.deepEqual(heightRequests, [request]);
+  assert.equal(typeof frameListeners.load, "function");
+  frameListeners.load();
+  assert.deepEqual(heightRequests, [request, request]);
 });
 
 test("a height inside the accepted band is applied verbatim", () => {

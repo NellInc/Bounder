@@ -23,6 +23,11 @@ const startEmbeddedHeightReporting = () => {
   if (window.parent === window) return;
   reportEmbeddedHeight();
   window.addEventListener("load", reportEmbeddedHeight, { once: true });
+  // The parent may start listening after the first report, so it asks for one when it does.
+  window.addEventListener("message", (event) => {
+    if (event.origin !== window.location.origin || event.source !== window.parent) return;
+    if (event.data?.type === "bounder-simulator-height-request") reportEmbeddedHeight();
+  });
   if (typeof ResizeObserver === "function") {
     try {
       embeddedHeightObserver = new ResizeObserver(reportEmbeddedHeight);

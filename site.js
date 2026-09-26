@@ -21,6 +21,13 @@ if (embeddedSimulator) {
     const clamped = Math.min(maxEmbeddedSimulatorHeight(), Math.max(MIN_EMBEDDED_SIMULATOR_HEIGHT, height));
     embeddedSimulator.style.height = `${Math.ceil(clamped)}px`;
   });
+  // The frame reports once at start-up and then only on resize. If it loaded before this
+  // listener existed, that first report was lost, so ask for a fresh one now and on load.
+  const requestEmbeddedHeight = () => {
+    embeddedSimulator.contentWindow?.postMessage({ type: "bounder-simulator-height-request" }, window.location.origin);
+  };
+  embeddedSimulator.addEventListener("load", requestEmbeddedHeight);
+  requestEmbeddedHeight();
 }
 
 // The live-proof verifier is a module. If it never starts (scripts blocked, a browser

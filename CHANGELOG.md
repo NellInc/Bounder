@@ -9,7 +9,7 @@ Launch-readiness pass across the site, simulator, reference runtime, tooling and
 - The homepage continuity proof refreshes before its lease lapses, pauses in background tabs and names each failure plainly (feed offline, proof expired, cannot verify here, proof not verified) without placing recorded figures in live cells. Visitors without JavaScript see a short note instead of a permanent loading state.
 - Fault replay re-renders the scene from the recorded timeline, including when scrubbed back. "Ready" no longer shows a held state, and closing Fault replay restores the scenario shown before it opened.
 - A scenario chosen while Fleet evidence is still loading is no longer replaced. Choosing a scenario by hand closes the tour and updates the address, so a reload shows the same view.
-- The embedded simulator shrinks again when its disclosures close, and evidence and schema files open outside the embedded frame.
+- The embedded simulator always receives its height, even when it loads before the homepage script, shrinks again when its disclosures close, and opens evidence and schema files outside the embedded frame.
 - A lost WebGL context pauses the scene with no command authority and recovers when the browser restores it. If neither the 3D view nor the accessible view can load, every panel holds with no command authority and offers a reload.
 - The accessible view loads the recorded 100-Guardian run. A failed load reads "Unavailable" rather than staying on "Loading".
 - A network failure after a verified signature is reported as unavailable evidence, not a rejected envelope. A browser without Ed25519 support is told so rather than shown a rejection.
