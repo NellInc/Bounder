@@ -576,7 +576,7 @@ test("live proof expires fail-closed and stale timers cannot overwrite newer sta
   assert.deepEqual(cleared, [firstToken]);
   assert.equal(nodes.get("[data-continuity-decisions]").textContent, "16\u00a0allow / 84\u00a0hold", "each count stays with its word when the cell wraps");
   assert.equal(nodes.get("[data-continuity-updated]").textContent, "16 Jul 2026, 11:59 UTC");
-  assert.equal(nodes.get("[data-continuity-updated]").attributes.get("datetime"), second.generated_at, "the <time> carries the exact signed instant");
+  assert.equal(nodes.get("[data-continuity-updated]").attributes.get("datetime"), "2026-07-16T11:59:00.000Z", "the <time> carries the signed instant as a valid HTML datetime");
 
   callbacks.get(firstToken).callback();
   assert.equal(root.dataset.state, "verified", "a cancelled older generation must not downgrade newer proof");

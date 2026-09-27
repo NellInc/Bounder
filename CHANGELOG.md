@@ -1,6 +1,32 @@
 # Changelog
 
-## 1.2.5 · 2026-09-26 (source candidate, unsealed)
+## 1.2.6 · 2026-09-27 (source candidate, unsealed)
+
+Review follow-up to 1.2.5: a rendering fix for the embedded simulator, restraint wording throughout, layout polish, and documentation and terms.
+
+### Fixed
+
+- The embedded simulator no longer shows a blank sky-coloured box after a layout change: the scene is redrawn whenever its size really changes, and resizing to the same size no longer clears it.
+- The Fleet legend fits the stage at every width, and on phones the Guardian count moves into the caption.
+- The homepage says again that, in this simulation, a high-consequence request is never allowed, whatever is confirmed.
+- The proof timestamp is a valid HTML date-time, and the recorded-run note describes the figures on screen.
+- Layout: fault-replay tiles no longer look selected on hover, receipt rows share one inner edge, continuity figures use three columns on tablets, the tour link no longer wraps, and the empty decorative rings are gone. The operating-window scenario reads as dusk rather than a darkened image.
+- The local test server now exits when the process that launched it exits, so an interrupted browser test run no longer leaves it holding its port.
+- The integration guide calls a JSON file chosen for verification the selected file rather than the uploaded file, since it is read in the browser and never uploaded.
+- The README and the 1.2.4 release notes give the fallback font's licence its proper name, SIL Open Font License, as NOTICE does.
+
+### Changed
+
+- Identity, consequence and team-separation holds, their adapter responses and Fleet rows are described in restraint wording. The recorded producer strings are unchanged and remain in the evidence.
+- Structured data names Nell Watson, Inc. as the site's publisher, matching the terms, privacy notice and footer.
+- The terms scope the Apache-2.0 licence to the code in the public Bounder repository and the website's original text, and link to that repository.
+- The README adds an intended-use section that matches the terms: restraint-only, not for weapons, targeting or fire control, with export-control responsibility. It lists `README.md`, `SECURITY.md`, `CHANGELOG.md` and `VERSION` among the published files, says that the preview server exits with the process that launched it, documents `npm run check:live`, and adds the release steps that the checks already enforce: renewing the `security.txt` expiry, recording the previous manifest's digest and sealing from a producer commit on its default branch.
+
+### Proof limits
+
+- Deployed Guardian performance, Fleet backend integration, hardware safety and human or regulatory review remain unverified.
+
+## 1.2.5 · 2026-09-26 (published without a sealed manifest)
 
 Second launch-readiness pass: quality, fidelity and plain restraint language across the site, simulator, reference runtime and tooling.
 
@@ -13,6 +39,7 @@ Second launch-readiness pass: quality, fidelity and plain restraint language acr
 - A one-finger vertical swipe over the scene scrolls the page without turning the camera. "Focus on drone" frames the drone closely and follows it in flight. The tour and fault replay keep the stage in view on every step.
 - The simulator shows a slow-loading notice with a reload button after 20 seconds, says when a browser lacks import-map support, and fails closed if its bootstrap never runs. A browser without Ed25519 is told it cannot verify here rather than shown a rejection.
 - Scene fidelity: the Fleet Guardians fly a fixed formation clear of each other and of the rooftops, the windsock streams downwind, the operating-window scenario is lit as dusk, hills sit on the horizon and the subject is framed between the status badge and the legend.
+- `/.well-known/security.txt` is now served; the 1.2.4 deployment left it out.
 
 ### Changed
 
@@ -57,7 +84,7 @@ Launch-readiness pass across the site, simulator, reference runtime, tooling and
 - Site copy describes restraint only, drops unqualified safety claims and uses British English. The "Safety" navigation item is now "Roadmap".
 - The simulator page has its own compact introduction. The skip link, calls to action and tour links land on the workbench.
 - Reduced motion jumps to the recorded decision instead of flying the route. The mouse wheel scrolls the page unless the scene has focus, and the plus and minus keys zoom the scene.
-- The favicon and a new touch icon are drawn from the current mark, now in the site palette. Pages share a dedicated social card, and a self-hosted condensed fallback font (SIL Open Font Licence) is used where Avenir Next is unavailable. Two unreferenced legacy images were removed.
+- The favicon and a new touch icon are drawn from the current mark, now in the site palette. Pages share a dedicated social card, and a self-hosted condensed fallback font (SIL Open Font License) is used where Avenir Next is unavailable. Two unreferenced legacy images were removed.
 - The privacy notice names the controller (Nell Watson, Inc.), the host, the lawful basis, processing in the United States, visitors' rights and the right to complain to the ICO.
 - Mirrored preview of the Creed Space manipulator profile contract: its schema, an example profile and a signed golden vector, with the example and vector under `data/` beside the other fixtures. They come from the private producer but are not yet covered by producer derivation, and the browser verifier does not inspect them.
 - Observability reference: each telemetry key is bound to one subject, liveness is capped by receive time, snapshots expire with the policies and leases they summarise, aggregation can quarantine a bad heartbeat, and the stable heartbeat interval is 40 seconds so that one lost report cannot expire a Guardian.
@@ -85,7 +112,6 @@ Launch-readiness pass across the site, simulator, reference runtime, tooling and
 Deployed from source commit `56fdbed`. No release manifest was sealed for this version; its changes are carried into 1.2.4.
 
 - Copy pass across visitor-facing prose: a clearer homepage, README, integration guide and legal pages, and a reformatted SECURITY threat model.
-- Updated wiki citations to match shifted SECURITY.md line numbers.
 
 ## 1.2.2 · 2026-09-07
 

@@ -464,6 +464,14 @@
   border-left: 1px solid var(--line-light);
 }
 
+/* With the Fleet entry the row is full, so the hint takes its own row rather than wrapping
+   with its divider stranded at the start of the line. */
+.stage-legend:has(.legend-fleet) .legend-explore {
+  flex-basis: 100%;
+  padding-left: 0;
+  border-left: 0;
+}
+
 .webgl-fallback {
   position: absolute;
   inset: 50% auto auto 50%;
@@ -726,11 +734,13 @@
   list-style: none;
 }
 
+/* Rules, the evidence rows and the links share one inline edge, inset so a held row's tint
+   has room around its words. */
 .rule-stack li {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 1rem;
-  padding: 0.7rem 0;
+  padding: 0.7rem 0.75rem;
   color: var(--ink-soft);
   border-bottom: 1px solid var(--line);
   font-size: 0.83rem;
@@ -764,14 +774,16 @@
 
 .receipt-details dl {
   margin: 0;
-  padding: 0 1.6rem;
+  padding: 0;
 }
 
 .receipt-details dl > div {
   display: grid;
-  grid-template-columns: 5.4rem minmax(0, 1fr);
+  /* Wide enough that "Recorded adapter output" takes two lines, never more than 40% of a
+     narrow panel. */
+  grid-template-columns: min(7.5rem, 40%) minmax(0, 1fr);
   gap: 0.8rem;
-  padding: 0.7rem 0;
+  padding: 0.7rem 0.75rem;
   border-top: 1px solid var(--line-light);
   border-bottom: 1px solid var(--line);
 }
@@ -791,7 +803,7 @@
 
 .receipt-details p {
   margin: 0;
-  padding: 1rem 1.6rem 1.4rem;
+  padding: 1rem 0.75rem 1.4rem;
   color: var(--ink-soft);
   font-size: 0.75rem;
   overflow-wrap: anywhere;
@@ -1435,10 +1447,11 @@
   border-color: var(--signal);
 }
 
+/* Hover is a tint, not the pressed fill, so only the selected fault ever reads as chosen. */
 @media (hover: hover) {
-  .resilience-scenario:hover {
-    color: var(--ink);
-    background: var(--signal);
+  .resilience-scenario:not([aria-pressed="true"]):hover {
+    color: white;
+    background: rgba(201, 255, 87, 0.12);
     border-color: var(--signal);
   }
 }
@@ -1891,7 +1904,8 @@
 }
 
 @container stage (max-width: 700px) {
-  .stage-legend { right: auto; bottom: 0.5rem; left: 0.5rem; flex-wrap: nowrap; gap: 0.75rem; padding: 0.35rem 0.55rem; font-size: 0.65rem; }
+  /* Bounded by the stage and free to wrap between entries, so the Fleet count is never clipped. */
+  .stage-legend { right: 0.5rem; bottom: 0.5rem; left: 0.5rem; flex-wrap: wrap; row-gap: 0.25rem; column-gap: 0.75rem; padding: 0.35rem 0.55rem; font-size: 0.65rem; }
   .stage-legend span { gap: 0.35rem; white-space: nowrap; }
   .stage-legend i { width: 12px; }
 }

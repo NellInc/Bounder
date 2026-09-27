@@ -3,12 +3,12 @@
 <!-- wiki:type = system -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-26 -->
+<!-- wiki:updated = 2026-09-27 -->
 <!-- wiki:status = active -->
 
 ## Summary
 
-Bounder is a system of narrowing authority, local decision, safe physical response, auditable evidence, public demonstration, and release assurance. The public website in this repository is the presentation and publication projection of that system. It verifies and displays evidence; it carries no actuator transport and does not originate operational authority. (`README.md:131-136 "The simulator never decides whether a scenario is allowed."`; `guides/INTEGRATION.md:7-14`; `SECURITY.md:3-10`)
+Bounder is a system of narrowing authority, local decision, safe physical response, auditable evidence, public demonstration, and release assurance. The public website in this repository is the presentation and publication projection of that system. It verifies and displays evidence; it carries no actuator transport and does not originate operational authority. (`README.md:161-166 "The simulator never decides whether a scenario is allowed."`; `guides/INTEGRATION.md:7-14`; `SECURITY.md:3-10`)
 
 ## North Star
 
@@ -57,7 +57,7 @@ The policy envelope is bound to exact signed bytes, issuer, subject, sequence, a
 | 7. Publication assurance | Which exact source bytes became the site? | Allowlisted source tree | Byte-checked `_site` artifact and release record | Site repository and CI | No deployment |
 | 8. Live assurance | What is actually reachable now? | Deployed bytes and live evidence | Time-bounded operational observation | Hosting and evidence services | Unverified current state |
 
-Levels 1 through 5 follow the published authority flow and fail-safe invariants. Levels 6 through 8 are the website and release projection implemented by this repository. (`guides/INTEGRATION.md:7-27`; `README.md:75-103`; `.github/workflows/deploy-pages.yml:19-58`)
+Levels 1 through 5 follow the published authority flow and fail-safe invariants. Levels 6 through 8 are the website and release projection implemented by this repository. (`guides/INTEGRATION.md:7-27`; `README.md:96-127`; `.github/workflows/deploy-pages.yml:19-58`)
 
 ## System Planes
 
@@ -75,7 +75,7 @@ Private Guardian heartbeats, Fleet snapshots, and Fleet transition events extend
 
 ### Presentation plane
 
-The simulator loads recorded receipts, optional Fleet evidence, local resilience timelines, a bounded live stream, and a signed continuity feed. Its visual controls select, replay, and verify evidence. They do not recompute the canonical operational decision. (`README.md:17-32`; `simulator/controller.js:1786 "loadReceiptBundle"`; `simulator/controller.js:821 "loadPilotEvidence"`)
+The simulator loads recorded receipts, optional Fleet evidence, local resilience timelines, a bounded live stream, and a signed continuity feed. Its visual controls select, replay, and verify evidence. They do not recompute the canonical operational decision. (`README.md:32-47`; `simulator/controller.js:1813 "loadReceiptBundle"`; `simulator/controller.js:821 "loadPilotEvidence"`)
 
 The presentation seams own their own mounting. `simulator.html` loads `ui/policy-roundtrip-panel.js` directly, and that UI module is the only thing that calls `bootstrapPolicyRoundTrip`; importing `runtime/policy/core.js` now has no DOM side effect. `staging-feed.js` likewise imports `parseStrictJSON` from the narrow `runtime/json/policy-json.js` seam rather than from the policy facade. (`simulator.html:486 "ui/policy-roundtrip-panel.js"`; `ui/policy-roundtrip-panel.js:5-6 "The UI seam owns mounting the panel."`; `staging-feed.js:1 "runtime/json/policy-json.js"`)
 
@@ -103,11 +103,11 @@ These role boundaries compile the current integration guide, security boundary, 
 
 ## Repository Roles and the Provenance Gap
 
-This checkout is the public site repository. It contains static HTML, browser JavaScript, schemas, evidence copies, build tooling, release manifests, and Pages automation. It contains no Go source in its current tree. (`README.md:1-50`; `package.json:1-22`)
+This checkout is the public site repository. It contains static HTML, browser JavaScript, schemas, evidence copies, build tooling, release manifests, and Pages automation. It contains no Go source in its current tree. (`README.md:1-66`; `package.json:1-22`)
 
 Brand source material lives in `design/brand-source/`. It records the descent of the shipped marks in `assets/` and sits outside the publication allowlist, so it never reaches the built artifact. (`design/brand-source/README.md:3-5 "outside the publication"`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`)
 
-The public instructions verify producer derivation rather than regenerating and copying. `npm run verify:producer` runs against an explicit clean producer checkout supplied through `BOUNDER_PRODUCER_ROOT` or `--producer-root`, re-derives the three published outputs, and compares the thirteen shared contracts byte for byte; its receipt is what manifest v2 imports as producer provenance. (`README.md:140-150 "The path is not discovered"`; `README.md:116`; `scripts/verify-producer-derivation.mjs:13-31`)
+The public instructions verify producer derivation rather than regenerating and copying. `npm run verify:producer` runs against an explicit clean producer checkout supplied through `BOUNDER_PRODUCER_ROOT` or `--producer-root`, re-derives the three published outputs, and compares the thirteen shared contracts byte for byte; its receipt is what manifest v2 imports as producer provenance. (`README.md:170-180 "The path is not discovered"`; `README.md:144`; `scripts/verify-producer-derivation.mjs:13-31`)
 
 The system descriptor separately lists `../Bounder-from-org-agent-ergonomic` and `../Bounder-Drone` as local producer discovery candidates. They serve read-only orientation in `npm run inspect` only; the derivation gate never consults them and fails fast without an explicit root. (`system/bounder-system.v1.json:24-27`; `scripts/system-inspect.mjs:91-94 "local_discovery"`)
 
@@ -145,7 +145,7 @@ This vocabulary consolidates states already represented by the continuity lease,
 2. A stale, replayed, malformed, foreign, or unverified policy grants no new permission. (`guides/INTEGRATION.md:180 "Signature failure preserves the last verified unexpired policy and never broadens authority."`)
 3. Evidence failure cannot broaden a decision. (`SECURITY.md:28`)
 4. Browser interaction cannot mint an operational receipt. (`guides/INTEGRATION.md:86-90 "The browser does not create authority or mint a deployment receipt."`)
-5. Simulator controls remain disabled until their own required evidence is ready. (`simulator/controller.js:1781 "setScenarioControlsEnabled"`; `simulator/controller.js:1727 "Receipt fixture unavailable"`)
+5. Simulator controls remain disabled until their own required evidence is ready. (`simulator/controller.js:1808 "setScenarioControlsEnabled"`; `simulator/controller.js:1754 "Receipt fixture unavailable"`)
 6. Recorded, live, source, deployment, physical, and human assurance remain separately labelled. (`SECURITY.md:43-45 "Passing software tests does not establish any of those properties."`)
 7. Public artifacts come only from the explicit allowlist and are checked byte for byte after assembly. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:350-362`)
 8. A release record identifies both the producer lineage and publisher lineage before it claims derivation from the canonical engine. This is the target rule introduced by this design.

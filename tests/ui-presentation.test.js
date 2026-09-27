@@ -40,9 +40,27 @@ test("a replayed policy shows its rejected update instead of reading as accepted
   }
 });
 
-test("held Guardians keep their recorded code in the verdict and a sentence-cased reason", () => {
+test("held Guardians show a plain label in the verdict, a sentence-cased reason, and stay searchable by code", () => {
   const held = pilot.devices.find((device) => device.receipt.code === "civilian_proximity");
   const text = describeFleetDevice(held);
-  assert.equal(text.verdict, "Protective hold · civilian proximity");
+  assert.equal(text.verdict, "Protective hold · Civilians too close");
   assert.match(text.detail, /^[A-Z][^.]* · civilian protection\. Civilian distance is below the signed minimum separation\.$/);
+  assert.match(text.search, /civilian proximity/, "the recorded code stays searchable");
+});
+
+test("Fleet rows use restraint wording, never the producer's targeting terms, and keep the raw bytes searchable", () => {
+  for (const device of pilot.devices) {
+    const text = describeFleetDevice(device);
+    for (const visible of [text.verdict, text.detail, text.scenario]) {
+      assert.doesNotMatch(visible, /_/, `${device.device_id}: ${visible}`);
+      assert.doesNotMatch(visible, /positive identification|proportionality|friendly|authoriz/i, `${device.device_id}: ${visible}`);
+    }
+    assert.ok(text.search.includes(device.receipt.code.replaceAll("_", " ")), device.device_id);
+    assert.ok(text.search.includes(device.receipt.reason.toLowerCase()), device.device_id);
+  }
+  const identity = describeFleetDevice(pilot.devices.find((device) => device.receipt.code === "positive_identification_required"));
+  assert.equal(identity.verdict, "Protective hold · Identity unconfirmed");
+  assert.match(identity.detail, / · identity check\. The identity check has not been confirmed\.$/);
+  const stale = describeFleetDevice(pilot.devices.find((device) => device.receipt.code === "evidence_stale"));
+  assert.equal(stale.verdict, "Protective hold · Evidence missing or stale");
 });

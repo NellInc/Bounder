@@ -3,12 +3,12 @@
 <!-- wiki:type = seam -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-26 -->
+<!-- wiki:updated = 2026-09-27 -->
 <!-- wiki:status = active -->
 
 ## Summary
 
-The evidence seam connects governance, the Go decision producer, the browser verifier, the static publication pipeline, and live continuity reporting. Its purpose is to preserve artifact identity and proof meaning across every handoff. Historical manifest v1 records retain their original publisher-oriented `canonical_interlock` semantics. Manifest v2 and the producer-derivation receipt identify the private decision producer and public publisher separately. (`README.md:152-165 "Release manifest v2"`; `scripts/verify-producer-derivation.mjs:104-140`; `scripts/generate-release-manifest-v2.mjs:175-257 "buildManifestV2"`)
+The evidence seam connects governance, the Go decision producer, the browser verifier, the static publication pipeline, and live continuity reporting. Its purpose is to preserve artifact identity and proof meaning across every handoff. Historical manifest v1 records retain their original publisher-oriented `canonical_interlock` semantics. Manifest v2 and the producer-derivation receipt identify the private decision producer and public publisher separately. (`README.md:182-195 "Release manifest v2"`; `scripts/verify-producer-derivation.mjs:104-140`; `scripts/generate-release-manifest-v2.mjs:175-257 "buildManifestV2"`)
 
 ## Artifact Lineage
 
@@ -34,7 +34,7 @@ allowlisted publication artifact
 deployed bytes + time-bounded live observations
 ```
 
-The website’s published fixtures include deterministic receipts, Fleet evidence, a signed policy vector, a signed round-trip record, the mirrored manipulator preview, and schemas. (`README.md:26-32 "creedspace-bounder-roundtrip-v1.json"`; `README.md:34 "Mirrored preview of the manipulator profile contract"`) The browser verifies strict structures, bounded transports, selected signatures, relationships, and freshness according to the surface being inspected. (`guides/INTEGRATION.md:74-84 "Inspection is entirely local"`; `SECURITY.md:47-54 "cannot authenticate those signatures"`)
+The website’s published fixtures include deterministic receipts, Fleet evidence, a signed policy vector, a signed round-trip record, the mirrored manipulator preview, and schemas. (`README.md:41-47 "creedspace-bounder-roundtrip-v1.json"`; `README.md:49 "Mirrored preview of the manipulator profile contract"`) The browser verifies strict structures, bounded transports, selected signatures, relationships, and freshness according to the surface being inspected. (`guides/INTEGRATION.md:74-84 "Inspection is entirely local"`; `SECURITY.md:47-54 "cannot authenticate those signatures"`)
 
 ## Proof Lattice
 
@@ -123,7 +123,7 @@ Historical manifests remain byte-immutable and retain their original semantics. 
 
 ### Release status
 
-Every version from 1.0.0 to 1.2.2, and 1.2.4, has a sealed manifest in `release/`. Version 1.2.3 was deployed from its source commit without a sealed manifest; its changes were carried into 1.2.4. Version 1.2.5 is the current unsealed source candidate. Git tags stop at v1.1.1; tagging v1.1.2 to v1.2.2 at their seal commits needs publication authority. The changelog names each sealing manifest, and a unit test refuses a changelog that calls a sealed release unsealed, except the current `VERSION`, whose commit-A heading must stand at its own seal commit B. (`CHANGELOG.md:3 "(source candidate, unsealed)"`; `CHANGELOG.md:83-85 "published without a sealed manifest"`; `CHANGELOG.md:37 "bounder-reference-v1.2.4.manifest.json"`; `tests/release-manifest.test.js:1022-1067 "the changelog never calls a sealed release unsealed"`)
+Every version from 1.0.0 to 1.2.2, and 1.2.4, has a sealed manifest in `release/`. Version 1.2.3 was deployed from its source commit without a sealed manifest; its changes were carried into 1.2.4. Version 1.2.5 was deployed from its source commits without a sealed manifest; its changes are carried into 1.2.6. Version 1.2.6 is the current unsealed source candidate. Git tags stop at v1.1.1; tagging v1.1.2 to v1.2.2 at their seal commits needs publication authority. The changelog names each sealing manifest, and a unit test refuses a changelog that calls a sealed release unsealed, except the current `VERSION`, whose commit-A heading must stand at its own seal commit B. (`CHANGELOG.md:3 "(source candidate, unsealed)"`; `CHANGELOG.md:29 "## 1.2.5"`; `CHANGELOG.md:110 "published without a sealed manifest"`; `CHANGELOG.md:64 "bounder-reference-v1.2.4.manifest.json"`; `tests/release-manifest.test.js:1022-1067 "the changelog never calls a sealed release unsealed"`)
 
 ## Cross-Repository Verification
 

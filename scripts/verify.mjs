@@ -137,8 +137,10 @@ export async function executeVerificationPhase(phase, {
       escalation = timers.setTimeout(() => signalPhase("SIGKILL"), escalationMs);
     }, phase.timeout_ms);
     // The phase runs in its own process group, so an interactive Ctrl-C reaches this runner but
-    // not the work: without forwarding, a killed `npm run verify` leaves the browser phase's
-    // HTTP server bound to its port and the next run fails to start one.
+    // not the work. Forwarding stops the phase, including the Playwright runner. Playwright starts
+    // its web server in a separate session that a forwarded signal cannot reach; that server exits
+    // through serve-site's parent watch (exitWithParent) once the runner is gone, not through the
+    // forwarded signal.
     let forwarders = null;
     function stopForwarding() {
       if (!forwarders) return;

@@ -769,26 +769,6 @@ a[target="_blank"]::after {
   position: relative;
 }
 
-.continuity::before {
-  position: absolute;
-  /* Sits just below the status pill (section padding + the pill's own height) so the
-     rings frame it as a beacon instead of cutting through its border. */
-  top: calc(clamp(3.5rem, 7vw, 6rem) + 3.5rem);
-  right: 0;
-  width: clamp(9rem, 20vw, 17rem);
-  height: clamp(9rem, 20vw, 17rem);
-  border: 1px solid rgba(17, 19, 15, 0.12);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 2.8rem var(--paper), inset 0 0 0 calc(2.8rem + 1px) rgba(17, 19, 15, 0.12);
-  content: "";
-  pointer-events: none;
-}
-
-/* The rings frame the status pill as a live beacon; with no live proof there is no beacon. */
-.continuity[data-state="unavailable"]::before {
-  display: none;
-}
-
 .continuity-heading {
   position: relative;
   z-index: 1;
@@ -888,10 +868,6 @@ a[target="_blank"]::after {
 
   .continuity .continuity-recorded {
     display: block;
-  }
-
-  .continuity::before {
-    display: none;
   }
 }
 
@@ -1012,6 +988,7 @@ a[target="_blank"]::after {
 
 .continuity-links a {
   font-family: var(--font-mono);
+  text-wrap: balance;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1037,6 +1014,12 @@ a[target="_blank"]::after {
 
 .home-simulator-heading h2 {
   margin: 1.25rem 0;
+}
+
+/* The call to action keeps its one line beside the paragraph instead of wrapping into fragments. */
+.home-simulator-heading .text-link {
+  flex: none;
+  white-space: nowrap;
 }
 
 .home-simulator-heading p {
@@ -1622,9 +1605,26 @@ a[target="_blank"]::after {
   .policy-aside {
     position: static;
   }
+}
 
-  .continuity::before {
-    display: none;
+/* Five figures are too many for one row on a tablet: three, then the decisions and the
+   longer proof date across the rest. The two-column phone layout below takes over at 680px. */
+@media (min-width: 681px) and (max-width: 900px) {
+  .continuity-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .continuity-metrics div:nth-child(n + 4) {
+    border-top: 1px solid var(--line);
+  }
+
+  .continuity-metrics div:nth-child(4) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .continuity-metrics div:nth-child(5) {
+    grid-column: span 2;
   }
 }
 
@@ -1908,7 +1908,6 @@ a[target="_blank"]::after {
   .hero-actions,
   .cta-actions,
   .home-simulator-frame,
-  .continuity::before,
   .section-dark::before,
   .site-footer {
     display: none !important;

@@ -899,7 +899,7 @@ test("accessible evidence honours scenario deep links and remains usable without
   await expect(stage).toHaveAttribute("data-webgl", "unavailable");
   await expect(stage).toHaveAttribute("data-receipts-ready", "true");
   await expect(page.locator(".scene-explanation")).toBeVisible();
-  await expect(page.locator(".scene-explanation")).toContainText("Hold outside friendly separation");
+  await expect(page.locator(".scene-explanation")).toContainText("Hold outside the team-separation distance");
   await expect(page.locator("[data-receipt='evidence']")).toHaveText("gold · mettle.creed.space · 30s old");
   await expect(page.locator("body")).not.toContainText("undefined");
   const results = await new AxeBuilder({ page }).analyze();
@@ -1034,4 +1034,116 @@ test("with no verified live proof, the home page shows the labelled recorded run
   await expect(recorded).toContainText("Recorded run · not live");
   await expect(recorded).toContainText("13 allow / 87 hold");
   await expect(page.locator("[data-continuity-note]")).toHaveText(/^Live verification runs only on bounder\.io\./);
+});
+
+// The clear band of the stage between the status badge and the legend, as page coordinates.
+const stageSceneBand = (frame) => frame.locator(".simulator-stage").evaluate((stage) => {
+  const outer = stage.ownerDocument.defaultView.frameElement?.getBoundingClientRect() ?? { x: 0, y: 0 };
+  const box = stage.getBoundingClientRect();
+  const top = stage.querySelector(".stage-status").getBoundingClientRect().bottom + 4;
+  const legend = stage.querySelector(".stage-legend");
+  const bottom = legend.getClientRects().length ? legend.getBoundingClientRect().top - 4 : box.bottom - 4;
+  return { x: outer.x + box.x + 8, y: outer.y + top, width: box.width - 16, height: Math.max(8, bottom - top) };
+});
+
+// Distinct colours in a 64x36 downsample of a screenshot region: a drawn town has hundreds, a
+// cleared canvas showing only the stage background has one.
+const distinctColours = async (page, clip) => {
+  const png = await page.screenshot({ clip });
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 36;
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0, 64, 36);
+    const data = context.getImageData(0, 0, 64, 36).data;
+    const colours = new Set();
+    for (let index = 0; index < data.length; index += 4) colours.add((data[index] << 16) | (data[index + 1] << 8) | data[index + 2]);
+    return colours.size;
+  }, png.toString("base64"));
+};
+
+test("the homepage embed shows a drawn scene once it scrolls into view at desktop widths", async ({ browser }) => {
+  // Software-rendered frames can hold the main thread for many seconds on a loaded host.
+  test.setTimeout(240_000);
+  for (const width of [1440, 1920]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    try {
+      const page = await context.newPage();
+      await page.goto("/");
+      const embed = page.locator("iframe[data-bounder-simulator]");
+      await embed.evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" }));
+      const frame = page.frameLocator("iframe[data-bounder-simulator]");
+      const stage = frame.locator(".simulator-stage");
+      await expect(stage).toHaveAttribute("data-receipts-ready", "true", { timeout: 120_000 });
+      await expect(stage).toHaveAttribute("data-animation-state", "idle", { timeout: 120_000 });
+      // A same-size layout pass after the first frame must not leave the canvas cleared.
+      await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 1_500)));
+      const inner = page.frames().find((candidate) => candidate.url().includes("simulator.html"));
+      const band = await stageSceneBand(inner);
+      expect(await distinctColours(page, band), `${width}px embed shows only the stage background`).toBeGreaterThan(200);
+    } finally {
+      await context.close();
+    }
+  }
+});
+
+test("a layout change never clears the scene: same-size passes keep the canvas, real resizes redraw at once", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.addInitScript(() => {
+    window.__stageCanvasResizes = 0;
+    for (const property of ["width", "height"]) {
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, property);
+      Object.defineProperty(HTMLCanvasElement.prototype, property, {
+        configurable: true,
+        get: descriptor.get,
+        set(value) {
+          if (this.closest?.(".simulator-stage")) window.__stageCanvasResizes += 1;
+          descriptor.set.call(this, value);
+        }
+      });
+    }
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/simulator.html");
+  const stage = page.locator(".simulator-stage");
+  await expect(stage).toHaveAttribute("data-receipts-ready", "true", { timeout: 120_000 });
+  await expect(stage).toHaveAttribute("data-animation-state", "idle", { timeout: 120_000 });
+  const resizes = () => page.evaluate(() => window.__stageCanvasResizes);
+  const settled = await resizes();
+  const offsetBefore = await stage.getAttribute("data-view-offset");
+  // The legend growing fires the stage ResizeObserver (the view offset moves); the canvas keeps its buffer.
+  await page.locator(".stage-legend").evaluate((legend) => { legend.style.minHeight = "64px"; });
+  await expect.poll(() => stage.getAttribute("data-view-offset")).not.toBe(offsetBefore);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  expect(await resizes(), "a same-size layout pass reassigned the canvas size").toBe(settled);
+  // With animation frames withheld, only the synchronous redraw can refill a resized canvas.
+  await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+  await page.setViewportSize({ width: 1300, height: 1000 });
+  await expect.poll(resizes).toBeGreaterThan(settled);
+  const band = await stageSceneBand(page.mainFrame());
+  expect(await distinctColours(page, band), "the resized canvas was left cleared").toBeGreaterThan(200);
+});
+
+test("every guided-tour step leaves a drawn scene on the stage", async ({ page }) => {
+  test.setTimeout(240_000);
+  // Reduced motion lets each step settle to an idle frame instead of flying its route.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/simulator.html?tour=1");
+  const stage = page.locator(".simulator-stage");
+  const root = page.locator(".simulator-workbench");
+  await expect(stage).toHaveAttribute("data-receipts-ready", "true", { timeout: 120_000 });
+  for (let step = 0; step < 6; step += 1) {
+    await expect(root).toHaveAttribute("data-operator-tour-step", /.+/);
+    await expect(stage).toHaveAttribute("data-animation-state", "idle", { timeout: 120_000 });
+    await stage.evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" }));
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const band = await stageSceneBand(page.mainFrame());
+    expect(await distinctColours(page, band), `tour step ${step + 1} shows only the stage background`).toBeGreaterThan(200);
+    if (step < 5) await page.getByRole("button", { name: "Next proof" }).click();
+  }
 });

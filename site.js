@@ -85,6 +85,6 @@ if (continuityRoot) {
     // instead; they are cleared too. The recorded cells are static and left alone.
     for (const figure of continuityRoot.querySelectorAll("[data-continuity-devices], [data-continuity-policies], [data-continuity-checkpoints], [data-continuity-decisions], [data-continuity-updated]")) figure.textContent = "—";
     const note = continuityRoot.querySelector("[data-continuity-note]");
-    if (note) note.textContent = "This browser could not run the live proof verifier, so no live figures are shown. The recorded 100-Guardian run remains available to inspect.";
+    if (note) note.textContent = "This browser could not run the live proof verifier, so no live figures are shown. The figures shown are from the recorded 100-Guardian run, not live.";
   });
 }

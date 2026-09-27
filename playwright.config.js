@@ -17,7 +17,9 @@ export default defineConfig({
     trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true }
   },
   webServer: {
-    // exec replaces the shell, so stopping the web server stops Node rather than orphaning it.
+    // exec makes Node the runner's direct child. Playwright runs this in its own session, so a runner
+    // killed by SIGTERM/SIGKILL never signals it; serve-site exits when its parent pid changes
+    // (exitWithParent), which only happens if the shell is not in between.
     command: "npm run build && exec node scripts/serve-site.mjs --root _site --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173/",
     reuseExistingServer: false,

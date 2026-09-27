@@ -102,7 +102,7 @@ Start with the [guided browser demo](https://www.bounder.io/simulator.html?tour=
 
 ### Signed bytes and trust
 
-Decode canonical base64 and verify Ed25519 against the exact decoded payload bytes. Do not parse, pretty-print, normalise, or reserialise the payload before signature verification. The browser pins its simulation Fleet key and key ID independently of the uploaded file; a file's self-declared public key is insufficient. After verification, strict UTF-8 JSON parsing rejects duplicate members and unsupported contract fields. Policy identity and validity are checked separately from signature authenticity.
+Decode canonical base64 and verify Ed25519 against the exact decoded payload bytes. Do not parse, pretty-print, normalise, or reserialise the payload before signature verification. The browser pins its simulation Fleet key and key ID independently of the selected file; a file's self-declared public key is insufficient. After verification, strict UTF-8 JSON parsing rejects duplicate members and unsupported contract fields. Policy identity and validity are checked separately from signature authenticity.
 
 ### Valid and invalid examples
 

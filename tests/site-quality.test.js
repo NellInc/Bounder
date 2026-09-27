@@ -372,7 +372,9 @@ test("public presentation keeps development status concise without repeated disc
   assert.doesNotMatch(home, /Optional evidence is never|Reference software, honestly|not certified flight-control|Live hardware is outside project scope/);
   assert.doesNotMatch(simulator, /No actuator connected|Permission to operate is never|Demonstrator, not deployment assurance|not certified safety software/);
   const continuity = await readSiteFile("continuity-evidence.js");
-  assert.match(continuity, /The recorded 100-Guardian run remains available to inspect\./);
+  assert.match(continuity, /The figures shown are from the recorded 100-Guardian run, not live\./);
+  // The recorded figures sit on screen beside the note, so it describes them, not a place to go.
+  assert.doesNotMatch(continuity, /remains available to inspect/);
   // The fallback never points "below" at a link that sits beside it, and never shouts
   // "Unavailable" in the live-metric cells.
   assert.doesNotMatch(continuity, /Explore the recorded run below|textContent = "Unavailable"/);

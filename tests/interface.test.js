@@ -119,7 +119,10 @@ test("every abandoned live resilience stream keeps the recorded local fallback a
 
 test("source guard: bootstrap fails closed and always restores the render loop", () => {
   assert.match(simulatorScript, /const showBootstrapFailure = \(\) => \{/);
-  assert.match(simulatorScript, /\} finally \{\n\s+bootstrapSettled = true;\n\s+resize\(\);\n\s+scheduleAnimation\(\);\n\s+\}/);
+  assert.match(simulatorScript, /\} finally \{\n\s+bootstrapSettled = true;\n\s+resize\(\);\n\s+scheduleAnimation\(\);\n(?:\s+\/\/[^\n]*\n)*\s+requestAnimationFrame\(\(\) => requestAnimationFrame\(\(\) => \{ lastTime = 0; scheduleAnimation\(\); \}\)\);\n\s+\}/);
+  // A same-size resize must not clear the canvas; a real one redraws in the same call.
+  assert.match(simulatorScript, /if \(sizeChanged\) \{\n\s+renderer\.setSize\(width, height, false\);/);
+  assert.match(simulatorScript, /if \(sizeChanged && bootstrapSettled\) \{\n\s+try \{\n\s+renderer\.render\(scene, camera\);/);
   assert.match(simulatorScript, /bootstrap\(\)\.catch\(/);
 });
 

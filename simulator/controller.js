@@ -964,7 +964,7 @@ const setEnvelopeHeld = (held) => {
 const atmospheres = Object.freeze({
   clear: { background: "#b9d7df", fogNear: 28, fogFar: 62, sun: 3.1, sunColour: "#fff1cf", sunPosition: [-10, 18, 12], hemisphere: 2.15, sky: "#e9f7ff", groundLight: "#5b6749", clouds: "#f7fbfa", cloudOpacity: 0.88, fairClouds: true, lamps: 1.1, windowGlow: "#49747e", windowGlowIntensity: 0.18 },
   weather: { background: "#a6b5b9", fogNear: 26, fogFar: 62, sun: 1.8, sunColour: "#f4f1e8", sunPosition: [-10, 18, 12], hemisphere: 1.75, sky: "#d7e1e4", groundLight: "#56614a", clouds: "#f7fbfa", cloudOpacity: 0.88, fairClouds: false, lamps: 1.1, windowGlow: "#49747e", windowGlowIntensity: 0.18 },
-  window: { background: "#a3a2c6", fogNear: 26, fogFar: 64, sun: 3.4, sunColour: "#ffb57a", sunPosition: [-15, 10, 14], hemisphere: 2.0, sky: "#b7b3e2", groundLight: "#7a6450", clouds: "#e9b7a4", cloudOpacity: 0.85, fairClouds: true, lamps: 3.2, windowGlow: "#ffc46b", windowGlowIntensity: 0.95 }
+  window: { background: "#a3a2c6", fogNear: 26, fogFar: 64, sun: 1.9, sunColour: "#ffb27a", sunPosition: [-15, 10, 14], hemisphere: 2.6, sky: "#aab4e0", groundLight: "#4f5a60", clouds: "#e9b7a4", cloudOpacity: 0.85, fairClouds: true, lamps: 4.2, windowGlow: "#ffc46b", windowGlowIntensity: 1.3 }
 });
 const applyAtmosphere = (name) => {
   const grade = atmospheres[name] ?? atmospheres.clear;
@@ -1133,13 +1133,17 @@ const fleetLegend = (() => {
   else legend.append(entry);
   return entry;
 })();
+// Phones hide the legend, so the caption below the scene carries the count too while the Fleet
+// view is on, and returns to its own words when it is off.
+const sceneCaption = root.querySelector(".scene-caption");
+const sceneCaptionText = sceneCaption?.textContent ?? "";
 const syncFleetLegend = () => {
+  const recorded = fleetEvidence?.summary?.devices;
+  const count = Number.isInteger(recorded) ? `${fleetDrones.length} of ${recorded} Guardians drawn` : "";
+  if (sceneCaption) sceneCaption.textContent = fleetMode && count ? `${sceneCaptionText} Fleet view: ${count}.` : sceneCaptionText;
   if (!fleetLegend) return;
   fleetLegend.style.display = fleetMode ? "" : "none";
-  const recorded = fleetEvidence?.summary?.devices;
-  fleetLegend.lastChild.textContent = Number.isInteger(recorded)
-    ? `Guardians: ${fleetDrones.length} of ${recorded} drawn`
-    : "Illustrative Guardians";
+  fleetLegend.lastChild.textContent = count || "Illustrative Guardians";
 };
 
 const setFleetMode = (enabled) => {
@@ -1398,15 +1402,36 @@ const updateViewOffset = (width, height) => {
   stage.dataset.viewOffset = String(shift);
 };
 
+// Reassigning the canvas size clears its drawing buffer even when the size is unchanged, and
+// frames are drawn on demand, so a stray resize could leave the stage blank until the next
+// interaction. The size is applied only when it really changes, and a real change is redrawn
+// in the same call. The projection is still refreshed every time: the observer also fires when
+// the badge or legend changes height, which moves the clear band updateViewOffset aims into.
+let appliedSize = "";
 const resize = () => {
   if (!rendererOperational) return;
   const width = stage.clientWidth;
   const height = stage.clientHeight;
-  renderer.setSize(width, height, false);
+  const size = `${width}x${height}@${renderer.getPixelRatio()}`;
+  const sizeChanged = size !== appliedSize;
+  if (sizeChanged) {
+    renderer.setSize(width, height, false);
+    appliedSize = size;
+  }
   camera.aspect = width / height;
   updateViewOffset(width, height);
   camera.updateProjectionMatrix();
   layoutWorldLabels(height);
+  if (sizeChanged && bootstrapSettled) {
+    try {
+      renderer.render(scene, camera);
+      stage.dataset.renderFrames = String(Number(stage.dataset.renderFrames ?? 0) + 1);
+    } catch (error) {
+      console.error("Bounder WebGL rendering stopped", error);
+      handleWebGLRuntimeFailure({ terminal: true });
+      return;
+    }
+  }
   scheduleAnimation();
 };
 
@@ -1545,6 +1570,8 @@ const handleWebGLRuntimeFailure = ({ terminal = false } = {}) => {
 };
 
 const recoverRenderer = () => {
+  // A restored context has a fresh drawing buffer: apply the size again and redraw.
+  appliedSize = "";
   if (rendererOperational || rendererTerminal) return;
   rendererOperational = true;
   controls.enabled = true;
@@ -1844,6 +1871,9 @@ const bootstrap = async () => {
     bootstrapSettled = true;
     resize();
     scheduleAnimation();
+    // A layout change in the frames after bootstrap (fonts, the legend, a lazy embed settling)
+    // is always followed by a draw.
+    requestAnimationFrame(() => requestAnimationFrame(() => { lastTime = 0; scheduleAnimation(); }));
   }
 };
 

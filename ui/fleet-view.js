@@ -1,10 +1,13 @@
+import { glossReason, glossScenario, reasonLabel } from './receipt-copy.js';
 import { asSentence } from './text.js';
 
 /** Presentation wording for one recorded Guardian. Producer fields are glossed, never altered. */
 export const describeFleetDevice = (device) => {
   const { allowed, code, reason } = device.receipt;
-  const verdict = `${allowed ? 'Allowed request' : 'Protective hold'}${code === 'allowed' ? '' : ` · ${code.replaceAll('_', ' ')}`}`;
+  // Plain labels and glossed reasons for the visitor; the receipt JSON below keeps the producer bytes.
+  const verdict = `${allowed ? 'Allowed request' : 'Protective hold'}${code === 'allowed' ? '' : ` · ${reasonLabel(code)}`}`;
   const platform = device.platform_class?.replaceAll('_', ' ') ?? 'platform unspecified';
+  const scenario = glossScenario(device.scenario);
   // A rejected policy update is part of the recorded outcome: without it a replayed policy
   // reads as though it had been accepted.
   const update = typeof device.update_error === 'string' && device.update_error
@@ -12,9 +15,11 @@ export const describeFleetDevice = (device) => {
     : '';
   return {
     verdict,
-    detail: `${asSentence(`${platform} · ${device.scenario}`)} ${asSentence(reason)}${update}`,
+    scenario,
+    detail: `${asSentence(`${platform} · ${scenario}`)} ${asSentence(glossReason(reason))}${update}`,
     // Search matches what a visitor can read, not the collapsed receipt JSON.
-    search: [device.device_id, platform, device.scenario, code.replaceAll('_', ' '), reason, verdict, update]
+    // The recorded code and reason stay searchable beside the plain wording.
+    search: [device.device_id, platform, device.scenario, scenario, code.replaceAll('_', ' '), reason, glossReason(reason), verdict, update]
       .join(' ')
       .toLowerCase()
   };
@@ -32,7 +37,7 @@ export const renderFleetRows = (container, evidence) => {
     row.dataset.platform = device.platform_class ?? 'unspecified';
     row.dataset.outcome = device.receipt.allowed ? 'allowed' : 'held';
     row.dataset.search = text.search;
-    row.dataset.baseLabel = `${device.device_id}: ${text.verdict}; ${device.scenario}${device.update_error ? '; update rejected' : ''}`;
+    row.dataset.baseLabel = `${device.device_id}: ${text.verdict}; ${text.scenario}${device.update_error ? '; update rejected' : ''}`;
     row.setAttribute('aria-label', row.dataset.baseLabel);
     const detail = document.createElement('details');
     const summary = document.createElement('summary');

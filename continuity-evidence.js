@@ -342,12 +342,12 @@ const renderEvidence = (root, evidence) => {
   root.querySelector("[data-continuity-decisions]").textContent = `${evidence.allowed}${NBSP}allow / ${evidence.held}${NBSP}hold`;
   const issued = root.querySelector("[data-continuity-updated]");
   issued.textContent = formatEvidenceTime(evidence.generated_at);
-  // Machine-readable instant for the <time> element: the exact signed generated_at.
-  issued.setAttribute("datetime", evidence.generated_at);
+  // Machine-readable instant for <time>: HTML allows three fractional digits, so milliseconds.
+  issued.setAttribute("datetime", new Date(parseUtcTimestamp(evidence.generated_at, "continuity timestamp").milliseconds).toISOString());
   root.querySelector("[data-continuity-note]").textContent = "Exact Ed25519 payload verified in this browser. All 100 software Guardians completed policy sync, signed checkpoint verification, and local interlock evaluation.";
 };
 
-const RECORDED_RUN = "The recorded 100-Guardian run remains available to inspect.";
+const RECORDED_RUN = "The figures shown are from the recorded 100-Guardian run, not live.";
 
 // Every state other than "verified" is a fail-closed placeholder: no figure from an
 // unverified, expired or unreachable feed is ever shown, and each says truthfully why.

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { glossAdapterOutput, glossReason, outcomeHeadline, stageBadge } from "../ui/receipt-copy.js";
+import { glossAdapterOutput, glossReason, glossScenario, outcomeHeadline, reasonLabel, stageBadge } from "../ui/receipt-copy.js";
+import { asSentence } from "../ui/text.js";
 
 const bundle = JSON.parse(await readFile(new URL("../data/bounder-receipts.v1.json", import.meta.url), "utf8"));
 const receipts = Object.values(bundle.receipts);
@@ -37,6 +38,30 @@ test("adapter and reason glosses read in British English and leave unknown text 
   assert.equal(glossAdapterOutput("Await authorized window soon"), "Await authorized window soon");
   assert.equal(glossReason("  policy is not active  "), "the policy is not active: its operating window is closed");
   assert.equal(glossReason(undefined), "");
+});
+
+test("visible decision text for the identity, consequence and team-separation holds uses restraint wording", () => {
+  for (const code of ["positive_identification_required", "proportionality_unconfirmed", "friendly_force_proximity"]) {
+    const receipt = receipts.find((candidate) => candidate.code === code);
+    assert.ok(receipt, code);
+    // What the stage, decision panel and text view show; the raw strings stay in the evidence rows.
+    for (const visible of [stageBadge(receipt), asSentence(glossReason(receipt.reason)), glossAdapterOutput(receipt.adapter.output)]) {
+      assert.doesNotMatch(visible, /positive identification|proportionality|friendly/i, `${code}: ${visible}`);
+    }
+    assert.match(receipt.reason, /positive identification|proportionality|friendly/i, `${code}: the producer bytes are unchanged`);
+  }
+  assert.equal(glossReason("friendly-force distance is below the signed minimum separation"), "one of the operator’s own teams is closer than the signed minimum separation");
+  assert.equal(glossAdapterOutput("Hold pending positive identification"), "Hold until identity is confirmed");
+  assert.equal(glossAdapterOutput("Hold pending a satisfied proportionality condition"), "Hold until the consequence check is satisfied");
+});
+
+test("reason labels are shared with the Fleet rows and fall back to the recorded code", () => {
+  assert.equal(reasonLabel("friendly_force_proximity"), "Own team too close");
+  assert.equal(reasonLabel("inside_exclusion_zone"), "Inside an exclusion zone");
+  assert.equal(reasonLabel("policy_expired"), "Policy expired");
+  assert.equal(reasonLabel("unknown_future_code"), "unknown_future_code");
+  assert.equal(glossScenario("positive identification"), "identity check");
+  assert.equal(glossScenario("civilian protection"), "civilian protection");
 });
 
 test("the allowed receipt gloss stays truthful about authorisation and sending", () => {

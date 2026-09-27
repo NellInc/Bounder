@@ -6,6 +6,21 @@ Bounder is an open reference architecture for trustworthy physical interlocks â€
 
 The public source here is the website and JavaScript browser laboratory. The canonical Go decision engine is maintained in the private producer repository `NellInc/Bounder-from-org`, which is not publicly readable. Public fixtures support local verification; independent producer regeneration requires access to that separate checkout. See the [developer contract guide](guides/INTEGRATION.md#developer-contract-walkthrough) for signed bytes, examples, and failure semantics.
 
+## Intended use
+
+Bounder is designed as a restraint-only interlock. It decides whether an action
+requested elsewhere may go ahead, and otherwise keeps the machine in a safe
+state. It is not designed, offered or supported for weapons, targeting or
+fire-control use. Where the simulator and the recorded evidence model conditions
+such as a person signalling surrender, they use them only as reasons to hold a
+request.
+
+If you build, supply or export anything based on this code, you are responsible
+for complying with the export-control and sanctions law that applies to you,
+including the UK Strategic Export Control Lists and EU Regulation 2021/821. The
+[website terms](https://www.bounder.io/terms.html) say the same. This
+section is not part of the licence.
+
 ## Canonical site
 
 The root directory is the canonical website. This table is an annotated guide to
@@ -35,7 +50,7 @@ the build actually publishes.
 | `schemas/` | Published JSON Schemas for policy, envelope, profile, checkpoint, receipt, receipt bundle, round trip, resilience evidence, observability, evidence provenance, release manifest v2 and the manipulator profile preview |
 | `guides/INTEGRATION.md` | Creed Space Fleet to Bounder contract, browser verification and platform-adapter guide |
 | `release/` | Immutable SHA-256 integrity manifests for each sealed reference release |
-| `assets/` | Published brand mark, wordmark, touch icon and self-hosted fallback font (SIL Open Font Licence) |
+| `assets/` | Published brand mark, wordmark, touch icon and self-hosted fallback font (SIL Open Font License) |
 | `images/` | Published photography and the social card, credited in `images/CREDITS.md` |
 | `vendor/three/` | Pinned, self-hosted Three.js 0.180.0 runtime and licence |
 | `.well-known/security.txt` | Machine-readable vulnerability-reporting route (RFC 9116) |
@@ -47,6 +62,7 @@ the build actually publishes.
 | `styles.css` | Shared responsive design system |
 | `sitemap.xml` and `robots.txt` | Search discovery |
 | `CNAME` | `www.bounder.io` custom domain |
+| `README.md`, `SECURITY.md`, `CHANGELOG.md` and `VERSION` | Project overview, disclosure policy, release notes and current version |
 | `LICENSE` and `NOTICE` | Apache-2.0 project licence and attribution notice; the Bounder name, wordmark and mark are not licensed |
 
 Repository-only material is not published: `tests/` holds the unit, contract and
@@ -71,6 +87,11 @@ node scripts/serve-site.mjs --root . --port 8000
 Open `http://127.0.0.1:8000/`. `python3 -m http.server 8000` also works for a
 quick look. Release claims use the built `_site` artifact, which
 `npm run test:browser` serves the same way.
+
+`scripts/serve-site.mjs` exits when the process that launched it exits, so that
+a test run cannot leave it holding its port. Run it in the foreground, or under
+a process that stays alive; a server started with `&` from a shell that then
+exits stops within about a second.
 
 ## Validation
 
@@ -100,6 +121,9 @@ npm run verify
 
 # Deterministic design lint. Triage results rather than bulk-fixing.
 node_modules/.bin/impeccable detect .
+
+# After an authorised deploy, confirm the site serves this checkout's VERSION.
+npm run check:live -- --url https://www.bounder.io --attempts 10
 ```
 
 `npm run build` assembles the exact GitHub Pages payload in `_site/`. A release
@@ -108,12 +132,16 @@ deliberately uses two commits. First, finalise every pinned file, including
 source commit A. Commit A cannot describe its own seal, so its CHANGELOG entry
 stays `(source candidate, unsealed)`; the same commit relabels the previous
 entry with the manifest that sealed it, or records that it was published without
-one. Then generate the manifest with commit A as its provenance:
+one. Commit A also renews the `Expires` field of `.well-known/security.txt` to
+under a year after the new entry's date, and adds the previous release's manifest
+and its SHA-256 to `HISTORICAL_MANIFEST_SHA256` in
+`scripts/generate-release-manifest-v2.mjs`. Then generate the manifest with
+commit A as its provenance:
 
 ```bash
 git commit -m "release: prepare Bounder vX.Y.Z sources"
 SOURCE_COMMIT="$(git rev-parse HEAD)"
-BOUNDER_PRODUCER_ROOT=<path to a clean NellInc/Bounder-from-org checkout> npm run verify:producer
+BOUNDER_PRODUCER_ROOT=<path to a clean producer checkout on fetched origin/master> npm run verify:producer
 npm run verify
 npm run release:manifest:v2 -- \
   --publisher-commit "$SOURCE_COMMIT" \
@@ -121,9 +149,11 @@ npm run release:manifest:v2 -- \
   --verification-receipt artifacts/verification/latest.json
 ```
 
-The generator requires commit A to exist locally as a Git commit. Every pinned
-path in it must be an ordinary non-executable Git blob whose bytes equal the
-working-tree source. After the complete validation gates pass, commit the new
+The producer checkout must be clean and at a commit on the producer's `master`,
+fetched so that its `origin/master` contains that commit; otherwise sealing
+refuses the producer receipt. The generator requires commit A to exist locally
+as a Git commit. Every pinned path in it must be an ordinary non-executable Git
+blob whose bytes equal the working-tree source. After the complete validation gates pass, commit the new
 manifest separately as manifest commit B. Never amend source commit A after
 generating the manifest; any source change requires a new source commit and a
 newly generated manifest.
