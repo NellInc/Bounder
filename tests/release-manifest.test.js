@@ -496,10 +496,17 @@ test("receipt drift installs exact dependencies and derives every pinned evidenc
   assert.equal(tokenUses.length, 1, "the producer token must reach exactly one step");
   assert.match(workflow, /^\s{10}token: \$\{\{ secrets\.BOUNDER_PRODUCER_READ_TOKEN \}\}$/m, "the producer token is not scoped to the checkout step's token input");
   assert.doesNotMatch(workflow, /^\s+[A-Z_]+: \$\{\{ secrets\.BOUNDER_PRODUCER_READ_TOKEN \}\}$/m, "the producer token is copied into an environment variable");
-  // One job-level boolean derived from the secret drives the three step guards, plus exactly
-  // one `token:` consumer -- the producer checkout.
+  // The isolated producer job exposes only an availability boolean. Every producer step
+  // must test it, including setup; only the final missing-token notice takes the false path.
   assert.equal(workflow.split("secrets.BOUNDER_PRODUCER_READ_TOKEN").length - 1, 2);
-  assert.equal(workflow.split("env.PRODUCER_TOKEN_AVAILABLE").length - 1, 3, "the three step guards must test the derived boolean");
+  const producerJob = workflow.split("\n  producer:\n")[1];
+  assert.ok(producerJob, "private derivation must have its own runner");
+  const producerSteps = producerJob.split("\n      - name: ").slice(1);
+  assert.ok(producerSteps.length >= 3, "producer setup and verification steps are missing");
+  for (const step of producerSteps.slice(0, -1)) {
+    assert.match(step, /if: \$\{\{ env\.PRODUCER_TOKEN_AVAILABLE == 'true' \}\}/, "a producer step runs without its credential prerequisite");
+  }
+  assert.match(producerSteps.at(-1), /if: \$\{\{ env\.PRODUCER_TOKEN_AVAILABLE != 'true' \}\}/);
   assert.equal(workflow.split("token: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN }}").length - 1, 1);
   assert.match(workflow, /npm run verify:producer -- --producer-root \.\.\/producer/);
   assert.match(workflow, /Producer derivation is unverified in this run/);

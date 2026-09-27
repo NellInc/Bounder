@@ -15,7 +15,7 @@ permissions:
 # A newer push to the same pull request supersedes the running analysis. Runs on main are
 # never cancelled, so every commit that reaches main keeps a complete analysis.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

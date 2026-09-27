@@ -12,14 +12,15 @@ permissions:
 # A newer push to the same pull request supersedes the running gate. Runs on main are never
 # cancelled, so every commit that reaches main keeps a complete result.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
+    name: Site quality gate
     runs-on: ubuntu-latest
     # A path no impact rule covers selects the complete gate, so this budget matches the
-    # deploy workflow's complete verification plus the Chromium install.
+    # complete verification (20 minutes) plus a five-minute Chromium installation margin.
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
