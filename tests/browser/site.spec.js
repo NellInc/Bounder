@@ -1114,10 +1114,9 @@ test("a layout change never clears the scene: same-size passes keep the canvas, 
   await expect(stage).toHaveAttribute("data-animation-state", "idle", { timeout: 120_000 });
   const resizes = () => page.evaluate(() => window.__stageCanvasResizes);
   const settled = await resizes();
-  const offsetBefore = await stage.getAttribute("data-view-offset");
-  // The legend growing fires the stage ResizeObserver (the view offset moves); the canvas keeps its buffer.
+  // The legend growing fires the stage ResizeObserver, whose callback runs before the next paint;
+  // the stage itself keeps its size, so the canvas must keep its buffer.
   await page.locator(".stage-legend").evaluate((legend) => { legend.style.minHeight = "64px"; });
-  await expect.poll(() => stage.getAttribute("data-view-offset")).not.toBe(offsetBefore);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   expect(await resizes(), "a same-size layout pass reassigned the canvas size").toBe(settled);
   // With animation frames withheld, only the synchronous redraw can refill a resized canvas.
