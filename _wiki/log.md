@@ -132,3 +132,8 @@ Updated: flows/agent-operating-loop, seams/evidence-provenance, systems/site-arc
 Recorded: the operating loop's Seal step names the three commit-A steps that gates enforce (renewing `.well-known/security.txt` Expires, adding the previous manifest's digest to `HISTORICAL_MANIFEST_SHA256`, and sealing from a clean producer checkout whose fetched `origin/master` contains its commit), and its Publish step names `npm run check:live` as the read-only served-VERSION check. Release status now says 1.2.5 is deployed without a sealed manifest, so live bytes and the newest manifest (v1.2.4) disagree until it is sealed, and that 1.2.6 is the current source candidate.
 Repointed citations into `README.md`, `CHANGELOG.md`, `playwright.config.js` and `scripts/verify.mjs` moved by the README intended-use section, preview note, published-file row and release-step text, the 1.2.6 changelog entry, and the reworded web-server and signal-forwarding comments.
 Boundary: documentation only. No evidence, contract or authority byte changed; historical manifests are untouched.
+
+## [2026-09-27] correction | Private producer CI isolation
+Updated: seams/evidence-provenance, flows/agent-operating-loop (shifted test citations), index
+Sources ingested: .github/workflows/receipt-drift.yml, tests/site-quality.test.js, tests/release-manifest.test.js
+Boundary: public PR checks and private main-only derivation use separate runners; environment-secret branch restrictions are remote controls and require independent readback. Generator output is withheld from public logs. Post-deploy VERSION and homepage observation is a smoke check, not full artifact parity.

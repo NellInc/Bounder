@@ -174,8 +174,43 @@ test("pull-request workflows cancel superseded runs without cancelling main or d
       assert.match(workflow, /group: github-pages\n\s+cancel-in-progress: false/, "a deployment may never be cancelled mid-flight");
     } else {
       assert.match(workflow, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/, `${path} may cancel runs on main`);
+      assert.match(workflow, /group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/, `${path} may replace a pending main run`);
     }
   }
+});
+
+test("the required quality check has a unique name and deployment observes the published version", async () => {
+  const quality = await readSiteFile(".github/workflows/site-quality.yml");
+  assert.match(quality, /  verify:\n    name: Site quality gate\n/);
+  const deploy = await readSiteFile(".github/workflows/deploy-pages.yml");
+  const deployedJob = deploy.split("\n  deploy:\n")[1];
+  assert.ok(deployedJob, "the deployment job is missing");
+  assert.match(deployedJob, /persist-credentials: false/);
+  assert.match(deployedJob, /node-version-file: \.nvmrc/);
+  const install = deployedJob.indexOf("run: npm ci --ignore-scripts");
+  assert.ok(install >= 0 && install < deployedJob.indexOf("run: npm run check:live"), "the fresh deploy runner must install the live check's dependencies first");
+  assert.match(deployedJob, /run: npm run check:live -- --url https:\/\/www\.bounder\.io --attempts 10/);
+  assert.ok(deployedJob.indexOf("actions/deploy-pages@") < deployedJob.indexOf("run: npm run check:live"), "the observation must follow deployment");
+  assert.doesNotMatch(deployedJob, /continue-on-error: true/, "failed live observation must fail the deployment result");
+});
+
+test("private producer access is isolated from PR code and public generator logs", async () => {
+  const workflow = await readSiteFile(".github/workflows/receipt-drift.yml");
+  const [localJob, producerJob] = workflow.split("\n  producer:\n");
+  assert.ok(producerJob, "private producer access requires a separate job and runner");
+  assert.doesNotMatch(localJob, /secrets\.|repository: NellInc\/Bounder-from-org|path: producer\b/);
+  assert.match(localJob, /name: Local contract checks/);
+  assert.match(producerJob, /needs: verify/);
+  assert.match(producerJob, /if: \$\{\{ github\.ref == 'refs\/heads\/main' && github\.event_name != 'pull_request' \}\}/);
+  assert.match(producerJob, /environment: producer-verification/);
+  assert.match(producerJob, /ref: \$\{\{ github\.sha \}\}/);
+  assert.match(producerJob, /ref: \$\{\{ steps\.producer\.outputs\.commit \}\}/);
+  assert.match(producerJob, /fetch-depth: 0/, "ancestry proof needs the producer default-branch history");
+  assert.equal((producerJob.match(/persist-credentials: false/g) || []).length, 2);
+  assert.equal((producerJob.match(/secrets\.BOUNDER_PRODUCER_READ_TOKEN/g) || []).length, 2, "only availability and checkout may refer to the credential");
+  assert.match(producerJob, /npm run verify:producer -- --producer-root \.\.\/producer > "\$RUNNER_TEMP\/producer-derivation\.log" 2>&1/);
+  assert.match(producerJob, /exit 1/);
+  assert.doesNotMatch(workflow, /pull_request_target|upload-artifact|cat .*producer-derivation\.log/);
 });
 
 test("CodeQL analyses the workflows as well as the JavaScript", async () => {

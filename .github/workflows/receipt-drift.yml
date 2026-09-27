@@ -28,17 +28,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
+    name: Local contract checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      # The secrets context is not readable inside step conditions, so expose only whether the
-      # private read token exists. The token itself is passed only to the producer checkout.
-      PRODUCER_TOKEN_AVAILABLE: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN != '' }}
     steps:
       - name: Checkout publisher
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,11 +54,46 @@ jobs:
       - name: Validate local contracts and provenance tooling
         working-directory: publisher
         run: node --test tests/producer-derivation.test.js tests/release-manifest-v2.test.js
-      # The newest sealed manifest is the single source of truth for which producer tree this
-      # release claims. Resolving it here means a manifest bump moves the verified ref
-      # automatically instead of leaving the workflow attesting to a superseded commit. This
-      # step reads only public repository files, so it runs for fork pull requests too.
+      - name: Record pull-request proof boundary
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          message="Producer derivation is unverified on pull requests. Only public local contracts are checked; private producer access is restricted to protected main."
+          echo "::warning title=Producer derivation unverified::${message}"
+          printf '### Producer derivation unverified\n\n%s\n' "$message" >> "$GITHUB_STEP_SUMMARY"
+
+  producer:
+    name: Trusted producer derivation
+    needs: verify
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Store the token ONLY in this environment, with a branch policy allowing main only.
+    # A repository secret or a job condition alone cannot protect against PR workflow edits.
+    environment: producer-verification
+    env:
+      PRODUCER_TOKEN_AVAILABLE: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN != '' }}
+    steps:
+      - name: Checkout trusted publisher
+        if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: publisher
+          persist-credentials: false
+      - name: Set up Node.js
+        if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: publisher/.nvmrc
+          cache: npm
+          cache-dependency-path: publisher/package-lock.json
+      - name: Install publisher dependencies exactly
+        if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
+        working-directory: publisher
+        run: npm ci --ignore-scripts
+      # Resolve only trusted-main manifest bytes in this isolated runner.
       - name: Resolve the producer commit named by the newest release manifest
+        if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
         id: producer
         working-directory: publisher
         run: |
@@ -74,18 +106,23 @@ jobs:
         with:
           repository: NellInc/Bounder-from-org
           ref: ${{ steps.producer.outputs.commit }}
-          # Passed to this checkout only. A job-level env block would put the private producer
-          # credential in the process environment of every step, including steps that execute
-          # pull-request-head code, and persist-credentials: false stops checkout from leaving
-          # it in producer/.git/config, where those same steps could read it. The later steps
-          # only run local Git inspection in the producer tree and need no credential.
+          # Full history supplies origin/master for the producer ancestry gate. Credentials
+          # stay in checkout only; no private source or generator logs are uploaded.
+          fetch-depth: 0
           token: ${{ secrets.BOUNDER_PRODUCER_READ_TOKEN }}
           path: producer
           persist-credentials: false
       - name: Regenerate producer evidence and compare exact bytes
         if: ${{ env.PRODUCER_TOKEN_AVAILABLE == 'true' }}
         working-directory: publisher
-        run: npm run verify:producer -- --producer-root ../producer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! npm run verify:producer -- --producer-root ../producer > "$RUNNER_TEMP/producer-derivation.log" 2>&1; then
+            echo "::error title=Producer derivation failed::Repeat the derivation in the private producer workspace. Generator output is withheld from public Actions logs."
+            exit 1
+          fi
+          echo "Producer derivation passed against the sealed producer revision."
       # A skipped derivation must not read as a passed one. The warning annotation and the job
       # summary make the unverified state visible next to the green contract checks.
       - name: Record unavailable private-producer proof

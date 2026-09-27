@@ -15,7 +15,7 @@
 - [[bounder:generated/task-routes]] — Generated changed-path, component, command, and proof routes (updated: 2026-09-07)
 
 ## Seams
-- [[bounder:seams/evidence-provenance]] — Producer, publisher, deployment, live, and physical proof boundaries; mirrored manipulator preview; inventory-hash definition; release, deployment and tag status (updated: 2026-09-27)
+- [[bounder:seams/evidence-provenance]] — Producer, publisher, deployment, live, and physical proof boundaries; isolated main-only producer verification; mirrored manipulator preview; inventory-hash definition; release, deployment and tag status (updated: 2026-09-27)
 
 ## Domain
 - [[bounder:domain/physical-interlock]] — Physical-interlock problem, vocabulary, and invariants (updated: 2026-09-26)
