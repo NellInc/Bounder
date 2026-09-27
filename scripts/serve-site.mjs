@@ -179,11 +179,32 @@ export function parseServeArguments(args) {
   return { root: options.root, host: options.host, port };
 }
 
-export async function runServeSiteCli(args = process.argv.slice(2), { logger = console, start = startStaticServer } = {}) {
+// Playwright starts its web server in a separate process group, so a runner that is
+// killed (a verify phase timeout, a stopped task) cannot take the server with it, and the
+// orphan keeps the port. Re-parenting is the one signal that always arrives: when the
+// launching process dies, the parent pid changes, and the server closes and exits.
+export function exitWithParent(server, {
+  getParentPid = () => process.ppid,
+  intervalMs = 1_000,
+  exit = () => process.exit(0)
+} = {}) {
+  const parentPid = getParentPid();
+  const timer = setInterval(() => {
+    if (getParentPid() === parentPid) return;
+    clearInterval(timer);
+    server.close(() => exit());
+    server.closeAllConnections?.();
+  }, intervalMs);
+  timer.unref?.();
+  return timer;
+}
+
+export async function runServeSiteCli(args = process.argv.slice(2), { logger = console, start = startStaticServer, watchParent = exitWithParent } = {}) {
   const options = parseServeArguments(args);
   const server = await start({ ...options, logger });
   const address = server.address();
   logger.log(`Serving ${options.root} at http://${address.address}:${address.port}/`);
+  watchParent(server);
   return server;
 }
 

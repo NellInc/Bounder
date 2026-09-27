@@ -10,6 +10,7 @@ import {
   MIME_TYPES,
   contentTypeFor,
   createRequestHandler,
+  exitWithParent,
   parseServeArguments,
   requestSegments,
   resolveRequest,
@@ -174,18 +175,37 @@ test("the CLI requires an explicit root and port, and refuses a file as the serv
   await assert.rejects(() => startStaticServer({ root: join(root, "index.html") }), /must be a directory/);
 
   const logged = [];
+  const watched = [];
   const fake = { address: () => ({ address: "127.0.0.1", port: 4173 }) };
   const server = await runServeSiteCli(["--root", root, "--port", "4173"], {
     logger: { log: (line) => logged.push(line) },
     start: async (options) => {
       assert.equal(options.host, DEFAULT_HOST);
       return fake;
-    }
+    },
+    watchParent: (watchedServer) => watched.push(watchedServer)
   });
   assert.equal(server, fake);
+  assert.deepEqual(watched, [fake], "the CLI server must exit with its launching process");
   assert.match(logged[0], /^Serving .+ at http:\/\/127\.0\.0\.1:4173\/$/);
 
   const occupied = await startStaticServer({ root, port: 0 });
   t.after(() => new Promise((resolvePromise) => occupied.close(resolvePromise)));
   await assert.rejects(() => startStaticServer({ root, port: occupied.address().port }), /EADDRINUSE/);
+});
+
+test("a served site closes and exits once its launching process is gone", async () => {
+  let parentPid = 4242;
+  const events = [];
+  const server = {
+    close: (callback) => { events.push("close"); callback(); },
+    closeAllConnections: () => events.push("drop connections")
+  };
+  const timer = exitWithParent(server, { getParentPid: () => parentPid, intervalMs: 5, exit: () => events.push("exit") });
+  await new Promise((resolvePromise) => setTimeout(resolvePromise, 25));
+  assert.deepEqual(events, [], "a live parent keeps the server up");
+  parentPid = 1;
+  await new Promise((resolvePromise) => setTimeout(resolvePromise, 25));
+  clearInterval(timer);
+  assert.deepEqual(events, ["close", "exit", "drop connections"]);
 });
