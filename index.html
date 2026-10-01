@@ -326,7 +326,7 @@
         <h1 id="hero-title">Trust, at the<br>point of action.</h1>
         <p class="hero-summary"><strong>An open physical-interlock architecture.</strong> Bounder verifies narrow authority, checks live conditions locally, and permits only what signed policy and those checks allow.</p>
         <div class="hero-actions">
-          <a class="button button-primary" href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">Source and contracts <span aria-hidden="true">↗</span></a>
+          <a class="button button-primary" href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">Website source and contracts <span aria-hidden="true">↗</span></a>
           <a class="text-link" href="#architecture">See how it works <span aria-hidden="true">↓</span></a>
         </div>
       </div>
@@ -342,7 +342,7 @@
       <aside class="status-block" aria-label="Project status">
         <p class="status-kicker">Current status</p>
         <strong>Development testbed</strong>
-        <p>Browser simulations, policy contracts, and recorded runs, working towards deployment on real platforms.</p>
+        <p>Browser simulations, policy contracts, and recorded runs, working towards deployment on real platforms. The canonical Go decision engine is maintained in a private repository; public fixtures and contracts support local verification.</p>
       </aside>
     </section>
 
@@ -402,7 +402,7 @@
         <article>
           <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-local"/></svg>
           <h3>Local first</h3>
-          <p>The network can go dark. The cloud can be unreachable. The Guardian still decides, with no one else’s permission.</p>
+          <p>The network can go dark. The cloud can be unreachable. The Guardian still decides locally, and nothing it cannot verify goes ahead.</p>
         </article>
         <article>
           <svg class="principle-mark" aria-hidden="true" focusable="false"><use href="#i-narrow"/></svg>
@@ -505,6 +505,7 @@
         <div>
           <h2 id="simulator-preview-title">Watch the boundary hold.</h2>
           <p>Explore how Bounder holds a machine back: outside civilian buffers, protected sites and humanitarian corridors, away from the operator’s own teams, and whenever a person may be surrendering or incapacitated. An unconfirmed identity, an unresolved consequence check or missing human authorisation keeps a high-consequence request on hold. In this simulation such a request is never allowed, whatever is confirmed: these conditions are only ever reasons to hold. One Creed Space policy governs the whole simulated fleet.</p>
+          <p>Bounder is designed as a restraint-only interlock. It decides whether an action requested elsewhere may go ahead, and otherwise keeps the machine in a safe state. It is not designed, offered or supported for weapons, targeting or fire-control use.</p>
         </div>
         <a class="text-link" href="simulator.html?tour=1#scenario-lab">Take the six-step tour <span aria-hidden="true">→</span></a>
       </div>

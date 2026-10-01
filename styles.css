@@ -1029,6 +1029,10 @@ a[target="_blank"]::after {
   font-size: 1.08rem;
 }
 
+.home-simulator-heading p + p {
+  margin-top: 0.9rem;
+}
+
 .home-simulator-frame {
   display: block;
   width: 100%;

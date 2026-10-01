@@ -137,3 +137,9 @@ Boundary: documentation only. No evidence, contract or authority byte changed; h
 Updated: seams/evidence-provenance, flows/agent-operating-loop (shifted test citations), index
 Sources ingested: .github/workflows/receipt-drift.yml, tests/site-quality.test.js, tests/release-manifest.test.js
 Boundary: public PR checks and private main-only derivation use separate runners; environment-secret branch restrictions are remote controls and require independent readback. Generator output is withheld from public logs. Post-deploy VERSION and homepage observation is a smoke check, not full artifact parity.
+
+## [2026-10-01] correction | Copy-audit fixes and the 1.2.7 source candidate
+Updated: seams/evidence-provenance (release status), index; systems/site-architecture, systems/system-architecture, flows/agent-operating-loop (citations only)
+Recorded: 1.2.6 is sealed by `release/bounder-reference-v1.2.6.manifest.json`, its digest joins `HISTORICAL_MANIFEST_SHA256`, and 1.2.7 is the current unsealed source candidate.
+Repointed citations into `README.md`, `index.html`, `simulator.html`, `CHANGELOG.md` and `scripts/generate-release-manifest-v2.mjs` moved by the restraint-only intended-use paragraphs added under the homepage simulator teaser and the simulator's "Why Bounder" heading, the README paragraph on the producer's law-of-armed-conflict rule names, the 1.2.7 changelog entry and the new historical digest. The README evidence row now reads "Recorded staging run of 100 software Guardians simulating six physical platform classes", and its anchor in systems/site-architecture follows the new wording. Citation-only pages keep their `wiki:updated` markers, following the 2026-09-11 precedent.
+Boundary: presentation, documentation and release-line labelling only. No evidence, contract, schema or authority byte changed; historical manifests are untouched.

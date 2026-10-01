@@ -3,7 +3,7 @@
 <!-- wiki:type = index -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-05-23 -->
-<!-- wiki:updated = 2026-09-27 -->
+<!-- wiki:updated = 2026-10-01 -->
 
 ## Systems
 - [[bounder:systems/system-architecture]] — Canonical abstraction tower, authority owners, planes, invariants, and repository roles (updated: 2026-09-27)
@@ -15,7 +15,7 @@
 - [[bounder:generated/task-routes]] — Generated changed-path, component, command, and proof routes (updated: 2026-09-07)
 
 ## Seams
-- [[bounder:seams/evidence-provenance]] — Producer, publisher, deployment, live, and physical proof boundaries; isolated main-only producer verification; mirrored manipulator preview; inventory-hash definition; release, deployment and tag status (updated: 2026-09-27)
+- [[bounder:seams/evidence-provenance]] — Producer, publisher, deployment, live, and physical proof boundaries; isolated main-only producer verification; mirrored manipulator preview; inventory-hash definition; release, deployment and tag status (updated: 2026-10-01)
 
 ## Domain
 - [[bounder:domain/physical-interlock]] — Physical-interlock problem, vocabulary, and invariants (updated: 2026-09-26)

@@ -71,7 +71,7 @@ export const reasonLabel = (code) => {
   return recorded;
 };
 
-// Recorded Fleet scenario names that use targeting or US wording, shown in plain en-GB words.
+// Recorded producer names that use law-of-armed-conflict or US wording, shown in plain en-GB words.
 const SCENARIO_GLOSSES = Object.freeze({
   "friendly force separation": "team separation",
   "positive identification": "identity check",

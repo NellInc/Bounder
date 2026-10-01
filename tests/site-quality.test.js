@@ -337,8 +337,10 @@ test("home page distinguishes public browser source from the private decision pr
   const hero = html.match(/<div class="hero-content">([\s\S]*?)<\/section>/)?.[1];
   assert.ok(hero);
   // The public repository holds the website and contracts; the decision engine is private,
-  // so the call to action names what the link actually opens.
-  assert.match(hero, /href="https:\/\/github\.com\/NellInc\/Bounder"[^>]*>Source and contracts/);
+  // so the call to action names what the link actually opens and the status block says so.
+  assert.match(hero, /href="https:\/\/github\.com\/NellInc\/Bounder"[^>]*>Website source and contracts <span/);
+  assert.doesNotMatch(hero, />Source and contracts/);
+  assert.match(html, /working towards deployment on real platforms\. The canonical Go decision engine is maintained in a private repository; public fixtures and contracts support local verification\.<\/p>/);
   assert.doesNotMatch(hero, /Explore the code/);
   assert.match(hero, /An open physical-interlock architecture\./);
   // No unqualified safety guarantee for a simulation-only testbed.
@@ -351,6 +353,22 @@ test("home page distinguishes public browser source from the private decision pr
   const source = graph.find((entry) => entry["@type"] === "SoftwareSourceCode");
   assert.equal(source.codeRepository, "https://github.com/NellInc/Bounder");
   assert.deepEqual(source.programmingLanguage, ["HTML", "CSS", "JavaScript"]);
+});
+
+test("restraint-only intended use sits beside the people-protection copy on both pages", async () => {
+  const intendedUse = "<p>Bounder is designed as a restraint-only interlock. It decides whether an action requested elsewhere may go ahead, and otherwise keeps the machine in a safe state. It is not designed, offered or supported for weapons, targeting or fire-control use.</p>";
+  const home = await readSiteFile("index.html");
+  const preview = home.match(/<div class="home-simulator-heading"[\s\S]*?<\/div>/)[0];
+  assert.ok(preview.includes("In this simulation such a request is never allowed, whatever is confirmed: these conditions are only ever reasons to hold."));
+  assert.ok(preview.includes(intendedUse));
+  // The Guardian decides locally, but its authority comes from verified policy, not from itself.
+  assert.ok(home.includes("The Guardian still decides locally, and nothing it cannot verify goes ahead."));
+  assert.doesNotMatch(home, /with no one else’s permission/);
+  const simulator = await readSiteFile("simulator.html");
+  const rules = simulator.match(/<section class="rules-context[\s\S]*?<\/section>/)[0];
+  assert.ok(rules.includes("In this simulation, the rules that protect people can only hold a request; none of them can grant one."));
+  assert.ok(rules.includes(intendedUse));
+  assert.ok(rules.includes("<p>The rule names come from the restraint tests in international humanitarian law (positive identification, proportionality, surrender, own-force separation). The recorded data keeps the producer’s original wording, including the action label ‘intercept’; the interface shows plain-English labels. Every such request in the published evidence is held.</p>"));
 });
 
 test("contact intent guidance adds no mandatory field and is associated with the message", async () => {

@@ -173,8 +173,20 @@ const visibleText = (markup) => markup
   .replace(/<[^>]+>/g, " ")
   .replace(/\s+/g, " ");
 
+// The intended-use disclosure names the vocabulary that the rest of the copy avoids, so it is
+// pinned exactly here and removed before the vocabulary scan; nothing else is exempt.
+const intendedUseDisclosure = [
+  "<p>Bounder is designed as a restraint-only interlock. It decides whether an action requested elsewhere may go ahead, and otherwise keeps the machine in a safe state. It is not designed, offered or supported for weapons, targeting or fire-control use.</p>",
+  "<p>The rule names come from the restraint tests in international humanitarian law (positive identification, proportionality, surrender, own-force separation). The recorded data keeps the producer’s original wording, including the action label ‘intercept’; the interface shows plain-English labels. Every such request in the published evidence is held.</p>"
+];
+
 test("site-owned simulator copy uses restraint language, not targeting vocabulary", () => {
-  const text = visibleText(html);
+  let scanned = html;
+  for (const paragraph of intendedUseDisclosure) {
+    assert.equal(html.split(paragraph).length, 2, "the intended-use disclosure appears exactly once");
+    scanned = scanned.replace(paragraph, " ");
+  }
+  const text = visibleText(scanned);
   for (const phrase of [/targeting/i, /positive identification/i, /proportionality/i, /friendly/i, /intercept request/i]) {
     assert.doesNotMatch(text, phrase);
   }
