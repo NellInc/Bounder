@@ -1252,7 +1252,7 @@
       ],
       "release_sensitive": false,
       "documentation_refresh": [
-        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/flows/agent-operating-loop.md", "_wiki/log.md",
         "_wiki/systems/runtime-observability.md",
         "_wiki/systems/system-architecture.md"
       ],
@@ -1489,7 +1489,7 @@
         "*.png",
         "*.webmanifest",
         ".well-known/**",
-        "robots.txt",
+        "robots.txt", "llms.txt",
         "CNAME",
         "LICENSE",
         "NOTICE",
@@ -1513,7 +1513,7 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/flows/agent-operating-loop.md", "_wiki/log.md",
         "_wiki/systems/runtime-observability.md",
         "_wiki/systems/site-architecture.md",
         "_wiki/systems/system-architecture.md"

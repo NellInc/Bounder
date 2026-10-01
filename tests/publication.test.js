@@ -83,8 +83,7 @@ test("the exported publication allowlist is exact and explicitly includes every 
   assert.equal(Object.isFrozen(canonicalPublicPaths), true);
   assert.deepEqual(canonicalPublicPaths, expectedPublicPaths);
   assert.equal(new Set(canonicalPublicPaths).size, canonicalPublicPaths.length);
-  assert.ok(canonicalPublicPaths.includes("llms.txt"));
-  assert.ok(canonicalPublicPaths.includes("simulator-contracts.js"));
+  assert.ok(canonicalPublicPaths.includes("simulator-contracts.js") && canonicalPublicPaths.includes("llms.txt"));
   assert.ok(canonicalPublicPaths.includes("runtime"));
   assert.ok(canonicalPublicPaths.includes("simulator"));
 

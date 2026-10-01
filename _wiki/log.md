@@ -137,3 +137,9 @@ Boundary: documentation only. No evidence, contract or authority byte changed; h
 Updated: seams/evidence-provenance, flows/agent-operating-loop (shifted test citations), index
 Sources ingested: .github/workflows/receipt-drift.yml, tests/site-quality.test.js, tests/release-manifest.test.js
 Boundary: public PR checks and private main-only derivation use separate runners; environment-secret branch restrictions are remote controls and require independent readback. Generator output is withheld from public logs. Post-deploy VERSION and homepage observation is a smoke check, not full artifact parity.
+
+## [2026-10-01] implementation | Public llms.txt publication metadata
+Added: concise public site overview and curated links in `llms.txt:1-16`.
+Retention: canonical publication allowlist and regression inventory include llms.txt (`scripts/build-site.mjs:10-21`; `tests/publication.test.js:25-36`).
+Routing: llms.txt follows the existing publication impact rule (`system/bounder-system.v1.json:1475-1498`); task routes and CI impact rules regenerated, index updated.
+Boundary: source metadata changes confer no device authority. Full release verification, producer derivation, sealing, and live-byte evidence remain separate root-owned gates.
