@@ -1554,7 +1554,7 @@
       ],
       "release_sensitive": true,
       "documentation_refresh": [
-        "_wiki/flows/agent-operating-loop.md",
+        "_wiki/flows/agent-operating-loop.md", "_wiki/log.md",
         "_wiki/seams/evidence-provenance.md",
         "_wiki/systems/runtime-observability.md",
         "_wiki/systems/site-architecture.md",
