@@ -25,7 +25,7 @@ const quietLogger = Object.freeze({ log() {}, warn() {} });
 const expectedPublicPaths = Object.freeze([
   ".well-known", "404.html", "CNAME", "CHANGELOG.md", "LICENSE", "NOTICE", "README.md",
   "SECURITY.md", "VERSION", "contact.html", "continuity-evidence.js",
-  "favicon.ico", "index.html", "policy-roundtrip.js", "privacy.html",
+  "favicon.ico", "index.html", "llms.txt", "policy-roundtrip.js", "privacy.html",
   "robots.txt", "simulator-bootstrap.js", "simulator-contracts.js",
   "simulator-fallback.js", "simulator-world.js", "simulator.css",
   "simulator.html", "simulator.js", "site.js", "sitemap.xml",
@@ -83,6 +83,7 @@ test("the exported publication allowlist is exact and explicitly includes every 
   assert.equal(Object.isFrozen(canonicalPublicPaths), true);
   assert.deepEqual(canonicalPublicPaths, expectedPublicPaths);
   assert.equal(new Set(canonicalPublicPaths).size, canonicalPublicPaths.length);
+  assert.ok(canonicalPublicPaths.includes("llms.txt"));
   assert.ok(canonicalPublicPaths.includes("simulator-contracts.js"));
   assert.ok(canonicalPublicPaths.includes("runtime"));
   assert.ok(canonicalPublicPaths.includes("simulator"));
