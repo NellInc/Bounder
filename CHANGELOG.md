@@ -1,6 +1,15 @@
 # Changelog
 
-## 1.2.6 · 2026-09-27 (source candidate, unsealed)
+## 1.2.7 · 2026-10-01 (source candidate, unsealed)
+
+### Added
+
+- Public `llms.txt` with a concise overview of the simulation testbed and curated links to the architecture, simulator, contact and policy pages.
+- Publication allowlist retention and regression coverage for the file, with routing through the existing publication verification lane.
+
+## 1.2.6 · 2026-09-27
+
+Sealed by `release/bounder-reference-v1.2.6.manifest.json`.
 
 Review follow-up to 1.2.5: a rendering fix for the embedded simulator, restraint wording throughout, layout polish, and documentation and terms.
 

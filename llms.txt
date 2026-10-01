@@ -1,0 +1,16 @@
+# Bounder
+
+> An open physical-interlock architecture and simulation testbed for checking narrow, signed authority and local conditions at a machine's point of action.
+
+Bounder currently provides browser simulations, policy contracts, and recorded evidence. Device integration, hardware-in-the-loop testing, and platform-specific safety validation remain development goals.
+
+## Architecture and laboratory
+
+- [Overview](https://www.bounder.io/): Architecture, example applications, recorded Fleet exercises, and development roadmap.
+- [Simulator](https://www.bounder.io/simulator.html): Browser verification laboratory and guided tour of protective boundaries.
+
+## Optional
+
+- [Contact](https://www.bounder.io/contact.html): Inquiries about the project.
+- [Terms](https://www.bounder.io/terms.html): Terms for the website and reference materials.
+- [Privacy](https://www.bounder.io/privacy.html): Website privacy information.
