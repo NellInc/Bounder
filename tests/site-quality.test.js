@@ -362,7 +362,8 @@ test("restraint-only intended use sits beside the people-protection copy on both
   assert.ok(preview.includes("In this simulation such a request is never allowed, whatever is confirmed: these conditions are only ever reasons to hold."));
   assert.ok(preview.includes(intendedUse));
   // The Guardian decides locally, but its authority comes from verified policy, not from itself.
-  assert.ok(home.includes("The Guardian still decides locally, and nothing it cannot verify goes ahead."));
+  assert.ok(home.includes("The Guardian still decides locally, and is designed so that nothing it cannot verify goes ahead."));
+  assert.ok(!home.includes("locally, and nothing it cannot verify goes ahead."));
   assert.doesNotMatch(home, /with no one else’s permission/);
   const simulator = await readSiteFile("simulator.html");
   const rules = simulator.match(/<section class="rules-context[\s\S]*?<\/section>/)[0];

@@ -8,7 +8,7 @@ Copy-audit follow-up to 1.2.6: the intended-use statement now sits beside the co
 
 - The homepage simulator teaser and the simulator's "Why Bounder" section carry the intended-use statement from the terms: Bounder is designed as a restraint-only interlock and is not designed, offered or supported for weapons, targeting or fire-control use. The conditions listed before it and the "In this simulation" wording are unchanged. On the homepage it is spaced as its own paragraph.
 - The README intended-use section and the simulator say that the rule names come from the restraint tests in international humanitarian law, that the recorded data keeps the producer's original wording, including the action label "intercept", and that every such request in the published evidence is held. The glossary comment in `ui/receipt-copy.js` names that wording plainly. The recorded producer strings are unchanged.
-- The homepage says the Guardian decides locally and that nothing it cannot verify goes ahead, instead of "with no one else's permission".
+- The homepage says the Guardian decides locally and is designed so that nothing it cannot verify goes ahead, instead of "with no one else's permission".
 - The homepage button reads "Website source and contracts", and the status block says the canonical Go decision engine is maintained in a private repository and that public fixtures and contracts support local verification.
 - The README describes `data/bounder-staging-pilot.v1.json` as a recorded staging run of 100 software Guardians simulating six physical platform classes.
 - 1.2.6 is labelled with the manifest that sealed it, and that manifest's digest joins the historical manifest digests.
