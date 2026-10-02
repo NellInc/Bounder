@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { access, readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
@@ -479,5 +480,42 @@ test("visitor-facing copy names the recorded receipt one way, without bare 'Go r
   for (const path of ["simulator.html", "simulator-fallback.js", "simulator/controller.js", "ui/policy-panel.js", "index.html"]) {
     const source = await readSiteFile(path);
     assert.doesNotMatch(source, /\bGo (?:interlock )?receipt\b/, `${path} still says "Go receipt"`);
+  }
+});
+
+const readExplainer = (path) => readFile(new URL(`../${path}`, import.meta.url));
+
+test("the published explainer preserves the accepted corrected master", async () => {
+  const bytes = await readExplainer("assets/video/bounder-explainer-v1.mp4");
+  assert.equal(bytes.byteLength, 43726947);
+  assert.equal(createHash("sha256").update(bytes).digest("hex"), "1b90d7e36e503fbcb4ec531a152925cdbf3d9a33b60f62cff57b002773545b04");
+});
+
+test("the homepage offers opt-in native playback, captions and the complete transcript", async () => {
+  const html = (await readExplainer("index.html")).toString();
+  const player = html.match(/<video\b[\s\S]*?<\/video>/u)?.[0] ?? "";
+  assert.match(player, /controls playsinline preload="none"/u);
+  assert.doesNotMatch(player, /\b(?:autoplay|loop|muted)\b/u);
+  assert.match(player, /poster="assets\/video\/bounder-explainer-v1.jpg"/u);
+  assert.match(player, /kind="captions"[^>]*srclang="en"[^>]*default/u);
+  assert.match(html, /href="#explainer">Watch the film/u);
+  const transcript = html.match(/<div class="explainer-transcript-copy">([\s\S]*?)<\/div>/u)?.[1] ?? "";
+  assert.equal((transcript.match(/<p>/gu) ?? []).length, 8);
+  assert.match(transcript, /Bounder is currently simulation-only/u);
+  assert.match(transcript, /cached authority still expires/u);
+  assert.match(transcript, /physical safety remains a separate engineering and validation responsibility/u);
+});
+
+test("English caption cues are ordered and stay inside the two-minute film", async () => {
+  const text = (await readExplainer("assets/video/bounder-explainer-v1.vtt")).toString();
+  assert.ok(text.startsWith("WEBVTT\n"));
+  const toSeconds = (time) => time.split(":").reduce((total, part) => total * 60 + Number(part), 0);
+  const cues = [...text.matchAll(/(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3})/gu)];
+  assert.equal(cues.length, 41);
+  let previousEnd = 0;
+  for (const [, startText, endText] of cues) {
+    const start = toSeconds(startText), end = toSeconds(endText);
+    assert.ok(start >= previousEnd && end > start && end <= 120);
+    previousEnd = end;
   }
 });

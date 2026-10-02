@@ -3,7 +3,7 @@
 <!-- wiki:type = system -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-05-23 -->
-<!-- wiki:updated = 2026-09-27 -->
+<!-- wiki:updated = 2026-10-02 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -12,7 +12,7 @@ Bounder.io is the static public verification and presentation layer for a simula
 
 ## Source and Archive Boundary
 
-The root pages and modules are the only active site source. The `docs/` tree is a preserved Squarespace-era snapshot with search exclusion and no production support. (`README.md:73-79 "preserved Squarespace-era clone"`; `SECURITY.md:3-10`; `tests/site-quality.test.js:48-54`)
+The root pages and modules are the only active site source. The `docs/` tree is a preserved Squarespace-era snapshot with search exclusion and no production support. (`README.md:73-79 "preserved Squarespace-era clone"`; `SECURITY.md:3-10`; `tests/site-quality.test.js:49-55`)
 
 The publication build uses an explicit recursive allowlist that excludes `docs/`, tests, repository automation, temporary design assets, and the wiki. It copies the accepted tree into `_site/` and verifies the promoted artifact byte for byte. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:350-362`; `README.md:197-203 "deliberately allowlisted artifact"`)
 
@@ -57,7 +57,11 @@ The controller and UI imports establish this dependency shape. (`simulator/contr
 | `scripts/generate-release-manifest-v2.mjs` | Seal a release from an existing publisher commit plus producer and verification receipts | Publisher commit, producer-derivation receipt, verification receipt | Immutable manifest v2 | Refuse to seal on receipt or provenance mismatch |
 | `scripts/generate-release-manifest.js` | Historical v1 generator, retained only for the byte-immutable v1 records | Version, source commit, pinned paths | Immutable v1 manifest | Exclusive rollback and no target |
 
-The module exports, browser structure, and build code define these roles. (`continuity-evidence.js:158 "verifyContinuityEnvelope"`; `continuity-evidence.js:514 "startContinuityMonitor"`; `runtime/policy/contracts.js:145 "verifyEnvelope"`; `runtime/policy/roundtrip.js:44 "validateRoundTripEvidence"`; `runtime/simulator/contracts-core.js:197-849`; `staging-feed.js:117 "validatePilotEvidence"`; `staging-feed.js:438 "loadPilotEvidence"`; `simulator-world.js:7-143`; `scripts/build-site.mjs:365-520`; `scripts/generate-release-manifest.js:715-928`; `scripts/generate-release-manifest-v2.mjs:175-257 "buildManifestV2"`)
+The module exports, browser structure, and build code define these roles. (`continuity-evidence.js:158 "verifyContinuityEnvelope"`; `continuity-evidence.js:514 "startContinuityMonitor"`; `runtime/policy/contracts.js:145 "verifyEnvelope"`; `runtime/policy/roundtrip.js:44 "validateRoundTripEvidence"`; `runtime/simulator/contracts-core.js:197-849`; `staging-feed.js:117 "validatePilotEvidence"`; `staging-feed.js:438 "loadPilotEvidence"`; `simulator-world.js:7-143`; `scripts/build-site.mjs:365-520`; `scripts/generate-release-manifest.js:715-928`; `scripts/generate-release-manifest-v2.mjs:176-258 "buildManifestV2"`)
+
+## Homepage explainer
+
+The homepage offers a self-hosted two-minute film through a native player with controls, a poster and `preload="none"`. English captions accompany the film, and an eight-paragraph transcript remains available in a disclosure. The caption and transcript retain the simulation-only boundary and separate physical safety validation from browser exploration. (`index.html:349-377 "bounder-explainer"`; `index.html:362 "simulation-only"`; `index.html:373 "physical safety remains a separate engineering and validation responsibility"`)
 
 ## Contact and rendering lifecycle
 
@@ -73,7 +77,7 @@ The simulator schedules rendering on demand: after a frame it continues only whi
 2. **Recorded Fleet pilot:** a local evidence bundle supports fleet and resilience views. (`README.md:43 "Recorded 100-Guardian pilot"`; `simulator/controller.js:821 "loadPilotEvidence"`)
 3. **Optional staging feed:** bounded external data can replace the recorded pilot only after validation; failure retains the fallback. The recorded fallback loads from any same-origin http(s) page, while the live URL stays behind the host allowlist. (`staging-feed.js:283 "resolveFeedURL"`; `staging-feed.js:300 "resolveRecordedURL"`; `staging-feed.js:438 "loadPilotEvidence"`)
 4. **Optional resilience stream:** same-origin or loopback events can drive the lab; malformed or absent streams fall back to the committed timeline. (`runtime/simulator/contracts-core.js:763-849`; `simulator/controller.js:711 "resilience stream timed out"`)
-5. **Live continuity proof:** the homepage verifies a signed aggregate envelope and expires it when its lease ends. A monitor re-reads the feed a minute before the lease ends and at least every five minutes, backs off after failures, pauses in hidden tabs, and keeps a still-valid proof on screen until its own expiry; a repeated proof counts as no newer proof, and rollback is still refused. Each failure is named rather than shown as recorded figures in live cells, and a browser without Ed25519 WebCrypto reads "Cannot verify here". Without JavaScript, a `<noscript>` note replaces the loading state. (`index.html:18-20 "bounder-continuity-feed"`; `index.html:494 "continuity-noscript"`; `continuity-evidence.js:399 "createContinuityLeaseController"`; `continuity-evidence.js:490-498 "CONTINUITY_REFRESH"`; `continuity-evidence.js:500 "classifyContinuityFailure"`; `continuity-evidence.js:514 "startContinuityMonitor"`)
+5. **Live continuity proof:** the homepage verifies a signed aggregate envelope and expires it when its lease ends. A monitor re-reads the feed a minute before the lease ends and at least every five minutes, backs off after failures, pauses in hidden tabs, and keeps a still-valid proof on screen until its own expiry; a repeated proof counts as no newer proof, and rollback is still refused. Each failure is named rather than shown as recorded figures in live cells, and a browser without Ed25519 WebCrypto reads "Cannot verify here". Without JavaScript, a `<noscript>` note replaces the loading state. (`index.html:18-20 "bounder-continuity-feed"`; `index.html:524 "continuity-noscript"`; `continuity-evidence.js:399 "createContinuityLeaseController"`; `continuity-evidence.js:490-498 "CONTINUITY_REFRESH"`; `continuity-evidence.js:500 "classifyContinuityFailure"`; `continuity-evidence.js:514 "startContinuityMonitor"`)
 6. **Local policy laboratory:** the browser verifies the published Fleet vector and recorded round trip without creating authority. (`guides/INTEGRATION.md:74-84 "Inspection is entirely local"`)
 
 ## Publication Pipeline
@@ -109,7 +113,7 @@ The current canonical domain file contains `www.bounder.io`, matching page canon
 ## Current Friction
 
 1. Compatibility facades preserve existing imports while named policy modules own validation, evaluation, round-trip matching, and presentation state. The controller delegates scene creation and Fleet row rendering; controller orchestration and the simulator contract implementation remain broader maintenance surfaces. (`runtime/policy/contracts.js:145 "verifyEnvelope"`; `runtime/policy/roundtrip.js:44 "validateRoundTripEvidence"`; `runtime/simulator/contracts-core.js:197-849`; `simulator/controller.js:4 "createTownScene"`; `ui/policy-panel.js:44 "bootstrapPolicyRoundTrip"`)
-2. The same evidence concept appears in recorded, staging, continuity, resilience-stream, and policy-laboratory forms. Their proof strength needs one shared state vocabulary. (`index.html:470-501 "continuity-proof"`; `simulator.html:315 "fleet-evidence"`; `simulator.html:344 "policy-roundtrip-title"`; `simulator.html:384 "fault-replay"`; `simulator.html:407 "continuity-proof-title"`)
+2. The same evidence concept appears in recorded, staging, continuity, resilience-stream, and policy-laboratory forms. Their proof strength needs one shared state vocabulary. (`index.html:500-531 "continuity-proof"`; `simulator.html:315 "fleet-evidence"`; `simulator.html:344 "policy-roundtrip-title"`; `simulator.html:384 "fault-replay"`; `simulator.html:407 "continuity-proof-title"`)
 3. Public independent producer regeneration still requires access to the private producer revision or a future public mirror or reviewable source bundle. ([[bounder:seams/evidence-provenance]])
 4. Internal guidance previously described the source as having no build system, while release acceptance actually depends on an allowlisted build. (`README.md:127-130 "assembles the exact GitHub Pages payload"`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`)
 
