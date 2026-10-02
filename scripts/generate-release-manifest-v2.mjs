@@ -26,7 +26,8 @@ export const HISTORICAL_MANIFEST_SHA256 = Object.freeze({
   "release/bounder-reference-v1.2.0.manifest.json": "75e8162ea9af1c9b700191004cc1ec05ea99d6546b49eb54a667f73b7e87b599",
   "release/bounder-reference-v1.2.1.manifest.json": "cc04c1f52dc06374f401058b6807169745c0a5185f1cc2374155c9389ff7510a",
   "release/bounder-reference-v1.2.2.manifest.json": "33e42452818d60c3350c93c117132cadeb1345a0503311ea039afb8cbd0c6f02",
-  "release/bounder-reference-v1.2.4.manifest.json": "9ed697436d1e37fb30098bb500295b439ce58bb7ff8fdb35b4457bbd15372e5a", "release/bounder-reference-v1.2.6.manifest.json": "469d1111bc2de33a91028d6fd2484bff97ce8b856b6ddffef47569d560f86e00"
+  "release/bounder-reference-v1.2.4.manifest.json": "9ed697436d1e37fb30098bb500295b439ce58bb7ff8fdb35b4457bbd15372e5a", "release/bounder-reference-v1.2.6.manifest.json": "469d1111bc2de33a91028d6fd2484bff97ce8b856b6ddffef47569d560f86e00",
+  "release/bounder-reference-v1.2.7.manifest.json": "03da76eb23fad0a6f180faf9c7413e0ae4b18a98908f8d4232e3402f23e41bbe"
 });
 
 const execFileAsync = promisify(execFile);

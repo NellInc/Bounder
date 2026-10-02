@@ -3,7 +3,7 @@
 <!-- wiki:type = flow -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-27 -->
+<!-- wiki:updated = 2026-10-02 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -37,7 +37,7 @@ Stop broad exploration once the task surface, authority boundary, and proof rout
 | Change heartbeat, Fleet state, or observability budgets | [[bounder:systems/runtime-observability]] | `runtime/observability/`, `runtime/json/`, observability tests | `npm run test:observability`, `npm run benchmark:observability`, coverage and docs | Deployed producer or Fleet integration is requested |
 | Change a public telemetry schema | [[bounder:systems/runtime-observability]] | Four observability schemas and compatible reference validators | Observability tests and benchmark, coverage, build, browser, docs | Release pinning or producer contract adoption is requested |
 
-The touched surfaces and current tests support these routes. (`README.md:26-66`; `tests/interface.test.js:13-102`; `tests/site-quality.test.js:55-84`; `tests/publication.test.js:82-116 "the exported publication allowlist is exact"`)
+The touched surfaces and current tests support these routes. (`README.md:26-66`; `tests/interface.test.js:13-102`; `tests/site-quality.test.js:56-85`; `tests/publication.test.js:82-116 "the exported publication allowlist is exact"`)
 
 ## Control Loop
 
@@ -80,11 +80,11 @@ Run the narrowest discriminating test first. Run the aggregate gate required by 
 
 ### 6. Seal
 
-For release-sensitive work, freeze source bytes before manifest generation. A release uses a source commit followed by a manifest commit because the generator requires an existing source commit whose bytes match the pinned working tree. (`README.md:127-157 "Never amend source commit A"`; `scripts/generate-release-manifest-v2.mjs:133-151 "assertPublisherCommit"`)
+For release-sensitive work, freeze source bytes before manifest generation. A release uses a source commit followed by a manifest commit because the generator requires an existing source commit whose bytes match the pinned working tree. (`README.md:127-157 "Never amend source commit A"`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`)
 
 Commit A cannot describe its own seal, so its CHANGELOG entry stays `(source candidate, unsealed)`, and the next release's commit A relabels it with the manifest that sealed it, or records that it was published without one. Nothing in the two-commit flow did this before 1.2.4, so 1.2.0 to 1.2.2 were published labelled unsealed; a unit test now refuses a changelog that calls any version in `release/` other than the current `VERSION` unsealed (at seal commit B the current entry must keep its commit-A label), and requires an unsealed `VERSION` to be the newest entry. (`README.md:129-135 "relabels the previous"`; `tests/release-manifest.test.js:993-1011 "source candidate, unsealed"`; `tests/release-manifest.test.js:1029-1074 "the changelog never calls a sealed release unsealed"`)
 
-Three further commit-A steps are enforced by gates rather than by habit. Commit A renews the `Expires` field of `.well-known/security.txt` to under a year after the new entry's date, or the unit suite fails. It adds the previous release's manifest and its SHA-256 to `HISTORICAL_MANIFEST_SHA256`, which the unit suite requires and the generator checks again at seal time. The producer checkout passed to `npm run verify:producer` must be clean and at a commit on the producer's `master`, fetched so that `origin/master` contains it, or sealing refuses the receipt. (`README.md:135-138 "renews the \`Expires\` field"`; `README.md:151-154 "fetched so that its"`; `tests/publication.test.js:1031-1037 "security.txt expires more than a year after the newest release"`; `scripts/generate-release-manifest-v2.mjs:17 "HISTORICAL_MANIFEST_SHA256"`; `scripts/generate-release-manifest-v2.mjs:183 "assertHistoricalManifests"`; `scripts/generate-release-manifest-v2.mjs:199-201 "default_ref_contains_commit"`)
+Three further commit-A steps are enforced by gates rather than by habit. Commit A renews the `Expires` field of `.well-known/security.txt` to under a year after the new entry's date, or the unit suite fails. It adds the previous release's manifest and its SHA-256 to `HISTORICAL_MANIFEST_SHA256`, which the unit suite requires and the generator checks again at seal time. The producer checkout passed to `npm run verify:producer` must be clean and at a commit on the producer's `master`, fetched so that `origin/master` contains it, or sealing refuses the receipt. (`README.md:135-138 "renews the \`Expires\` field"`; `README.md:151-154 "fetched so that its"`; `tests/publication.test.js:1031-1037 "security.txt expires more than a year after the newest release"`; `scripts/generate-release-manifest-v2.mjs:17 "HISTORICAL_MANIFEST_SHA256"`; `scripts/generate-release-manifest-v2.mjs:184 "assertHistoricalManifests"`; `scripts/generate-release-manifest-v2.mjs:200-202 "default_ref_contains_commit"`)
 
 ### 7. Publish
 
@@ -127,7 +127,7 @@ There is no `npm run release:manifest` any more. `scripts/generate-release-manif
 
 `npm run test:coverage` runs `scripts/coverage.mjs`, which holds the per-file floors over the modules that run under Node (root modules, `runtime/`, `scripts/`) and then prints, without gating, the browser-only modules (`ui/`, `simulator/` and the page entry scripts), which the Playwright acceptance suite proves behaviourally but gathers no coverage for. Each run keeps V8 coverage in a private temporary directory and removes it afterwards. (`scripts/coverage.mjs:10-21 "Reported: browser-only modules"`)
 
-A focused `npm run verify -- --phase <id>` writes a receipt with `scope: "focused"` and no claims, and leaves `artifacts/verification/latest.json` alone; only the complete gate replaces it. `npm run release:manifest:v2` refuses any verification receipt that lacks a passing run of every default phase, the full claim set, or the producer commit it is sealing against. (`scripts/verify.mjs:315-317 "A focused run proves only the phases it ran."`; `scripts/generate-release-manifest-v2.mjs:91-112 "assertCompleteVerification"`)
+A focused `npm run verify -- --phase <id>` writes a receipt with `scope: "focused"` and no claims, and leaves `artifacts/verification/latest.json` alone; only the complete gate replaces it. `npm run release:manifest:v2` refuses any verification receipt that lacks a passing run of every default phase, the full claim set, or the producer commit it is sealing against. (`scripts/verify.mjs:315-317 "A focused run proves only the phases it ran."`; `scripts/generate-release-manifest-v2.mjs:92-113 "assertCompleteVerification"`)
 
 `npm run docs:check` supports an opt-in anchored citation form: a quoted exact fragment may follow a citation's line range, as in `README.md:1 "# Bounder website"`. The fragment then becomes load-bearing — the check fails if the cited range stops containing it — which is the only defence this repository has against silent citation drift when a cited file is edited. Prefer it wherever the supporting text is short and stable. Pages under `_wiki/generated/` are exempt from the `wiki:updated` freshness marker, because they are compiled from the descriptor and byte-compared by `npm run system:check`, which validates the descriptor and then runs `generate-system-views.mjs --check`, rather than dated by hand. `npm run system:generate --check` would not check anything: npm consumes a flag placed before `--`, so that command regenerates the views. (`scripts/docs-check.mjs:7-9 "opts a citation into a"`; `scripts/docs-check.mjs:49-52 "an anchor absent from that range"`; `scripts/docs-check.mjs:71-80 "generated/"`)
 
