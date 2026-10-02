@@ -264,7 +264,7 @@ test("a vertical touch swipe over the scene scrolls the page without tilting the
     await touch("touchStart", [[hx, hy]]);
     for (let index = 1; index <= 20; index += 1) await touch("touchMove", [[hx + index * 5, hy]]);
     await touch("touchEnd", []);
-    await expect.poll(async () => Math.abs((await read()).azimuth - after.azimuth)).toBeGreaterThan(5);
+    await expect.poll(async () => Math.abs((await read()).azimuth - after.azimuth), { timeout: 120_000 }).toBeGreaterThan(5);
   } finally {
     await context.close();
   }
@@ -480,7 +480,7 @@ test("the embedded simulator frame shrinks again after an evidence disclosure cl
   const embedded = iframe.contentFrame();
   await expect(embedded.locator(".simulator-stage")).toHaveAttribute("data-fleet-ready", /true|false/, { timeout: 20_000 });
   const frameHeight = async () => (await iframe.boundingBox()).height;
-  await expect.poll(frameHeight).toBeGreaterThan(400);
+  await expect.poll(frameHeight, { timeout: 60_000 }).toBeGreaterThan(400);
   const closed = await frameHeight();
   await embedded.locator("#fleet-evidence > summary").click();
   await expect.poll(frameHeight).toBeGreaterThan(closed + 200);

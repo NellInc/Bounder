@@ -1,0 +1,900 @@
+{
+  "manifest_version": "bounder-release-manifest/v2",
+  "release_version": "1.2.7",
+  "license": "Apache-2.0",
+  "generated_at": "2026-10-01T18:52:16Z",
+  "publisher_source": {
+    "repository": "https://github.com/NellInc/Bounder",
+    "commit": "2127c44d6bee4ad69c1cf1b5f57f9bd08d648a60",
+    "discovery_ref": "main"
+  },
+  "evidence_producers": [
+    {
+      "role": "decision_producer",
+      "repository": "https://github.com/NellInc/Bounder-from-org",
+      "commit": "ad57979201dad3396ca5f77cb02a535b9a57e094",
+      "discovery_ref": "master",
+      "generator": "scripts/export-website-artifacts.py@1",
+      "inputs": [
+        {
+          "path": "scripts/export-website-artifacts.py",
+          "bytes": 9583,
+          "sha256": "34d17f725824052b4512f0149117a451844320734adaee3cee583daa396cf96a"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-attestation-check/main.go",
+          "bytes": 1524,
+          "sha256": "7541c1172d6d48fdb4469d20cd654e4d9826f4da135c40a1cd11a09a4ba97a61"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-fleet-continuity/main.go",
+          "bytes": 37210,
+          "sha256": "5e8e898d4e2f62bc1db73180b67cb1da8e4fb662829361451bea8920e391baf0"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-fleet-continuity/main_test.go",
+          "bytes": 14268,
+          "sha256": "e5eee99dc87be527957b65c8ec110a21c5e32d3b202ea46a54f72455f7873e46"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-fleet-lab/main.go",
+          "bytes": 48292,
+          "sha256": "5f72ab59ce434d94fc5067ee44e460f4e893a77463de076d1f01a29ca66fe55d"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-fleet-lab/main_test.go",
+          "bytes": 3590,
+          "sha256": "f74af616dd1c50a60f55b9cbc1d852a2828fce3d266cfdb2f98f12d844d47e5e"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-fleet-sim/main.go",
+          "bytes": 14060,
+          "sha256": "d83578cb902f5c6d6c5a6774e90e69b7cfb1cac7f10b42a60d67238165cfa269"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-fleet-sim/main_test.go",
+          "bytes": 1881,
+          "sha256": "47a2f204f08a55e2476bff954cd05c8c18b368e647ae28fe4da1ea3d86728829"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-interlock-demo/main.go",
+          "bytes": 11811,
+          "sha256": "0f6abb3af3ae1e72f25eff8be6970d844110a378b9ebdc885ea2991b885b7044"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-interlock-demo/main_test.go",
+          "bytes": 2800,
+          "sha256": "19413cc32619e763f61daa28a4c512ddbc9aecb4c728df51971aeb005081abab"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-manipulator-golden/main.go",
+          "bytes": 4743,
+          "sha256": "bd93737ffb4b3587a62edd5234fa584f568859d5e1291ba5427df167b9bd8f01"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-roundtrip-export/main.go",
+          "bytes": 4855,
+          "sha256": "25dd1c52718e763101d46dfd64acadca8ffbb506da91a80b02190777d6437d48"
+        },
+        {
+          "path": "server/go-bounder-io/cmd/bounder-roundtrip-export/main_test.go",
+          "bytes": 1247,
+          "sha256": "90d5dba7cdf598466ae351568ddbb1e18e1e08e2f096032a0bddc538ce2860e3"
+        },
+        {
+          "path": "server/go-bounder-io/common/model_common.go",
+          "bytes": 387,
+          "sha256": "32277d5df1dd8fb07a4a7f4bb2517c8866341328a5328a2df925bf2d7cddf5ed"
+        },
+        {
+          "path": "server/go-bounder-io/config/config.go",
+          "bytes": 4872,
+          "sha256": "5372e53abec55f3a0f0705f4bf5183032ae1c3165be314d1f6bd13e60e9d1beb"
+        },
+        {
+          "path": "server/go-bounder-io/config/config_test.go",
+          "bytes": 1699,
+          "sha256": "d186e7ed7d610d7cc5ef71d97f95b2d02cdc0b9130e9a26e18985f78ee7d07c8"
+        },
+        {
+          "path": "server/go-bounder-io/go.mod",
+          "bytes": 653,
+          "sha256": "d9e9d551491f73ec749ce158e70d540dca570cb309307639aafbbdbd9f9213fe"
+        },
+        {
+          "path": "server/go-bounder-io/go.sum",
+          "bytes": 3999,
+          "sha256": "417faef5deb8fba61af39094d46182f22e01478546b86af5e46c9a60d7637dec"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/admin.go",
+          "bytes": 6377,
+          "sha256": "3f02121fa45259985708f236191444c4eaf15be5937f6291713b2cd35365c1f2"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/admin_test.go",
+          "bytes": 2414,
+          "sha256": "382f66ca49c3cae0c8bda167ee55b74420a1521a879f01dde1f1dc66e041381e"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/audit_payload_test.go",
+          "bytes": 3153,
+          "sha256": "e67e45674287ff04127693918d597e11df89dbb617322c42c6290fa32059c9b3"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/checkpoint.go",
+          "bytes": 10303,
+          "sha256": "c71c39542d7b07e0d776ee7ac7ba15ac27ecd79ddd08f6914eb2ed1b41c9d3ea"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/checkpoint_test.go",
+          "bytes": 7184,
+          "sha256": "3489d7ecd4e80397f4a88b59586dd519eac3da47a2bf17491c8023e3a426f79f"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/client.go",
+          "bytes": 11052,
+          "sha256": "efc6fc42e8c45805efc64e8db2d2562bce4be236475a7dc1aa28d9ae3b6e1039"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/client_test.go",
+          "bytes": 4228,
+          "sha256": "3e75897a6a6fcef9580b2fefa291f0b0be3f60b6e9e82324c63eaaa9077f83b1"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/envelope.go",
+          "bytes": 7381,
+          "sha256": "394165cb81cff3574ca5e61b5090fca2f27400b634b49f9c9d311f43b6878e21"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/envelope_test.go",
+          "bytes": 13287,
+          "sha256": "529326aa91f02679cdc90c4810049709cf241750deabb986e48081c0bc76f7d1"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/guardian.go",
+          "bytes": 13322,
+          "sha256": "0883757a5d698b048176560565e123ea23ef270b27d49d62e80a24d5bc95c52c"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/guardian_state.go",
+          "bytes": 3173,
+          "sha256": "712c2b5e298655b976f870a5e0581930f888ce63c1714072562deca52707a11d"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/manipulator.go",
+          "bytes": 5915,
+          "sha256": "2fcb3f462848966baf78f8cac2790c5f0ce8287a7c56bffadd4fb64ceac158a5"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/creedspace/manipulator_test.go",
+          "bytes": 3676,
+          "sha256": "11953caf7b53a3147d405cefb9c01b466db8e487d4c0127da0f527a7981195cb"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/mettle/attestation.go",
+          "bytes": 5102,
+          "sha256": "51ce6935699273a6cd59e52d8ad8ee0866159170519554d00a6cf8601a89c174"
+        },
+        {
+          "path": "server/go-bounder-io/integrations/mettle/attestation_test.go",
+          "bytes": 3422,
+          "sha256": "2bf4788d7e41f08fe8860012a424b27933d29bca2d3042147973d708d395aa14"
+        },
+        {
+          "path": "server/go-bounder-io/interlock/manipulator.go",
+          "bytes": 14656,
+          "sha256": "75df662e60dead1c240813981693b0ededb93ec8186eedc16d2552f34164f2d3"
+        },
+        {
+          "path": "server/go-bounder-io/interlock/manipulator_test.go",
+          "bytes": 5364,
+          "sha256": "2599c3290b10a4e174d7d394cc716420f1114f409c33a771fbdfeeb8a9f635ac"
+        },
+        {
+          "path": "server/go-bounder-io/interlock/physical_constraints_test.go",
+          "bytes": 3476,
+          "sha256": "c60490c725468e8b46ffeaa2022a48d46e98e02148c13d4c177bfb0d937b903f"
+        },
+        {
+          "path": "server/go-bounder-io/interlock/policy.go",
+          "bytes": 18147,
+          "sha256": "046f073aea235caf3d5f91b60ac2982716b76fb4db5937faca776df742b8bca8"
+        },
+        {
+          "path": "server/go-bounder-io/interlock/policy_test.go",
+          "bytes": 7554,
+          "sha256": "1977744da3d2e98fe563d8deebe488897746dfc9d855b01399d69414c23aed60"
+        },
+        {
+          "path": "server/go-bounder-io/ws-transport/client.go",
+          "bytes": 4548,
+          "sha256": "023272411902671ea4d41a44258702ae21e2483f4f830ab3bf12e9ead0284dc7"
+        },
+        {
+          "path": "server/go-bounder-io/ws-transport/client_test.go",
+          "bytes": 458,
+          "sha256": "4e17963a998ddd7cfe9078ac306ed7a883011f439d2c12cb4618fa086c4bfafb"
+        },
+        {
+          "path": "server/go-bounder-io/ws-transport/origin_test.go",
+          "bytes": 1096,
+          "sha256": "65725fc9612a831f3d30059a4f13a5086a9bd4044e3cc08bd8b62caa06b46cec"
+        },
+        {
+          "path": "server/go-bounder-io/ws-transport/server.go",
+          "bytes": 9437,
+          "sha256": "ce545ba306ec5752b8f491f43261024a6801efeb335ba6767957b0ef692cd59f"
+        }
+      ],
+      "contracts": [
+        {
+          "path": "schemas/bounder-evidence-provenance-v1.schema.json",
+          "bytes": 2559,
+          "sha256": "5c89c7a3c3ef50729db73ee615976ff478082a5ab4327478844a91a4e949fc2b"
+        },
+        {
+          "path": "schemas/bounder-resilience-evidence.v1.schema.json",
+          "bytes": 36852,
+          "sha256": "af20b8288f607de1f18ff3848e698df1352d808583fff2065c497388d551d9a6"
+        },
+        {
+          "path": "schemas/bounder.receipt-bundle.v1.schema.json",
+          "bytes": 6917,
+          "sha256": "ac3793153a17a50b9bd0bab7d7c0c27b542b55385bfe0a042b664ee26bbe8228"
+        },
+        {
+          "path": "schemas/bounder.receipt.v1.schema.json",
+          "bytes": 21464,
+          "sha256": "664f5e1554fcf34f5184070419bcf364ba9549c230ff2607f82c50fc046e0f6a"
+        },
+        {
+          "path": "schemas/creedspace-bounder-checkpoint-v1.schema.json",
+          "bytes": 3745,
+          "sha256": "7289deab9c5292971a434010ba1b591c0ce8b998bdb234f90ad609cea90dc49f"
+        },
+        {
+          "path": "schemas/creedspace-bounder-envelope-v1.schema.json",
+          "bytes": 1268,
+          "sha256": "6f05338c0825315d064cdd1377c200e8630eaa862cd626c56e3707741f1956ce"
+        },
+        {
+          "path": "schemas/creedspace-bounder-fleet-event-v1.schema.json",
+          "bytes": 2472,
+          "sha256": "b49d41d9fced41110b8e16885930c67d9767791241aabc88c9394b88a7da0a42"
+        },
+        {
+          "path": "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
+          "bytes": 5471,
+          "sha256": "8474f97b577d1fa425cb6e474eb02bda04ccf1cd6984ae13365aa0bf52387cc1"
+        },
+        {
+          "path": "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json",
+          "bytes": 5137,
+          "sha256": "2248511b570868f8bcb0cd6e9126f69500e45c726be088f4eec411e4f9023bca"
+        },
+        {
+          "path": "schemas/creedspace-bounder-policy-v1.schema.json",
+          "bytes": 2391,
+          "sha256": "11bef2efeb63c93412b4bce9627218c08c7cd8c553f4c0e39b35d44596f5321c"
+        },
+        {
+          "path": "schemas/creedspace-bounder-profile-v1.schema.json",
+          "bytes": 3892,
+          "sha256": "0bf34b83c896b6b778d598f3df44ef1e331fd0c9debb0992020424d3d91be6d6"
+        },
+        {
+          "path": "schemas/creedspace-bounder-roundtrip-v1.schema.json",
+          "bytes": 8691,
+          "sha256": "446ca04a71bd51f3506faac047f9d1c52ba2e30270acb1d33eb2904a5fa188bf"
+        },
+        {
+          "path": "schemas/creedspace-bounder-telemetry-envelope-v1.schema.json",
+          "bytes": 1447,
+          "sha256": "05ced915ea44fc075f4df4a56b6e170569be5fed378091710e74e446feaa799b"
+        }
+      ],
+      "outputs": [
+        {
+          "path": "data/bounder-receipts.v1.json",
+          "bytes": 25352,
+          "sha256": "b56f447ed7e548297bbab2246bf35d7d4ece3a016bd0c9da8a5d8fa377e11ddc"
+        },
+        {
+          "path": "data/creedspace-bounder-golden-v1.json",
+          "bytes": 2074,
+          "sha256": "3dd2469dc619aed477e8cd2995fc5b99ceeec4b9412d3a5241bb8679927aacb0"
+        },
+        {
+          "path": "data/creedspace-bounder-roundtrip-v1.json",
+          "bytes": 3088,
+          "sha256": "80e755711d72a16f8d90a21f827602d52e35f952b87eeaee8de86139a5e29a70"
+        },
+        {
+          "path": "producer/creedspace-fleet-evidence.v1.json",
+          "bytes": 168722,
+          "sha256": "ab1c0277c2fd02041eb282e0ed3ebe5f75d7632b9d45143b60e2b2670a824481"
+        }
+      ],
+      "verification_receipt_sha256": "ea36afad716bba4bdd1c83b04cd797cc150285dbd28761c1ccf97c11bd8f77c9"
+    }
+  ],
+  "build": {
+    "command": "npm run build",
+    "node": "v26.9.0",
+    "public_inventory_sha256": "1a33486fa7b9b33608dba4736c5c13002bc8333894c23e7e8026e5a61958934a",
+    "verification_receipt_sha256": "61a87f536380695db34f367ee57ef0c186d7d09c2df69e4b566b709281d14a70"
+  },
+  "deployment": {
+    "status": "unverified",
+    "reason": "Deployment is verified separately after this source manifest is sealed."
+  },
+  "live_observation": {
+    "status": "unverified",
+    "reason": "Live bytes and continuity evidence require a separate authorized observation after deployment."
+  },
+  "observations": [
+    {
+      "path": "data/bounder-fleet-evidence.v1.json",
+      "classification": "recorded_observation",
+      "sha256": "bd11ce7ffd6f36eaed048d0aef646d4df06527e77ebb6d0640e3ff42244aa893",
+      "limitation": "Recorded 16-Guardian Fleet laboratory evidence; it is not the deterministic producer Fleet fixture."
+    },
+    {
+      "path": "data/bounder-staging-pilot.v1.json",
+      "classification": "recorded_observation",
+      "sha256": "ac240f38971e9d72fb77af1103a104a40a7fa10a1a1f4d0e5ef130da2f25ad94",
+      "limitation": "Recorded 100-Guardian staging pilot; it is not current live health or deployment proof."
+    },
+    {
+      "path": "data/creedspace-bounder-manipulator-golden-v1.json",
+      "classification": "recorded_observation",
+      "sha256": "4949dc61a760609e6ad9be591d3d88180f19f2e96b74533be6c977afa8c54f97",
+      "limitation": "Mirrored Creed Space manipulator contract preview. It is not in the decision producer's evidence statement, so no producer derivation covers these bytes."
+    },
+    {
+      "path": "data/creedspace-bounder-manipulator-profile-v1.example.json",
+      "classification": "recorded_observation",
+      "sha256": "29f2ccb647cbfd489e84dd844a11f6ebf5eecaeaa94c3e2d9083d9e66d1eb29f",
+      "limitation": "Mirrored Creed Space manipulator contract preview. It is not in the decision producer's evidence statement, so no producer derivation covers these bytes."
+    },
+    {
+      "path": "schemas/creedspace-bounder-manipulator-profile-v1.schema.json",
+      "classification": "recorded_observation",
+      "sha256": "5827105a0ad834c6b71bf09e63d183c94869ccd27de2b7019c0e80d1ab7d8be4",
+      "limitation": "Mirrored Creed Space manipulator contract preview. It is not in the decision producer's evidence statement, so no producer derivation covers these bytes."
+    }
+  ],
+  "files": [
+    {
+      "path": ".well-known/security.txt",
+      "bytes": 250,
+      "sha256": "5c31e18d190b89b4e855b36ab7b0ab7252078352600a2cb32b18394418040e60"
+    },
+    {
+      "path": "404.html",
+      "bytes": 1583,
+      "sha256": "3bd850dc06a892d82dfba7f026d040749b978e0fb783c0f29e4a51c311328890"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 29178,
+      "sha256": "19d8d212bd7b501fccd3ab40458c6c7683301074a49cefe96f5c57cfff8fb7d6"
+    },
+    {
+      "path": "CNAME",
+      "bytes": 14,
+      "sha256": "1a2a79eb26953fb7d18fc3e28d87770174468a3a7aa5ed1f2667e784bea59e0a"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "NOTICE",
+      "bytes": 607,
+      "sha256": "f0281901bff03ea8e15445294da79d1061666cfcc98ddcd8f4f35440f2dd6547"
+    },
+    {
+      "path": "README.md",
+      "bytes": 12313,
+      "sha256": "e6b2ea7afd8a875c95869b55b7b39ab44e3d7c3e4f0d7fa7214d8a511d658372"
+    },
+    {
+      "path": "SECURITY.md",
+      "bytes": 3936,
+      "sha256": "f7fda0d053bba7640eb9aa51a3816ed6a9f90372f9d14fd26eb0991328fea991"
+    },
+    {
+      "path": "VERSION",
+      "bytes": 6,
+      "sha256": "d9e8e8429c6a7d0b965e4fac26a5efff7103f055faa98cceb5bd4731fd24603a"
+    },
+    {
+      "path": "assets/apple-touch-icon.png",
+      "bytes": 2888,
+      "sha256": "d443ffa53564e4b561f42beceb2296856bc3e213b4d3d97adf8f66d62fba0280"
+    },
+    {
+      "path": "assets/bounder-mark.svg",
+      "bytes": 540,
+      "sha256": "ba0b9fdf3df6d9b929366be3d7e1519809de2e9f7c294bb686d642ec5009d92f"
+    },
+    {
+      "path": "assets/bounder-wordmark.svg",
+      "bytes": 2668,
+      "sha256": "c3e607f535fd42bbef8c9436fef13392285b53e2adec54be7481a582e4eefc5f"
+    },
+    {
+      "path": "assets/fonts/OFL.txt",
+      "bytes": 4684,
+      "sha256": "6fec1dbebb3a3ab2891a768d6526b657ace6b480d950e443e61f62ddd397ef86"
+    },
+    {
+      "path": "assets/fonts/open-sans-condensed-latin.woff2",
+      "bytes": 39960,
+      "sha256": "7955392f537cc2b6e5745a4c323b4a997216dbd563c7900f3375a09f12e016ba"
+    },
+    {
+      "path": "contact.html",
+      "bytes": 8595,
+      "sha256": "3e7f5e2ef1b7c5d4bd064ab422cc5579e77a3e518f0f6033be630515fa2dc56e"
+    },
+    {
+      "path": "continuity-evidence.js",
+      "bytes": 30663,
+      "sha256": "934e95c81068cd616e9cf91e7401e01121f3480ce89e4d3c26a725e9b7a3da9f"
+    },
+    {
+      "path": "data/bounder-fleet-evidence.v1.json",
+      "bytes": 60714,
+      "sha256": "bd11ce7ffd6f36eaed048d0aef646d4df06527e77ebb6d0640e3ff42244aa893"
+    },
+    {
+      "path": "data/bounder-receipts.v1.json",
+      "bytes": 25352,
+      "sha256": "b56f447ed7e548297bbab2246bf35d7d4ece3a016bd0c9da8a5d8fa377e11ddc"
+    },
+    {
+      "path": "data/bounder-staging-pilot.v1.json",
+      "bytes": 168722,
+      "sha256": "ac240f38971e9d72fb77af1103a104a40a7fa10a1a1f4d0e5ef130da2f25ad94"
+    },
+    {
+      "path": "data/creedspace-bounder-golden-v1.json",
+      "bytes": 2074,
+      "sha256": "3dd2469dc619aed477e8cd2995fc5b99ceeec4b9412d3a5241bb8679927aacb0"
+    },
+    {
+      "path": "data/creedspace-bounder-manipulator-golden-v1.json",
+      "bytes": 2342,
+      "sha256": "4949dc61a760609e6ad9be591d3d88180f19f2e96b74533be6c977afa8c54f97"
+    },
+    {
+      "path": "data/creedspace-bounder-manipulator-profile-v1.example.json",
+      "bytes": 1618,
+      "sha256": "29f2ccb647cbfd489e84dd844a11f6ebf5eecaeaa94c3e2d9083d9e66d1eb29f"
+    },
+    {
+      "path": "data/creedspace-bounder-roundtrip-v1.json",
+      "bytes": 3088,
+      "sha256": "80e755711d72a16f8d90a21f827602d52e35f952b87eeaee8de86139a5e29a70"
+    },
+    {
+      "path": "favicon.ico",
+      "bytes": 2665,
+      "sha256": "0e844d1e9b4ad674c9a81054c5596907ba93834d2b937cb08aad538a018d1412"
+    },
+    {
+      "path": "guides/INTEGRATION.md",
+      "bytes": 15784,
+      "sha256": "48307a13d06b581426dcb5203985f7eb0ce563362f5ae979243a96dd065018b1"
+    },
+    {
+      "path": "images/CREDITS.md",
+      "bytes": 1474,
+      "sha256": "82332320a8f0cfcc7622e5792543816a87109689c180997b6b6fe062ac9d6443"
+    },
+    {
+      "path": "images/hero-drone-dusk.avif",
+      "bytes": 58936,
+      "sha256": "f7eda403fbf76830983610989b470b091bc481aebb5f2168fade4522807e8e4f"
+    },
+    {
+      "path": "images/hero-drone-dusk.jpg",
+      "bytes": 330020,
+      "sha256": "44efc224ae722ba7eaad382443929c72be1d29371f4a0b5aaa930481bd0b5f9c"
+    },
+    {
+      "path": "images/hero-drone-dusk.webp",
+      "bytes": 71030,
+      "sha256": "22213c3c398375845651305b498088c80fab8d01ec1ad9f2df7c3aabe54cbd82"
+    },
+    {
+      "path": "images/og-card.jpg",
+      "bytes": 54119,
+      "sha256": "a667f172006d9281a2d8e17f63321d8685d85e81095f451e67a83351a7b5ec36"
+    },
+    {
+      "path": "index.html",
+      "bytes": 31282,
+      "sha256": "fde99547a2db8a57037be0a7395cab8659335cda4b2b1e071cb932d2c1a6e311"
+    },
+    {
+      "path": "llms.txt",
+      "bytes": 925,
+      "sha256": "478e5a8756a6d90ec7edaa243b584d1346576dc2112bd55a11c7898ebc6db988"
+    },
+    {
+      "path": "policy-roundtrip.js",
+      "bytes": 122,
+      "sha256": "e21dc50dd32560b6e8c4c41d860e241d1c17314a0032010377a0c63c117c4f7b"
+    },
+    {
+      "path": "privacy.html",
+      "bytes": 10199,
+      "sha256": "1d12cb3b81ff38ca7be0df19d6f26ec053e6eb8c3c9fd437d9098614e76db21e"
+    },
+    {
+      "path": "release/bounder-reference-v1.0.0.manifest.json",
+      "bytes": 5132,
+      "sha256": "4f01487f7c31897d8b9210c6efbd1971f1877eed510ad1d975ead72d46202e17"
+    },
+    {
+      "path": "release/bounder-reference-v1.0.1.manifest.json",
+      "bytes": 5274,
+      "sha256": "05ffe834e1f1d4d2c28980be95e12c2cb8d66bbaf89f89a379f3150be3f9b170"
+    },
+    {
+      "path": "release/bounder-reference-v1.0.2.manifest.json",
+      "bytes": 5274,
+      "sha256": "9aeabbc5da421e53535281cc67a59706ad0ccad3a67b7006dc1380977a68c785"
+    },
+    {
+      "path": "release/bounder-reference-v1.0.3.manifest.json",
+      "bytes": 5439,
+      "sha256": "656d39ffdf319e59098a0f42e52a72f62bb50855eba3e7bff5aeb228926ba7b4"
+    },
+    {
+      "path": "release/bounder-reference-v1.0.4.manifest.json",
+      "bytes": 5439,
+      "sha256": "302f5023a1769658e29ec8298e7405e2ac8762fe5bf3d805cf8ffd5fcf38d8b9"
+    },
+    {
+      "path": "release/bounder-reference-v1.1.0.manifest.json",
+      "bytes": 25814,
+      "sha256": "71dee2bdf9ab446d677d203fca8b93842a8c63b07109e86bc2fee1c07eca0556"
+    },
+    {
+      "path": "release/bounder-reference-v1.1.1.manifest.json",
+      "bytes": 25996,
+      "sha256": "6a7524407d25ff0d4d5783f07a01c76e0ee686e1107c3f10dfac6539f17ea73b"
+    },
+    {
+      "path": "release/bounder-reference-v1.1.2.manifest.json",
+      "bytes": 26180,
+      "sha256": "4cf34684204304f4d034f81111c27be86e84ffadceace544d73763e499aa553b"
+    },
+    {
+      "path": "release/bounder-reference-v1.2.0.manifest.json",
+      "bytes": 27629,
+      "sha256": "75e8162ea9af1c9b700191004cc1ec05ea99d6546b49eb54a667f73b7e87b599"
+    },
+    {
+      "path": "release/bounder-reference-v1.2.1.manifest.json",
+      "bytes": 27820,
+      "sha256": "cc04c1f52dc06374f401058b6807169745c0a5185f1cc2374155c9389ff7510a"
+    },
+    {
+      "path": "release/bounder-reference-v1.2.2.manifest.json",
+      "bytes": 28002,
+      "sha256": "33e42452818d60c3350c93c117132cadeb1345a0503311ea039afb8cbd0c6f02"
+    },
+    {
+      "path": "release/bounder-reference-v1.2.4.manifest.json",
+      "bytes": 30580,
+      "sha256": "9ed697436d1e37fb30098bb500295b439ce58bb7ff8fdb35b4457bbd15372e5a"
+    },
+    {
+      "path": "release/bounder-reference-v1.2.6.manifest.json",
+      "bytes": 32520,
+      "sha256": "469d1111bc2de33a91028d6fd2484bff97ce8b856b6ddffef47569d560f86e00"
+    },
+    {
+      "path": "robots.txt",
+      "bytes": 68,
+      "sha256": "9e4ae98a582732f17f184729bf82a91d3d5a1a9ef57697f5beda90d605accccc"
+    },
+    {
+      "path": "runtime/crypto/encoding.js",
+      "bytes": 1766,
+      "sha256": "de94a2161ac50f8b39689adfeacfa8f69b1eb7d49f778726f131daf1917709d9"
+    },
+    {
+      "path": "runtime/fleet/contracts.js",
+      "bytes": 186,
+      "sha256": "16d562d546b29e08694615d9fdc73f85622253603a80ea2a8592cb9e2cd81146"
+    },
+    {
+      "path": "runtime/json/policy-json.js",
+      "bytes": 5164,
+      "sha256": "af6b95ab7d42e95164f385b0323e3fd3d3a3baf162a629ab58c3ad3db4b6a530"
+    },
+    {
+      "path": "runtime/json/strict-json.js",
+      "bytes": 3558,
+      "sha256": "2f3b5d745fefe6415c72b6e5ff7ccc20246472a1e2b2f66f25463c0aa080ea9d"
+    },
+    {
+      "path": "runtime/observability/guardian-fleet-state.js",
+      "bytes": 55335,
+      "sha256": "63a52807c65582b8b13ab90609ae7befa8a9518768ca336ee4141e6561040413"
+    },
+    {
+      "path": "runtime/policy/contracts.js",
+      "bytes": 10773,
+      "sha256": "6d67ca20483abea91427766f8e2ea5e2209413506c7223e27df8decbd8112ba3"
+    },
+    {
+      "path": "runtime/policy/core.js",
+      "bytes": 862,
+      "sha256": "04e36a549bd8f1a542e9963bcdcb17239ead535e28d6d7bb85aee70d746e9037"
+    },
+    {
+      "path": "runtime/policy/evaluator.js",
+      "bytes": 5589,
+      "sha256": "153d4b995ed4c152d28965575f427a3ba6355ef8aaf327873d8fbaef77aee2c9"
+    },
+    {
+      "path": "runtime/policy/presentation-state.js",
+      "bytes": 1619,
+      "sha256": "a706c9cd689f41c8ab7ed7dcf1c7cf5606959fc19a9d0650283f3e6cc0c2cc79"
+    },
+    {
+      "path": "runtime/policy/primitives.js",
+      "bytes": 7776,
+      "sha256": "233be13fc56ef5fbfadbfe00e28ab36ddc72fa3f599ae6ecaa1ddcf2e6def565"
+    },
+    {
+      "path": "runtime/policy/request.js",
+      "bytes": 1825,
+      "sha256": "884f43a9993bf76b9d3b514e26e048afb81f961fa2073a586131007df546c04d"
+    },
+    {
+      "path": "runtime/policy/roundtrip.js",
+      "bytes": 11291,
+      "sha256": "1c20a939166e2e19155a3251563f1d5748443d06c7e9ce5c4162ebf7d7aa8b98"
+    },
+    {
+      "path": "runtime/receipts/contracts.js",
+      "bytes": 110,
+      "sha256": "89b76bf66cbd8738fbc493c05a8a524208c6f59ba676e21b78bf147ded639013"
+    },
+    {
+      "path": "runtime/resilience/contracts.js",
+      "bytes": 235,
+      "sha256": "061bd1e0202a962c3f9b36a84e36f9f7cec83b45aa4d13db5002b367300437b6"
+    },
+    {
+      "path": "runtime/simulator/contracts-core.js",
+      "bytes": 45805,
+      "sha256": "8cae7a493174f202810f1ffaa07e5de4f5a8d9ea56c0990c09f0938897ca9ca3"
+    },
+    {
+      "path": "runtime/transport/bounded-json.js",
+      "bytes": 6287,
+      "sha256": "80f434539e5e98d5299d89e8c80522fcdc154d98fa71f6655a495d075b0a1d98"
+    },
+    {
+      "path": "runtime/transport/simulator-json.js",
+      "bytes": 237,
+      "sha256": "b47133abdcb15f3f56208d6fad5c44cd6def9e06c6e9c30cf11b32746f4eea52"
+    },
+    {
+      "path": "schemas/bounder-evidence-provenance-v1.schema.json",
+      "bytes": 2559,
+      "sha256": "5c89c7a3c3ef50729db73ee615976ff478082a5ab4327478844a91a4e949fc2b"
+    },
+    {
+      "path": "schemas/bounder-release-manifest-v2.schema.json",
+      "bytes": 4480,
+      "sha256": "6485dabe5651d324f7cc4121f4260dc86ab519fc0812ceb981223e5df18690b4"
+    },
+    {
+      "path": "schemas/bounder-resilience-evidence.v1.schema.json",
+      "bytes": 36852,
+      "sha256": "af20b8288f607de1f18ff3848e698df1352d808583fff2065c497388d551d9a6"
+    },
+    {
+      "path": "schemas/bounder.receipt-bundle.v1.schema.json",
+      "bytes": 6917,
+      "sha256": "ac3793153a17a50b9bd0bab7d7c0c27b542b55385bfe0a042b664ee26bbe8228"
+    },
+    {
+      "path": "schemas/bounder.receipt.v1.schema.json",
+      "bytes": 21464,
+      "sha256": "664f5e1554fcf34f5184070419bcf364ba9549c230ff2607f82c50fc046e0f6a"
+    },
+    {
+      "path": "schemas/creedspace-bounder-checkpoint-v1.schema.json",
+      "bytes": 3745,
+      "sha256": "7289deab9c5292971a434010ba1b591c0ce8b998bdb234f90ad609cea90dc49f"
+    },
+    {
+      "path": "schemas/creedspace-bounder-envelope-v1.schema.json",
+      "bytes": 1268,
+      "sha256": "6f05338c0825315d064cdd1377c200e8630eaa862cd626c56e3707741f1956ce"
+    },
+    {
+      "path": "schemas/creedspace-bounder-fleet-event-v1.schema.json",
+      "bytes": 2472,
+      "sha256": "b49d41d9fced41110b8e16885930c67d9767791241aabc88c9394b88a7da0a42"
+    },
+    {
+      "path": "schemas/creedspace-bounder-fleet-snapshot-v1.schema.json",
+      "bytes": 5471,
+      "sha256": "8474f97b577d1fa425cb6e474eb02bda04ccf1cd6984ae13365aa0bf52387cc1"
+    },
+    {
+      "path": "schemas/creedspace-bounder-guardian-heartbeat-v1.schema.json",
+      "bytes": 5137,
+      "sha256": "2248511b570868f8bcb0cd6e9126f69500e45c726be088f4eec411e4f9023bca"
+    },
+    {
+      "path": "schemas/creedspace-bounder-manipulator-profile-v1.schema.json",
+      "bytes": 3217,
+      "sha256": "5827105a0ad834c6b71bf09e63d183c94869ccd27de2b7019c0e80d1ab7d8be4"
+    },
+    {
+      "path": "schemas/creedspace-bounder-policy-v1.schema.json",
+      "bytes": 2391,
+      "sha256": "11bef2efeb63c93412b4bce9627218c08c7cd8c553f4c0e39b35d44596f5321c"
+    },
+    {
+      "path": "schemas/creedspace-bounder-profile-v1.schema.json",
+      "bytes": 3892,
+      "sha256": "0bf34b83c896b6b778d598f3df44ef1e331fd0c9debb0992020424d3d91be6d6"
+    },
+    {
+      "path": "schemas/creedspace-bounder-roundtrip-v1.schema.json",
+      "bytes": 8691,
+      "sha256": "446ca04a71bd51f3506faac047f9d1c52ba2e30270acb1d33eb2904a5fa188bf"
+    },
+    {
+      "path": "schemas/creedspace-bounder-telemetry-envelope-v1.schema.json",
+      "bytes": 1447,
+      "sha256": "05ced915ea44fc075f4df4a56b6e170569be5fed378091710e74e446feaa799b"
+    },
+    {
+      "path": "simulator-bootstrap.js",
+      "bytes": 8214,
+      "sha256": "74e8c8e1950dcb01fd1ba096e923a5e9e390cf8128ef2c877a48fb54b11bcd9b"
+    },
+    {
+      "path": "simulator-contracts.js",
+      "bytes": 129,
+      "sha256": "744a337ce7ba382dd850d78286d7b3f28a2b01a70c268d571588ba22978781f4"
+    },
+    {
+      "path": "simulator-fallback.js",
+      "bytes": 8085,
+      "sha256": "1a1f271793c8170e5ebc9e0e41b716ae580dbbd3cf29a0c0c12d3f78f25aa999"
+    },
+    {
+      "path": "simulator-world.js",
+      "bytes": 10196,
+      "sha256": "97fb2e33fa3ebbc0c062de4c6447aac485fe18915e3cd5fad4407a6db8ab423b"
+    },
+    {
+      "path": "simulator.css",
+      "bytes": 44230,
+      "sha256": "1c0eb4640212fa9da21ed28cf3d26c6617c1cc4175435f225921d234ea522e49"
+    },
+    {
+      "path": "simulator.html",
+      "bytes": 36143,
+      "sha256": "639ba07bb91115078bb242baad90024a8d1eed722d7b665aa8700eeb00290313"
+    },
+    {
+      "path": "simulator.js",
+      "bytes": 119,
+      "sha256": "cf85eafb5fb58a99d5ba1fa728ac1d53ad28a60e7fd85dc51194467fe0d1ec53"
+    },
+    {
+      "path": "simulator/controller.js",
+      "bytes": 92366,
+      "sha256": "5787bea208ca87bf2247926521e036071991c8c1816c1692f5061861a7fe23d4"
+    },
+    {
+      "path": "simulator/scene.js",
+      "bytes": 40956,
+      "sha256": "8621c34367fe41a132a00324cdfc2141bc85f872a7ecb93ea4fb429ef8abe216"
+    },
+    {
+      "path": "site.js",
+      "bytes": 4791,
+      "sha256": "32973750e7d811c29c09564ccb15faf3f3806f394533ac564f39a33df1be6f3a"
+    },
+    {
+      "path": "sitemap.xml",
+      "bytes": 935,
+      "sha256": "af5b66d414aa8d7af8766b8c4ac9f6932d9ed831c474e1c321ea757597d9d724"
+    },
+    {
+      "path": "staging-feed.js",
+      "bytes": 21325,
+      "sha256": "b745a148d797f7b18ef19b6c38d5ad6135d2be36e4f9a171c1d68541baf78d7e"
+    },
+    {
+      "path": "styles.css",
+      "bytes": 45528,
+      "sha256": "16cdeeaf79ab93c50f4540a9484489e5b4c68f49d45622176261d54508dd63eb"
+    },
+    {
+      "path": "terms.html",
+      "bytes": 10202,
+      "sha256": "64744ca22068836a7d2df89b7077e6c0b21ba0689a4d9a408c8f45222b6d861b"
+    },
+    {
+      "path": "ui/contact-form.js",
+      "bytes": 4483,
+      "sha256": "9d34436fc8c072ce462e42fd85f69cdee1ba1b8d724357d69a12419dc534c864"
+    },
+    {
+      "path": "ui/fleet-view.js",
+      "bytes": 5009,
+      "sha256": "b63e1e6f66a1db9b2d08e9b216041ffa30593fad1a35d5bd251b808600d26d21"
+    },
+    {
+      "path": "ui/policy-panel.js",
+      "bytes": 11742,
+      "sha256": "0027d19487143b0810eeb772d9223618d7f1f3fb601db8457680d01b3b66cde6"
+    },
+    {
+      "path": "ui/policy-roundtrip-panel.js",
+      "bytes": 430,
+      "sha256": "3feae7314cc331a47ec6a70c78c7bde765ce6ce3e99ff2f76053a3c42fedc5ea"
+    },
+    {
+      "path": "ui/receipt-copy.js",
+      "bytes": 4841,
+      "sha256": "7fb7325fc100572d3286902501becaa5dbc90776e6077e3c47eaecfc93cc4df4"
+    },
+    {
+      "path": "ui/text.js",
+      "bytes": 550,
+      "sha256": "8b66b540ca73dcf3e25376356a43ffa05ad0f680825149ca5562fc66ed58964b"
+    },
+    {
+      "path": "ui/workbench.js",
+      "bytes": 9831,
+      "sha256": "700ad210a4be0aa005e4cbd43a164cc3bd5cb74ba64d813334cf9387bf43cd36"
+    },
+    {
+      "path": "vendor/three/LICENSE",
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    {
+      "path": "vendor/three/OrbitControls.js",
+      "bytes": 38703,
+      "sha256": "b97879c748170baadeb3fb84cea1ffdf4674e283dc06042f34e2acb95a76042c"
+    },
+    {
+      "path": "vendor/three/VERSION",
+      "bytes": 14,
+      "sha256": "626fe9e91c52922f8afbdf6f3202dac2440753da826454637ef7342d722593f1"
+    },
+    {
+      "path": "vendor/three/three.core.min.js",
+      "bytes": 381124,
+      "sha256": "61ba0df005b05991361d040d8ff670e1aadfd0ce7aeebd1fdb0725957a8957de"
+    },
+    {
+      "path": "vendor/three/three.module.min.js",
+      "bytes": 338908,
+      "sha256": "e2b5ee6bccd38fd6d8a2428546b83c5f2426d84b152ef82be8055556e3b40eb6"
+    }
+  ]
+}

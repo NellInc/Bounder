@@ -179,6 +179,7 @@
         "*.webmanifest",
         ".well-known/**",
         "robots.txt",
+        "llms.txt",
         "CNAME",
         "LICENSE",
         "NOTICE",
