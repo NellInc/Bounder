@@ -12,3 +12,10 @@ This product includes third-party material under its own licence:
   600-800 and subset to Latin (assets/fonts/OFL.txt).
 - A photograph by Goh Rhy Yan under the Unsplash Licence, and derivatives of it
   (images/CREDITS.md).
+
+The Bounder explainer film and its poster in assets/video/ are excluded from
+the Apache-2.0 licence. Copyright 2026 Nell Watson, Inc. All rights reserved.
+The film includes an original instrumental generated and downloaded under
+a Suno Pro subscription. Narration, illustrative shots and keyframes were
+generated with Gemini, Veo, Seedance and Sunburst; diagrams and composition
+were authored for Bounder.

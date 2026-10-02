@@ -1,6 +1,16 @@
 # Changelog
 
-## 1.2.7 · 2026-10-01 (source candidate, unsealed)
+## 1.2.8 · 2026-10-03 (source candidate, unsealed)
+
+### Added
+
+- A two-minute, 1080p Bounder explainer on the homepage, with a native player, optional English captions and a full transcript. The film loads only when requested and retains the simulation-only boundary.
+- An original instrumental soundtrack and corrected narrowing-authority diagram, with the accepted final picture and audio preserved in the published file.
+- Regression coverage for media identity, captions, responsive layout and browser playback.
+
+## 1.2.7 · 2026-10-01
+
+Sealed by `release/bounder-reference-v1.2.7.manifest.json`.
 
 ### Added
 

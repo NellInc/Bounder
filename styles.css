@@ -525,6 +525,49 @@ a[target="_blank"]::after {
   padding: clamp(5rem, 10vw, 9rem) 0;
 }
 
+.explainer {
+  border-top: 1px solid var(--line);
+}
+
+.explainer-film {
+  margin: 0;
+}
+
+.explainer-film video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  color-scheme: dark;
+}
+
+.explainer-film figcaption {
+  margin-top: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.explainer-transcript {
+  margin-top: 2rem;
+}
+
+.explainer-transcript summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 600;
+  text-underline-offset: 0.25em;
+}
+
+.explainer-transcript summary:hover {
+  text-decoration: underline;
+}
+
+.explainer-transcript-copy {
+  max-width: 70ch;
+  margin-top: 1.5rem;
+}
+
 .section-label {
   color: var(--ink-soft);
 }

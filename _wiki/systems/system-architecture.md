@@ -3,7 +3,7 @@
 <!-- wiki:type = system -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-09-27 -->
+<!-- wiki:updated = 2026-10-02 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -81,7 +81,7 @@ The presentation seams own their own mounting. `simulator.html` loads `ui/policy
 
 ### Assurance plane
 
-Schemas, exact validators, unit tests, browser acceptance, the public allowlist, release manifests, CI, and post-deployment checks establish different proof classes. Passing one class cannot be promoted into another. (`package.json:6-22 "release:manifest:v2"`; `scripts/build-site.mjs:10-19`; `scripts/generate-release-manifest-v2.mjs:133-151 "assertPublisherCommit"`; `SECURITY.md:43-45 "Passing software tests does not establish any of those properties."`)
+Schemas, exact validators, unit tests, browser acceptance, the public allowlist, release manifests, CI, and post-deployment checks establish different proof classes. Passing one class cannot be promoted into another. (`package.json:6-22 "release:manifest:v2"`; `scripts/build-site.mjs:10-19`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`; `SECURITY.md:43-45 "Passing software tests does not establish any of those properties."`)
 
 ## Stable Component Roles
 
@@ -99,7 +99,7 @@ Schemas, exact validators, unit tests, browser acceptance, the public allowlist,
 | Fleet observer | Published snapshot/event schemas and reference aggregation | Operational state, transitions, and privacy-safe aggregation | Local Guardian decision substitution |
 | Agent control plane | `system/`, agent scripts, verification receipts | Task routing, proof planning, and candidate evidence | Publication or runtime authority |
 
-These role boundaries compile the current integration guide, security boundary, module imports, build allowlist, and release generator. (`guides/INTEGRATION.md:3-14`; `SECURITY.md:22-37`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/generate-release-manifest-v2.mjs:133-151 "assertPublisherCommit"`)
+These role boundaries compile the current integration guide, security boundary, module imports, build allowlist, and release generator. (`guides/INTEGRATION.md:3-14`; `SECURITY.md:22-37`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`)
 
 ## Repository Roles and the Provenance Gap
 
@@ -111,9 +111,9 @@ The public instructions verify producer derivation rather than regenerating and 
 
 The system descriptor separately lists `../Bounder-from-org-agent-ergonomic` and `../Bounder-Drone` as local producer discovery candidates. They serve read-only orientation in `npm run inspect` only; the derivation gate never consults them and fails fast without an explicit root. (`system/bounder-system.v1.json:24-27`; `scripts/system-inspect.mjs:91-94 "local_discovery"`)
 
-Historical manifest v1 generation calls Git against this repository root and requires every pinned website source byte to match the commit stored in `canonical_interlock`. Manifest v2 verifies the publisher commit separately and imports an exact producer statement from the producer-derivation receipt. (`scripts/generate-release-manifest.js:728-782`; `scripts/generate-release-manifest-v2.mjs:84-93 "fileReceipt"`; `scripts/generate-release-manifest-v2.mjs:133-151 "assertPublisherCommit"`)
+Historical manifest v1 generation calls Git against this repository root and requires every pinned website source byte to match the commit stored in `canonical_interlock`. Manifest v2 verifies the publisher commit separately and imports an exact producer statement from the producer-derivation receipt. (`scripts/generate-release-manifest.js:728-782`; `scripts/generate-release-manifest-v2.mjs:85-94 "fileReceipt"`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`)
 
-**Historical finding:** in manifest v1, `canonical_interlock` functions as website source provenance. It does not independently identify or reproduce the external Go decision producer. Manifest v2 corrects the role model for new releases while leaving every v1 byte unchanged. (`release/bounder-reference-v1.0.4.manifest.json:1-10`; `scripts/generate-release-manifest.js:776-782`; `scripts/generate-release-manifest-v2.mjs:133-151 "assertPublisherCommit"`)
+**Historical finding:** in manifest v1, `canonical_interlock` functions as website source provenance. It does not independently identify or reproduce the external Go decision producer. Manifest v2 corrects the role model for new releases while leaving every v1 byte unchanged. (`release/bounder-reference-v1.0.4.manifest.json:1-10`; `scripts/generate-release-manifest.js:776-782`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`)
 
 The target provenance model must carry two identities:
 
@@ -122,7 +122,7 @@ The target provenance model must carry two identities:
 
 Historical manifests remain immutable. Manifest v2 adds this distinction for new releases without rewriting prior records.
 
-The Go producer identity is no longer open. Manifest v2 names it as the `decision_producer` role at private `NellInc/Bounder-from-org` at a full commit. One part of that record is not yet true: manifests v1.1.2 to v1.2.4 name producer commit `d058ae1` with `discovery_ref` `master`, which the v2 schema fixes, but on 2026-09-26 that commit was reachable only from the producer branch `codex/agent-ergonomic-system`, not from `master`. The historical manifests stay byte-immutable, so the owner must merge the commit into producer `master` to make their `discovery_ref` true. The derivation receipt now records which remote-tracking refs contain the producer commit, and sealing refuses a commit that the run did not see on `origin/master`. The system descriptor carries this as a standing hold. What remains open beyond that is public reproducibility: regeneration still requires producer access or a future public mirror or reviewable source bundle. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1685 "is not on master"`; `scripts/generate-release-manifest-v2.mjs:199-201 "default_ref_contains_commit"`)
+The Go producer identity is no longer open. Manifest v2 names it as the `decision_producer` role at private `NellInc/Bounder-from-org` at a full commit. One part of that record is not yet true: manifests v1.1.2 to v1.2.4 name producer commit `d058ae1` with `discovery_ref` `master`, which the v2 schema fixes, but on 2026-09-26 that commit was reachable only from the producer branch `codex/agent-ergonomic-system`, not from `master`. The historical manifests stay byte-immutable, so the owner must merge the commit into producer `master` to make their `discovery_ref` true. The derivation receipt now records which remote-tracking refs contain the producer commit, and sealing refuses a commit that the run did not see on `origin/master`. The system descriptor carries this as a standing hold. What remains open beyond that is public reproducibility: regeneration still requires producer access or a future public mirror or reviewable source bundle. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1685 "is not on master"`; `scripts/generate-release-manifest-v2.mjs:200-202 "default_ref_contains_commit"`)
 
 ## Evidence State Model
 

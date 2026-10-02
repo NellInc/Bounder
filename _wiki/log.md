@@ -147,3 +147,8 @@ Boundary: source metadata changes confer no device authority. Full release verif
 ## [2026-10-01] preparation | Bounder llms.txt release
 Prepared 1.2.7 source candidate, corrected the prior 1.2.6 seal label, renewed security expiry, and pinned the historical 1.2.6 manifest digest (`CHANGELOG.md:3-13`; `.well-known/security.txt:1-5`; `scripts/generate-release-manifest-v2.mjs:17-30`).
 Updated: evidence-provenance, index and local release contprompt. Machine gating and a new immutable manifest are required before local sealing; remote publication remains outside this task.
+
+## [2026-10-03] update | Explainer publication source and citation refresh
+Updated: systems/site-architecture, systems/system-architecture, flows/agent-operating-loop, seams/evidence-provenance, index.
+Recorded the native homepage film, English captions, full transcript and simulation-only boundary (`_wiki/systems/site-architecture.md:62-64 "Homepage explainer"`). Repointed shifted homepage, manifest-generator, changelog and site-quality test citations.
+Release status records the prior 1.2.7 seal and the current 1.2.8 source candidate (`CHANGELOG.md:3-22`). Publication verification, producer derivation, sealing and live observation remain separate gates.
