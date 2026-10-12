@@ -1,6 +1,14 @@
 # Changelog
 
-## 1.2.8 · 2026-10-03 (source candidate, unsealed)
+## 1.2.9 · 2026-10-12 (source candidate, unsealed)
+
+### Added
+
+- Add the public IndexNow ownership-verification file to the website publication allowlist.
+
+## 1.2.8 · 2026-10-03
+
+Sealed by `release/bounder-reference-v1.2.8.manifest.json`.
 
 ### Added
 

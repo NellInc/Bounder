@@ -180,6 +180,7 @@
         ".well-known/**",
         "robots.txt",
         "llms.txt",
+        "indexnow-key.txt",
         "CNAME",
         "LICENSE",
         "NOTICE",
