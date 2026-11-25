@@ -31,7 +31,13 @@ const failClosedWithoutBootstrap = () => {
   setText('.rule-stack strong', 'UNAVAILABLE');
   setText('[data-receipt], [data-fleet]', 'Unavailable');
   setText('[data-fleet-source]', 'Fleet evidence unavailable · the simulator files could not be loaded');
-  for (const control of root.querySelectorAll('[data-scenario], [data-action], [data-camera], [data-explanation], [data-render-quality], [data-resilience-action], [data-resilience-scrubber]')) control.disabled = true;
+  for (const control of root.querySelectorAll('[data-scenario], [data-action], [data-camera], [data-explanation], [data-render-quality], [data-resilience-action], [data-resilience-scrubber]')) {
+    control.disabled = true;
+    if (control.hasAttribute('aria-pressed')) control.setAttribute('aria-pressed', 'false');
+  }
+  const explanationPanel = stage.querySelector('.scene-explanation');
+  if (explanationPanel) explanationPanel.hidden = true;
+  stage.classList.remove('is-explaining', 'is-slow');
   const notice = stage.querySelector('.webgl-fallback:not(.noscript-fallback)');
   if (notice) {
     const reload = document.createElement('button');
@@ -52,23 +58,22 @@ const describeDecision = () => [
   asSentence(`Recorded adapter response: ${root.querySelector('.adapter-output').textContent}`)
 ].filter(Boolean).join(' ');
 // One polite announcement per settled decision: the panel updates several nodes in one
-// task, so the text is read once after the frame rather than once per node.
+// task, so both the text-view summary and the announcement are computed once per frame.
 let announceFrame;
 let announced = '';
-const announceDecision = (text) => {
-  if (!announcer) return;
+const syncDecisionSummary = () => {
+  const text = describeDecision();
+  root.querySelector('[data-scene-explanation]').textContent = text;
+  if (!announcer || text === announced) return;
+  announced = text;
+  announcer.textContent = text;
+};
+const updateExplanation = () => {
   if (announceFrame !== undefined) cancelAnimationFrame(announceFrame);
   announceFrame = requestAnimationFrame(() => {
     announceFrame = undefined;
-    if (text === announced) return;
-    announced = text;
-    announcer.textContent = text;
+    syncDecisionSummary();
   });
-};
-const updateExplanation = () => {
-  const text = describeDecision();
-  root.querySelector('[data-scene-explanation]').textContent = text;
-  announceDecision(text);
 };
 new MutationObserver(updateExplanation).observe(root.querySelector('.decision-panel'), { childList: true, subtree: true, characterData: true });
 // The initial state is described but not announced: nothing has changed yet.

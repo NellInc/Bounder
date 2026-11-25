@@ -1007,7 +1007,7 @@ a[target="_blank"]::after {
   line-height: 1.05;
 }
 
-.continuity-proof {
+.continuity .continuity-proof {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.7fr);
   gap: 3rem;
@@ -1015,7 +1015,7 @@ a[target="_blank"]::after {
   padding-top: 1.5rem;
 }
 
-.continuity-proof p {
+.continuity .continuity-proof p {
   max-width: 58ch;
   margin: 0;
   color: var(--ink-soft);
@@ -1555,6 +1555,7 @@ a[target="_blank"]::after {
 }
 
 .error-main {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1562,6 +1563,7 @@ a[target="_blank"]::after {
   width: min(calc(100% - 3rem), var(--content));
   min-height: 100vh;
   margin: 0 auto;
+  padding-block: 5.5rem 2.5rem;
 }
 
 .error-main .wordmark {
@@ -1582,13 +1584,6 @@ a[target="_blank"]::after {
   color: rgba(255, 255, 255, 0.68);
   font-size: 1.4rem;
   line-height: 1.5;
-}
-
-.secondary-nav ul {
-  display: flex;
-  gap: 1.2rem;
-  padding: 0;
-  list-style: none;
 }
 
 /* No negative space beside the headline below desktop widths: scaled to fit, the interlock's
@@ -1828,7 +1823,7 @@ a[target="_blank"]::after {
     border-bottom: 0;
   }
 
-  .continuity-proof {
+  .continuity .continuity-proof {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
@@ -1930,7 +1925,10 @@ a[target="_blank"]::after {
   .interior-page:not(.simulator-page) .site-header .brand-lockup,
   .continuity .continuity-state::before,
   .continuity[data-state] .continuity-state::before,
-  .fleet-node i,
+  .continuity-recorded-caption::before,
+  .fleet-source::before,
+  .stage-legend i,
+  .continuity-rail i,
   .policy-roundtrip-steps i {
     forced-color-adjust: none;
     background: CanvasText;
@@ -1950,10 +1948,16 @@ a[target="_blank"]::after {
   .hero-interlock,
   .hero-actions,
   .cta-actions,
+  .explainer-film video,
   .home-simulator-frame,
   .section-dark::before,
   .site-footer {
     display: none !important;
+  }
+
+  .explainer-transcript-copy {
+    display: block;
+    color: black;
   }
 
   /* The scroll reveal never runs for content the printer lays out off screen. */

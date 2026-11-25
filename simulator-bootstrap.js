@@ -61,6 +61,7 @@ const showBootstrapUnavailable = () => {
   const setText = (selector, text) => {
     for (const element of root.querySelectorAll(selector)) element.textContent = text;
   };
+  stage.classList.add("is-unavailable");
   stage.dataset.webgl = "fallback-error";
   stage.dataset.receiptsReady = "false";
   stage.dataset.fleetReady = "false";
@@ -147,6 +148,8 @@ const startAccessibleFallback = async () => {
   }
 };
 
+startEmbeddedHeightReporting();
+
 if (forceAccessibleFallback) {
   await startAccessibleFallback();
 } else {
@@ -163,5 +166,3 @@ if (forceAccessibleFallback) {
     await startAccessibleFallback();
   }
 }
-
-startEmbeddedHeightReporting();

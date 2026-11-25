@@ -73,7 +73,7 @@ export async function checkDocumentation({ root = repositoryRoot, model: supplie
     const source = await readFile(join(wikiRoot, relativeWikiPath), "utf8");
     if (!["index.md", "log.md"].includes(relativeWikiPath)) {
       // Generated pages carry no freshness marker: they are compiled from the descriptor and
-      // byte-compared by `npm run system:generate --check`, so a hand-written date on them
+      // byte-compared by `npm run system:check`, so a hand-written date on them
       // would be a claim nobody maintains rather than metadata anybody can trust.
       if (!relativeWikiPath.startsWith("generated/")) {
         const updated = WIKI_UPDATED.exec(source)?.[1];

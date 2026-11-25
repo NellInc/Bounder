@@ -1,6 +1,6 @@
 # Integrating Bounder with Creed Space Fleet
 
-Bounder is the local Guardian for embodied movement and physical-action boundaries — the component that asks whether a machine should move right now. Creed Space Fleet governs and distributes policy. A platform adapter owns the safest physical response.
+Bounder is the local Guardian for embodied movement and physical-action boundaries: the component that asks whether a machine should move right now. Creed Space Fleet governs and distributes policy. A platform adapter owns the safest physical response.
 
 This project is simulation-only. The contract is suitable for software integration and assurance work, not a claim of certified deployment safety.
 
@@ -91,7 +91,7 @@ verifies deterministic outputs from an exact clean producer commit.
 
 ## Developer contract walkthrough
 
-Start with the [guided browser demo](https://www.bounder.io/simulator.html?tour=1), then inspect the published contracts above. This is a static verification laboratory. It publishes no policy-issuance, device-command, or Fleet ingestion HTTP API. Producer and backend integration requires a separately agreed private implementation; schema identifiers are contract names, not service endpoints.
+Start with the [guided browser demo](https://www.bounder.io/simulator.html?tour=1#scenario-lab), then inspect the published contracts above. This is a static verification laboratory. It publishes no policy-issuance, device-command, or Fleet ingestion HTTP API. Producer and backend integration requires a separately agreed private implementation; schema identifiers are contract names, not service endpoints.
 
 ### What crosses each boundary
 
@@ -171,7 +171,7 @@ safety remain unverified.
 | Inspection platform | approach asset, energise tool, enter exclusion area | permit, tool state, personnel clearance | inhibit, retract, isolate |
 | Fixed machinery | move axis, open valve, energise process | guards, lockout state, pressure, operator key | interlock, stop, vent, isolate |
 
-An adapter should be narrow, deterministic, separately tested, and fail safe. When its input is missing, stale, malformed, or beyond its declared capability, it does the safest thing available — not nothing.
+An adapter should be narrow, deterministic, separately tested, and fail safe. When its input is missing, stale, malformed, or beyond its declared capability, it does the safest thing available rather than nothing.
 
 ## Fail-safe invariants
 

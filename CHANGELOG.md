@@ -1,6 +1,30 @@
 # Changelog
 
-## 1.2.9 · 2026-10-12 (source candidate, unsealed)
+## 1.2.10 · 2026-11-25 (source candidate, unsealed)
+
+Repository audit, runtime hardening, simulator and accessible-fallback parity, media and accessibility polish, and tooling cleanup.
+
+### Fixed
+
+- Exact nanosecond timestamp parsing and comparison in browser policy presentation state and Guardian fleet observability, plus finite-number and unknown-key validation for observability budget overrides.
+- Range requests (`Accept-Ranges`, `206 Partial Content`, `416 Range Not Satisfiable`) and MP4/VTT MIME types in the local static preview server.
+- Simulator 3D controller and scene issues: early low-power shadow avoidance and shadow-map disposal, named touch-cancel handler cleanup, synchronous scenario placement and envelope-hold state, `audit` resilience rule updates, zero-dimension resize guard, fleet-only rotor animation, immediate `?fleet=1` URL synchronization, accurate hidden-page pause copy, shared sphere geometry/materials for route markers, and `arcTo` fallback for rounded canvas badges.
+- Bootstrap failure parity between `simulator-bootstrap.js` and `ui/workbench.js`, embedded height reporting before dynamic module import, `aria-busy` and cross-origin intro handling in the contact form, and accessible Fault Replay plus scenario/resilience URL synchronization in `simulator-fallback.js`.
+- Explainer caption timing (merged 200 ms orphan cue), `<video preload="auto">` on the homepage explainer, scoped `.continuity .continuity-proof` rules, 44px transport button touch targets, raised secondary-label contrast in the simulator dark panel, forced-colors and print styles, narrowed `form-action 'none'` CSP on non-form pages, and aligned Open Graph/Twitter titles and theme metadata.
+- Narrowed unsupported-WebCrypto fallback to `NotSupportedError`, O(N) sticky-regex JSON number parsing, deduplicated Base64/SHA-256/JSON helpers across browser runtime modules, bounded streaming chunk reads in continuity evidence, and APFS clone-first staging copies in `scripts/build-site.mjs`.
+
+### Changed
+
+- Removed deprecated `.npmrc`, decoupled zero-dependency CLI helpers into `scripts/lib/cli-helpers.mjs`, aligned CI workflow step labels and deploy-job install caching, expanded `llms.txt` and documentation links, and updated the system descriptor and compiled `_wiki/` citations.
+- Recorded the immutable `1.2.9` manifest digest in `scripts/generate-release-manifest-v2.mjs` and renewed `.well-known/security.txt`.
+
+### Proof limits
+
+- Deployed Guardian performance, Fleet backend integration, hardware safety and human or regulatory review remain unverified.
+
+## 1.2.9 · 2026-10-12
+
+Sealed by `release/bounder-reference-v1.2.9.manifest.json`.
 
 ### Added
 

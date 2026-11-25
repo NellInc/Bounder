@@ -1,5 +1,7 @@
 import { MAX_JSON_DEPTH, MAX_VECTOR_BYTES, assertSafeInteger, hasUnpairedSurrogate, toBytes } from "../policy/primitives.js";
 
+const NUMBER_PATTERN = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/uy;
+
 const normalizedDecimal = (token) => {
   const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(token);
   if (!match) return undefined;
@@ -14,8 +16,9 @@ const normalizedDecimal = (token) => {
   return `${sign}${digits}e${scale}`;
 };
 
-export const parseStrictJSON = (input, label = "JSON", { maxBytes = MAX_VECTOR_BYTES } = {}) => {
+export const parseStrictJSON = (input, label = "JSON", { maxBytes = MAX_VECTOR_BYTES, maxDepth = MAX_JSON_DEPTH } = {}) => {
   assertSafeInteger(maxBytes, "JSON byte limit", { min: 1 });
+  assertSafeInteger(maxDepth, "JSON depth limit", { min: 1, max: MAX_JSON_DEPTH });
   let source;
   if (typeof input === "string") {
     if (new TextEncoder().encode(input).byteLength > maxBytes) throw new Error(`${label} exceeds the ${maxBytes}-byte limit`);
@@ -70,7 +73,7 @@ export const parseStrictJSON = (input, label = "JSON", { maxBytes = MAX_VECTOR_B
     fail("contains an unterminated string");
   };
   const parseValue = (depth) => {
-    if (depth > MAX_JSON_DEPTH) fail(`exceeds the ${MAX_JSON_DEPTH}-level nesting limit`);
+    if (depth > maxDepth) fail(`exceeds the ${maxDepth}-level nesting limit`);
     whitespace();
     if (source[offset] === '"') return parseString();
     if (source[offset] === "{") {
@@ -129,7 +132,8 @@ export const parseStrictJSON = (input, label = "JSON", { maxBytes = MAX_VECTOR_B
         return value;
       }
     }
-    const number = source.slice(offset).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/u)?.[0];
+    NUMBER_PATTERN.lastIndex = offset;
+    const number = NUMBER_PATTERN.exec(source)?.[0];
     if (!number) fail();
     offset += number.length;
     const value = Number(number);

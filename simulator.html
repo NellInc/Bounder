@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-wXl2mfr2gkiEcqcqH9Ptf2hLCVHniQiPPo79NZ+VDXY=' 'sha256-K8ryXxrcJTDmcGwz4JP/darnCe0QoYNv4BbYZL7Ygks=' 'sha256-3E2WnlvntLPKxHdc6votB0HCX1YoKKxMZtY2/Fn+vIU='; connect-src 'self'; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'none'; script-src 'self' 'sha256-K8ryXxrcJTDmcGwz4JP/darnCe0QoYNv4BbYZL7Ygks=' 'sha256-3E2WnlvntLPKxHdc6votB0HCX1YoKKxMZtY2/Fn+vIU='; connect-src 'self'; frame-src 'none'">
   <title>Bounder Simulator | Test a Local Physical Interlock</title>
   <meta name="description" content="Test how Bounder permits or holds physical state changes by checking signed authority, current policy, and local safety conditions beside the actuator.">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -19,7 +19,7 @@
   <meta property="og:site_name" content="Bounder">
   <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://www.bounder.io/simulator.html">
-  <meta property="og:title" content="Bounder Simulator | The Last Word Before Motion">
+  <meta property="og:title" content="Bounder Simulator | Test a Local Physical Interlock">
   <meta property="og:description" content="A widescreen 3D demonstration of local, auditable policy enforcement at the point of physical action.">
   <meta property="og:image" content="https://www.bounder.io/images/og-card.jpg">
   <meta property="og:image:width" content="1200">
@@ -27,7 +27,7 @@
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Bounder Simulator | The Last Word Before Motion">
+  <meta name="twitter:title" content="Bounder Simulator | Test a Local Physical Interlock">
   <meta name="twitter:description" content="A widescreen 3D demonstration of local, auditable policy enforcement at the point of physical action.">
   <meta name="twitter:image" content="https://www.bounder.io/images/og-card.jpg">
   <meta name="twitter:image:alt" content="Bounder: Trust, at the point of action. A quadcopter hovering at dusk above a city skyline.">
@@ -36,75 +36,6 @@
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="simulator.css">
-  <script>
-  /* Reveal bootstrap is inline on purpose. It gates content visibility, so it must share
-     the lifetime of the document: a network-fetched file that 404s or throws would leave
-     every [data-reveal] block stuck at opacity 0. Inline runs before first paint, so the
-     hidden state is applied without a flash of unstyled content.
-
-     The observers start when parsing finishes (readyState "interactive"), which comes
-     before deferred and module scripts run. DOMContentLoaded waits for those scripts, so a
-     slow or stalled one would otherwise keep everything below the hero hidden. A failsafe
-     reveals everything if the observers have not started within three seconds. */
-  (function () {
-    var root = document.documentElement;
-    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (reduced || !("IntersectionObserver" in window)) return;
-    root.classList.add("js");
-
-    function revealAll() {
-      var targets = document.querySelectorAll("[data-reveal]");
-      for (var i = 0; i < targets.length; i++) targets[i].classList.add("is-revealed");
-    }
-
-    var failsafe = setTimeout(revealAll, 3000);
-    var started = false;
-
-    function start() {
-      if (started || document.readyState === "loading") return;
-      started = true;
-      clearTimeout(failsafe);
-      var targets = document.querySelectorAll("[data-reveal]");
-
-      try {
-        if (targets.length) {
-          var observer = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-              if (!entry.isIntersecting) return;
-              entry.target.classList.add("is-revealed");
-              observer.unobserve(entry.target);
-            });
-          }, { rootMargin: "0px 0px -10% 0px", threshold: 0.08 });
-
-          for (var i = 0; i < targets.length; i++) observer.observe(targets[i]);
-        }
-
-        /* The interlock plays when the hero is actually on screen, not merely when
-           the document parses. Arming on load would spend the animation before a
-           deep-linked visitor ever scrolled up to see it. */
-        var interlock = document.querySelector(".hero-interlock");
-
-        if (interlock) {
-          var interlockObserver = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-              if (!entry.isIntersecting) return;
-              entry.target.classList.add("is-armed");
-              interlockObserver.unobserve(entry.target);
-            });
-          }, { threshold: 0.35 });
-
-          interlockObserver.observe(interlock);
-        }
-      } catch (error) {
-        revealAll();
-      }
-    }
-
-    document.addEventListener("readystatechange", start);
-    start();
-  })();
-  </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -437,7 +368,7 @@
           </div>
         </div>
       </section>
-      <p class="evidence-unavailable" data-resilience-unavailable>Fault replay opens here once the 3D scene and the recorded Fleet evidence have loaded. If either cannot load in this browser, <a href="data/bounder-fleet-evidence.v1.json" download>download the resilience evidence</a> to read the recorded timelines directly.</p>
+      <p class="evidence-unavailable" data-resilience-unavailable>Fault replay opens here once the recorded Fleet evidence has loaded. If it cannot load in this browser, <a href="data/bounder-fleet-evidence.v1.json" download>download the resilience evidence</a> to read the recorded timelines directly.</p>
 </details>
 
       </div>
@@ -453,7 +384,7 @@
         <article>
           <span>People</span>
           <h3>Protect people</h3>
-          <p>A hospital, a school, a person with hands raised — any of these can stop an otherwise valid command. Protection overrides permission.</p>
+          <p>A hospital, a school, a person with hands raised: any of these can stop an otherwise valid command. Protection overrides permission.</p>
         </article>
         <article>
           <span>Separation</span>
@@ -463,7 +394,7 @@
         <article>
           <span>Operations</span>
           <h3>Enforce ordinary limits</h3>
-          <p>Altitude, weather, battery, identity, geography, time of day, communications — each is a first-class reason to hold. Routine limits deserve the same rigour as emergency ones.</p>
+          <p>Altitude, weather, battery, identity, geography, time of day, communications: each is a first-class reason to hold. Routine limits deserve the same rigour as emergency ones.</p>
         </article>
       </div>
     </section>
@@ -478,7 +409,7 @@
       <a href="contact.html">Contact</a>
       <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <p class="copyright">© Nell Watson, Inc. Code and text under <span class="nowrap">Apache-2.0</span>, except the Bounder name and marks; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
+    <p class="copyright">© Nell Watson, Inc. Code and text under <span class="nowrap">Apache-2.0</span>, except the Bounder name, marks, explainer film and poster; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
   </footer>
   <!-- The simulator bootstrap comes first: module scripts run in document order, and it
        should not wait for the policy panel's graph. Its top-level await blocks none of them. -->

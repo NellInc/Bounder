@@ -65,13 +65,13 @@ const sceneAuditRequested = () => {
 };
 
 // Illustrative geometry only. Recorded evidence, never geometry, owns the outcome.
-export const createTownScene = ({ scene, colours, stage }) => {
+export const createTownScene = ({ scene, colours, stage, shadows = true }) => {
   const instances = createInstanceBatches(scene);
   const hemisphere = new THREE.HemisphereLight(0xe9f7ff, 0x5b6749, 2.15);
   scene.add(hemisphere);
   const sun = new THREE.DirectionalLight(0xfff1cf, 3.1);
   sun.position.set(-10, 18, 12);
-  sun.castShadow = true;
+  sun.castShadow = Boolean(shadows);
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -22;
   sun.shadow.camera.right = 22;
@@ -507,7 +507,21 @@ export const createTownScene = ({ scene, colours, stage }) => {
     context.font = labelFont();
     context.fillStyle = "rgba(17, 19, 15, 0.9)";
     context.beginPath();
-    context.roundRect(3, 3, width - 6, LABEL_TEXTURE_HEIGHT - 6, 18);
+    const x = 3;
+    const y = 3;
+    const rectW = width - 6;
+    const rectH = LABEL_TEXTURE_HEIGHT - 6;
+    const radius = 18;
+    if (typeof context.roundRect === "function") {
+      context.roundRect(x, y, rectW, rectH, radius);
+    } else {
+      context.moveTo(x + radius, y);
+      context.arcTo(x + rectW, y, x + rectW, y + rectH, radius);
+      context.arcTo(x + rectW, y + rectH, x, y + rectH, radius);
+      context.arcTo(x, y + rectH, x, y, radius);
+      context.arcTo(x, y, x + rectW, y, radius);
+      context.closePath();
+    }
     context.fill();
     context.strokeStyle = colour;
     context.lineWidth = 6;
@@ -659,7 +673,8 @@ export const createTownScene = ({ scene, colours, stage }) => {
   const droneCamera = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 10), lampMetal);
   droneCamera.position.set(0.3, -0.2, 0);
   drone.add(droneCanopy, droneCamera);
-  const rotors = [];
+  const leadRotors = [];
+  const fleetRotors = [];
   const guardGeometry = new THREE.TorusGeometry(0.3, 0.018, 8, 36);
   const bladeGeometry = new THREE.BoxGeometry(0.54, 0.014, 0.065);
   const hubGeometry = new THREE.CylinderGeometry(0.045, 0.045, 0.05, 12);
@@ -686,7 +701,7 @@ export const createTownScene = ({ scene, colours, stage }) => {
     disc.rotation.x = -Math.PI / 2;
     propeller.add(blade, hub, disc);
     drone.add(propeller);
-    rotors.push(propeller);
+    leadRotors.push(propeller);
   }
   for (const z of [-0.25, 0.25]) {
     const skid = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.025, 8, 20, Math.PI), droneBodyMaterial);
@@ -734,11 +749,12 @@ export const createTownScene = ({ scene, colours, stage }) => {
     guardian.traverse((part) => {
       if (part.userData.envelope) part.material = guardianEnvelopeMaterial;
       else if (part.material === droneBodyMaterial) part.material = guardianBodyMaterial;
-      if (part.userData.propeller) rotors.push(part);
+      if (part.userData.propeller) fleetRotors.push(part);
     });
     scene.add(guardian);
     return guardian;
   });
+  const rotors = [...leadRotors, ...fleetRotors];
 
   const curves = Object.fromEntries(Object.entries(ROUTE_WAYPOINTS).map(([name, waypoints]) => [
     name,
@@ -767,9 +783,19 @@ export const createTownScene = ({ scene, colours, stage }) => {
 
   const routeMaterial = new THREE.LineDashedMaterial({ color: new THREE.Color(colours.route), dashSize: 0.44, gapSize: 0.2, transparent: true, opacity: 1 });
   const routeGlowMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color("#b8ef87"), transparent: true, opacity: 0.3, depthWrite: false });
+  const routeWaypointGeometry = new THREE.SphereGeometry(0.085, 12, 8);
+  const routeWaypointMaterial = new THREE.MeshBasicMaterial({ color: colours.route, transparent: true, opacity: 0.72 });
+  const routeWaypointEndMaterial = new THREE.MeshBasicMaterial({ color: colours.route, transparent: true, opacity: 1 });
+  const routeWaypoints = new THREE.Group();
+  const routeWaypointMarkers = [0, 0.25, 0.5, 0.75, 1].map((t) => {
+    const marker = new THREE.Mesh(routeWaypointGeometry, t === 1 ? routeWaypointEndMaterial : routeWaypointMaterial);
+    routeWaypoints.add(marker);
+    return { t, marker };
+  });
+  routeWaypoints.visible = false;
+  scene.add(routeWaypoints);
   let routeLine;
   let routeGlow;
-  let routeWaypoints;
   const showRoute = (curve) => {
     if (routeLine) {
       scene.remove(routeLine);
@@ -779,29 +805,17 @@ export const createTownScene = ({ scene, colours, stage }) => {
       scene.remove(routeGlow);
       routeGlow.geometry.dispose();
     }
-    if (routeWaypoints) {
-      scene.remove(routeWaypoints);
-      for (const marker of routeWaypoints.children) {
-        marker.geometry.dispose();
-        marker.material.dispose();
-      }
-    }
     const points = curve.getPoints(180).map((point) => new THREE.Vector3(point.x, 0.15, point.z));
     const projectedCurve = new THREE.CatmullRomCurve3(points, false, "centripetal", 0.35);
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     routeGlow = new THREE.Mesh(new THREE.TubeGeometry(projectedCurve, 180, 0.045, 6, false), routeGlowMaterial);
     routeLine = new THREE.Line(geometry, routeMaterial);
     routeLine.computeLineDistances();
-    routeWaypoints = new THREE.Group();
-    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
-      const marker = new THREE.Mesh(
-        new THREE.SphereGeometry(0.085, 12, 8),
-        new THREE.MeshBasicMaterial({ color: colours.route, transparent: true, opacity: t === 1 ? 1 : 0.72 })
-      );
+    for (const { t, marker } of routeWaypointMarkers) {
       marker.position.copy(projectedCurve.getPointAt(t));
-      routeWaypoints.add(marker);
     }
-    scene.add(routeGlow, routeLine, routeWaypoints);
+    routeWaypoints.visible = true;
+    scene.add(routeGlow, routeLine);
   };
 
 
@@ -829,6 +843,8 @@ export const createTownScene = ({ scene, colours, stage }) => {
     droneTether,
     bounderEnvelope,
     fleetDrones,
+    leadRotors,
+    fleetRotors,
     rotors,
     showRoute
   };

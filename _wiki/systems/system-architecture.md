@@ -3,7 +3,7 @@
 <!-- wiki:type = system -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-08-31 -->
-<!-- wiki:updated = 2026-10-02 -->
+<!-- wiki:updated = 2026-11-25 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -69,19 +69,19 @@ Authority flows downward through a closed policy schema, exact signature verific
 
 ### Evidence plane
 
-Receipts, Fleet audit records, checkpoints, resilience events, recorded pilots, and continuity envelopes describe decisions and system health. They are evidence about authority use. They are never authority for a new physical action. (`guides/INTEGRATION.md:133 "They never grant, broaden, or revoke permission."`; `runtime/simulator/contracts-core.js:148-164`; `continuity-evidence.js:84-126 "validateContinuityEvidence"`; `continuity-evidence.js:158 "verifyContinuityEnvelope"`)
+Receipts, Fleet audit records, checkpoints, resilience events, recorded pilots, and continuity envelopes describe decisions and system health. They are evidence about authority use. They are never authority for a new physical action. (`guides/INTEGRATION.md:133 "They never grant, broaden, or revoke permission."`; `runtime/simulator/contracts-core.js:148-164`; `continuity-evidence.js:84-126 "validateContinuityEvidence"`; `continuity-evidence.js:160 "verifyContinuityEnvelope"`)
 
-Private Guardian heartbeats, Fleet snapshots, and Fleet transition events extend this plane with operational diagnosis. Their state classifications remain observational and cannot substitute for local policy, evidence, checkpoint, or lease rules. (`runtime/observability/guardian-fleet-state.js:165-204 "deriveGuardianStateUnchecked"`; `runtime/observability/guardian-fleet-state.js:332-416 "createGuardianHeartbeatGuard"`)
+Private Guardian heartbeats, Fleet snapshots, and Fleet transition events extend this plane with operational diagnosis. Their state classifications remain observational and cannot substitute for local policy, evidence, checkpoint, or lease rules. (`runtime/observability/guardian-fleet-state.js:185-230 "deriveGuardianStateUnchecked"`; `runtime/observability/guardian-fleet-state.js:358-445 "createGuardianHeartbeatGuard"`)
 
 ### Presentation plane
 
-The simulator loads recorded receipts, optional Fleet evidence, local resilience timelines, a bounded live stream, and a signed continuity feed. Its visual controls select, replay, and verify evidence. They do not recompute the canonical operational decision. (`README.md:32-47`; `simulator/controller.js:1813 "loadReceiptBundle"`; `simulator/controller.js:821 "loadPilotEvidence"`)
+The simulator loads recorded receipts, optional Fleet evidence, local resilience timelines, a bounded live stream, and a signed continuity feed. Its visual controls select, replay, and verify evidence. They do not recompute the canonical operational decision. (`README.md:32-47`; `simulator/controller.js:1770 "loadReceiptBundle"`; `simulator/controller.js:766 "loadPilotEvidence"`)
 
-The presentation seams own their own mounting. `simulator.html` loads `ui/policy-roundtrip-panel.js` directly, and that UI module is the only thing that calls `bootstrapPolicyRoundTrip`; importing `runtime/policy/core.js` now has no DOM side effect. `staging-feed.js` likewise imports `parseStrictJSON` from the narrow `runtime/json/policy-json.js` seam rather than from the policy facade. (`simulator.html:486 "ui/policy-roundtrip-panel.js"`; `ui/policy-roundtrip-panel.js:5-6 "The UI seam owns mounting the panel."`; `staging-feed.js:1 "runtime/json/policy-json.js"`)
+The presentation seams own their own mounting. `simulator.html` loads `ui/policy-roundtrip-panel.js` directly, and that UI module is the only thing that calls `bootstrapPolicyRoundTrip`; importing `runtime/policy/core.js` now has no DOM side effect. `staging-feed.js` likewise imports `parseStrictJSON` from the narrow `runtime/json/policy-json.js` seam rather than from the policy facade. (`simulator.html:417 "ui/policy-roundtrip-panel.js"`; `ui/policy-roundtrip-panel.js:5-6 "The UI seam owns mounting the panel."`; `staging-feed.js:1 "runtime/json/policy-json.js"`)
 
 ### Assurance plane
 
-Schemas, exact validators, unit tests, browser acceptance, the public allowlist, release manifests, CI, and post-deployment checks establish different proof classes. Passing one class cannot be promoted into another. (`package.json:6-22 "release:manifest:v2"`; `scripts/build-site.mjs:10-19`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`; `SECURITY.md:43-45 "Passing software tests does not establish any of those properties."`)
+Schemas, exact validators, unit tests, browser acceptance, the public allowlist, release manifests, CI, and post-deployment checks establish different proof classes. Passing one class cannot be promoted into another. (`package.json:6-22 "release:manifest:v2"`; `scripts/build-site.mjs:10-19`; `scripts/generate-release-manifest-v2.mjs:135-153 "assertPublisherCommit"`; `SECURITY.md:43-45 "Passing software tests does not establish any of those properties."`)
 
 ## Stable Component Roles
 
@@ -99,7 +99,7 @@ Schemas, exact validators, unit tests, browser acceptance, the public allowlist,
 | Fleet observer | Published snapshot/event schemas and reference aggregation | Operational state, transitions, and privacy-safe aggregation | Local Guardian decision substitution |
 | Agent control plane | `system/`, agent scripts, verification receipts | Task routing, proof planning, and candidate evidence | Publication or runtime authority |
 
-These role boundaries compile the current integration guide, security boundary, module imports, build allowlist, and release generator. (`guides/INTEGRATION.md:3-14`; `SECURITY.md:22-37`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`)
+These role boundaries compile the current integration guide, security boundary, module imports, build allowlist, and release generator. (`guides/INTEGRATION.md:3-14`; `SECURITY.md:22-37`; `scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/generate-release-manifest-v2.mjs:135-153 "assertPublisherCommit"`)
 
 ## Repository Roles and the Provenance Gap
 
@@ -111,9 +111,9 @@ The public instructions verify producer derivation rather than regenerating and 
 
 The system descriptor separately lists `../Bounder-from-org-agent-ergonomic` and `../Bounder-Drone` as local producer discovery candidates. They serve read-only orientation in `npm run inspect` only; the derivation gate never consults them and fails fast without an explicit root. (`system/bounder-system.v1.json:24-27`; `scripts/system-inspect.mjs:91-94 "local_discovery"`)
 
-Historical manifest v1 generation calls Git against this repository root and requires every pinned website source byte to match the commit stored in `canonical_interlock`. Manifest v2 verifies the publisher commit separately and imports an exact producer statement from the producer-derivation receipt. (`scripts/generate-release-manifest.js:728-782`; `scripts/generate-release-manifest-v2.mjs:85-94 "fileReceipt"`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`)
+Historical manifest v1 generation calls Git against this repository root and requires every pinned website source byte to match the commit stored in `canonical_interlock`. Manifest v2 verifies the publisher commit separately and imports an exact producer statement from the producer-derivation receipt. (`scripts/generate-release-manifest.js:728-782`; `scripts/generate-release-manifest-v2.mjs:86-95 "fileReceipt"`; `scripts/generate-release-manifest-v2.mjs:135-153 "assertPublisherCommit"`)
 
-**Historical finding:** in manifest v1, `canonical_interlock` functions as website source provenance. It does not independently identify or reproduce the external Go decision producer. Manifest v2 corrects the role model for new releases while leaving every v1 byte unchanged. (`release/bounder-reference-v1.0.4.manifest.json:1-10`; `scripts/generate-release-manifest.js:776-782`; `scripts/generate-release-manifest-v2.mjs:134-152 "assertPublisherCommit"`)
+**Historical finding:** in manifest v1, `canonical_interlock` functions as website source provenance. It does not independently identify or reproduce the external Go decision producer. Manifest v2 corrects the role model for new releases while leaving every v1 byte unchanged. (`release/bounder-reference-v1.0.4.manifest.json:1-10`; `scripts/generate-release-manifest.js:776-782`; `scripts/generate-release-manifest-v2.mjs:135-153 "assertPublisherCommit"`)
 
 The target provenance model must carry two identities:
 
@@ -122,7 +122,7 @@ The target provenance model must carry two identities:
 
 Historical manifests remain immutable. Manifest v2 adds this distinction for new releases without rewriting prior records.
 
-The Go producer identity is no longer open. Manifest v2 names it as the `decision_producer` role at private `NellInc/Bounder-from-org` at a full commit. One part of that record is not yet true: manifests v1.1.2 to v1.2.4 name producer commit `d058ae1` with `discovery_ref` `master`, which the v2 schema fixes, but on 2026-09-26 that commit was reachable only from the producer branch `codex/agent-ergonomic-system`, not from `master`. The historical manifests stay byte-immutable, so the owner must merge the commit into producer `master` to make their `discovery_ref` true. The derivation receipt now records which remote-tracking refs contain the producer commit, and sealing refuses a commit that the run did not see on `origin/master`. The system descriptor carries this as a standing hold. What remains open beyond that is public reproducibility: regeneration still requires producer access or a future public mirror or reviewable source bundle. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1685 "is not on master"`; `scripts/generate-release-manifest-v2.mjs:200-202 "default_ref_contains_commit"`)
+The Go producer identity is no longer open. Manifest v2 names it as the `decision_producer` role at private `NellInc/Bounder-from-org` at a full commit. Historical manifests v1.1.2 to v1.2.4 remain byte-immutable and retain producer commit `d058ae1` (which was never merged to `master`; its contract change was later merged on `master` for v1.2.5 onwards). The derivation receipt records which remote-tracking refs contain the producer commit, and sealing refuses any commit that the run did not see on `origin/master`. The system descriptor carries this standing note alongside the remaining open boundary: public reproducibility still requires producer access or a future public mirror or reviewable source bundle. (`release/bounder-reference-v1.1.1.manifest.json:11-16 "decision_producer"`; `system/bounder-system.v1.json:1687 "never merged to master"`; `scripts/generate-release-manifest-v2.mjs:203-205 "default_ref_contains_commit"`)
 
 ## Evidence State Model
 
@@ -137,7 +137,7 @@ Every evidence surface should expose one of these mutually exclusive states:
 | `LIVE_INVALID` | Live evidence failed transport, signature, shape, identity, or ordering | Reject it and retain the local safe state |
 | `AUTHORITY_HELD` | Valid evidence describes a policy or continuity state that cannot grant current permission | Show the reason for hold without converting evidence into authority |
 
-This vocabulary consolidates states already represented by the continuity lease, staging fallback, receipt readiness, policy validity, and simulator fail-closed behavior. (`continuity-evidence.js:399 "createContinuityLeaseController"`; `continuity-evidence.js:500 "classifyContinuityFailure"`; `staging-feed.js:438 "loadPilotEvidence"`; `runtime/policy/presentation-state.js:25 "classifyAuthority"`; `simulator-fallback.js:81 "failClosed"`)
+This vocabulary consolidates states already represented by the continuity lease, staging fallback, receipt readiness, policy validity, and simulator fail-closed behavior. (`continuity-evidence.js:396 "createContinuityLeaseController"`; `continuity-evidence.js:497 "classifyContinuityFailure"`; `staging-feed.js:438 "loadPilotEvidence"`; `runtime/policy/presentation-state.js:31 "classifyAuthority"`; `simulator-fallback.js:285 "failClosed"`)
 
 ## Cross-Layer Invariants
 
@@ -145,12 +145,12 @@ This vocabulary consolidates states already represented by the continuity lease,
 2. A stale, replayed, malformed, foreign, or unverified policy grants no new permission. (`guides/INTEGRATION.md:180 "Signature failure preserves the last verified unexpired policy and never broadens authority."`)
 3. Evidence failure cannot broaden a decision. (`SECURITY.md:28`)
 4. Browser interaction cannot mint an operational receipt. (`guides/INTEGRATION.md:86-90 "The browser does not create authority or mint a deployment receipt."`)
-5. Simulator controls remain disabled until their own required evidence is ready. (`simulator/controller.js:1808 "setScenarioControlsEnabled"`; `simulator/controller.js:1754 "Receipt fixture unavailable"`)
+5. Simulator controls remain disabled until their own required evidence is ready. (`simulator/controller.js:1765 "setScenarioControlsEnabled"`; `simulator/controller.js:1711 "Receipt fixture unavailable"`)
 6. Recorded, live, source, deployment, physical, and human assurance remain separately labelled. (`SECURITY.md:43-45 "Passing software tests does not establish any of those properties."`)
-7. Public artifacts come only from the explicit allowlist and are checked byte for byte after assembly. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:350-362`)
+7. Public artifacts come only from the explicit allowlist and are checked byte for byte after assembly. (`scripts/build-site.mjs:10-19 "canonicalPublicPaths"`; `scripts/build-site.mjs:364-376`)
 8. A release record identifies both the producer lineage and publisher lineage before it claims derivation from the canonical engine. This is the target rule introduced by this design.
-9. Heartbeat loss can change Fleet observation but cannot broaden or revoke local authority by itself. (`runtime/observability/guardian-fleet-state.js:312-330 "classifyValidatedGuardianHeartbeat"`; `guides/INTEGRATION.md:133 "They never grant, broaden, or revoke permission."`)
-10. Public continuity can be projected only from a complete healthy privacy-safe aggregate. (`runtime/observability/guardian-fleet-state.js:683-743 "projectPublicContinuity"`)
+9. Heartbeat loss can change Fleet observation but cannot broaden or revoke local authority by itself. (`runtime/observability/guardian-fleet-state.js:338-357 "classifyValidatedGuardianHeartbeat"`; `guides/INTEGRATION.md:133 "They never grant, broaden, or revoke permission."`)
+10. Public continuity can be projected only from a complete healthy privacy-safe aggregate. (`runtime/observability/guardian-fleet-state.js:715-775 "projectPublicContinuity"`)
 
 ## Working If
 

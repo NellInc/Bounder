@@ -14,15 +14,21 @@ export default defineConfig({
     browserName: "chromium",
     // Continuous filmstrip readbacks can stall software WebGL under host pressure.
     // Keep DOM/source traces and the explicit visual QA captures instead.
-    trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true }
+    trace: {
+      mode: "retain-on-failure",
+      screenshots: false,
+      snapshots: true,
+      sources: true,
+    },
   },
   webServer: {
     // exec makes Node the runner's direct child. Playwright runs this in its own session, so a runner
     // killed by SIGTERM/SIGKILL never signals it; serve-site exits when its parent pid changes
     // (exitWithParent), which only happens if the shell is not in between.
-    command: "npm run build && exec node scripts/serve-site.mjs --root _site --host 127.0.0.1 --port 4173",
+    command:
+      "npm run build && exec node scripts/serve-site.mjs --root _site --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173/",
     reuseExistingServer: false,
-    timeout: 120_000
-  }
+    timeout: 120_000,
+  },
 });

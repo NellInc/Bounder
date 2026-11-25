@@ -1,6 +1,6 @@
 import { performance } from "node:perf_hooks";
 
-import { isMainModule } from "./lib/system-model.mjs";
+import { isMainModule } from "./lib/cli-helpers.mjs";
 
 import {
   DEFAULT_OBSERVABILITY_BUDGETS,

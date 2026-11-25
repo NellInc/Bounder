@@ -9,10 +9,13 @@ class FakeElement {
     this.textContent = text;
     this.children = {};
     this.listeners = {};
+    this.attributes = {};
     this.focused = false;
   }
   querySelector(selector) { return this.children[selector] ?? null; }
   addEventListener(type, listener) { this.listeners[type] = listener; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
   focus() { this.focused = true; }
 }
 
@@ -51,12 +54,16 @@ async function loadWith(page, fetchImpl) {
 test("a failed send restores only the label text, keeping the arrow, and focuses the error", async () => {
   const page = makePage();
   let labelWhileSending;
+  let busyWhileSending;
   const submit = await loadWith(page, async () => {
     labelWhileSending = page.label.textContent;
+    busyWhileSending = page.form.attributes["aria-busy"];
     return { ok: false };
   });
   await submit();
   assert.equal(labelWhileSending, "Sending enquiry…");
+  assert.equal(busyWhileSending, "true");
+  assert.equal(page.form.attributes["aria-busy"], undefined);
   assert.equal(page.label.textContent, "Send enquiry");
   assert.equal(page.submit.textContent, "", "the button's own text must not be overwritten");
   assert.equal(page.arrow.textContent, "→");

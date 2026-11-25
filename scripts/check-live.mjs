@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { isMainModule, repositoryRoot } from "./lib/system-model.mjs";
+import { isMainModule, repositoryRoot } from "./lib/cli-helpers.mjs";
 
 // Read-only post-deployment observation: does the site at --url serve this checkout's VERSION?
 // It sends two GET requests per attempt and writes nothing, so a deploy workflow or an operator

@@ -57,9 +57,9 @@ jobs:
           const browser = plan.commands.some((command) => ["browser", "verify"].includes(command));
           appendFileSync(process.argv[3], `browser=${browser}\n`);
           NODE
-      - name: Install Chromium when selected
+      - name: Install Chrome when selected
         if: ${{ steps.impact.outputs.browser == 'true' }}
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chrome
       - name: Run descriptor-selected gates
         env:
           BASE: ${{ steps.impact.outputs.base }}

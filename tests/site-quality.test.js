@@ -188,8 +188,7 @@ test("the required quality check has a unique name and deployment observes the p
   assert.ok(deployedJob, "the deployment job is missing");
   assert.match(deployedJob, /persist-credentials: false/);
   assert.match(deployedJob, /node-version-file: \.nvmrc/);
-  const install = deployedJob.indexOf("run: npm ci --ignore-scripts");
-  assert.ok(install >= 0 && install < deployedJob.indexOf("run: npm run check:live"), "the fresh deploy runner must install the live check's dependencies first");
+  assert.doesNotMatch(deployedJob, /npm ci/, "check:live uses only Node built-ins and needs no dependency install on the deploy runner");
   assert.match(deployedJob, /run: npm run check:live -- --url https:\/\/www\.bounder\.io --attempts 10/);
   assert.ok(deployedJob.indexOf("actions/deploy-pages@") < deployedJob.indexOf("run: npm run check:live"), "the observation must follow deployment");
   assert.doesNotMatch(deployedJob, /continue-on-error: true/, "failed live observation must fail the deployment result");
@@ -381,7 +380,7 @@ test("standalone simulator leads with its own heading and hands straight over to
   assert.match(hero, /href="#scenario-lab"/);
   assert.doesNotMatch(html, /class="simulator-intro"/);
   assert.equal((html.match(/Scenario laboratory/g) || []).length, 0);
-  assert.match(html, /interlockObserver.observe\(interlock\)/);
+  assert.doesNotMatch(html, /interlockObserver\.observe\(interlock\)/);
   assert.match(await readSiteFile("simulator.css"), /\.simulator-embed \.hero,/);
 });
 
@@ -491,10 +490,10 @@ test("the published explainer preserves the accepted corrected master", async ()
   assert.equal(createHash("sha256").update(bytes).digest("hex"), "1b90d7e36e503fbcb4ec531a152925cdbf3d9a33b60f62cff57b002773545b04");
 });
 
-test("the homepage offers opt-in native playback, captions and the complete transcript", async () => {
+test("the homepage offers preloaded native playback, captions and the complete transcript", async () => {
   const html = (await readExplainer("index.html")).toString();
   const player = html.match(/<video\b[\s\S]*?<\/video>/u)?.[0] ?? "";
-  assert.match(player, /controls playsinline preload="none"/u);
+  assert.match(player, /controls playsinline preload="auto"/u);
   assert.doesNotMatch(player, /\b(?:autoplay|loop|muted)\b/u);
   assert.match(player, /poster="assets\/video\/bounder-explainer-v1.jpg"/u);
   assert.match(player, /kind="captions"[^>]*srclang="en"[^>]*default/u);
@@ -511,7 +510,7 @@ test("English caption cues are ordered and stay inside the two-minute film", asy
   assert.ok(text.startsWith("WEBVTT\n"));
   const toSeconds = (time) => time.split(":").reduce((total, part) => total * 60 + Number(part), 0);
   const cues = [...text.matchAll(/(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3})/gu)];
-  assert.equal(cues.length, 41);
+  assert.equal(cues.length, 40);
   let previousEnd = 0;
   for (const [, startText, endText] of cues) {
     const start = toSeconds(startText), end = toSeconds(endText);
