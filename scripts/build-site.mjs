@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { constants as fsConstants } from "node:fs";
 import * as nodeFs from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -323,6 +324,19 @@ export function assertEquivalentTrees(expected, actual) {
   }
 }
 
+async function copyFileCloneFirst(fsApi, source, target) {
+  if (fsApi.copyFile !== nodeFs.copyFile) {
+    await fsApi.copyFile(source, target);
+    return;
+  }
+  try {
+    await fsApi.copyFile(source, target, fsConstants.COPYFILE_FICLONE);
+  } catch (error) {
+    if (!["EINVAL", "ENOSYS", "ENOTSUP", "EPERM", "EXDEV"].includes(error?.code)) throw error;
+    await fsApi.copyFile(source, target);
+  }
+}
+
 async function copySnapshot({ root, stage, snapshot, fsApi, maxFileBytes }) {
   for (const entry of snapshot.filter(({ type }) => type === "directory")) {
     await fsApi.mkdir(resolveContainedPath(stage, entry.path, "staged directory"), { recursive: true });
@@ -337,7 +351,7 @@ async function copySnapshot({ root, stage, snapshot, fsApi, maxFileBytes }) {
       throw new Error(`Source file violates the size limit during copy: ${entry.path}`);
     }
     await fsApi.mkdir(dirname(target), { recursive: true });
-    await fsApi.copyFile(source, target);
+    await copyFileCloneFirst(fsApi, source, target);
     const copied = await fsApi.lstat(target);
     if (copied.isSymbolicLink() || !copied.isFile()) throw new Error(`Copied output is not a regular file: ${entry.path}`);
     const bytes = await fsApi.readFile(target);

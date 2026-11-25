@@ -1,4 +1,6 @@
+import { sha256Hex as sha256BytesHex } from "../crypto/encoding.js";
 import { parseStrictJSON } from "../json/policy-json.js";
+import { sameJSONValue } from "../policy/roundtrip.js";
 
 const deepFreeze = (value, seen = new WeakSet()) => {
   if (value === null || typeof value !== "object" || seen.has(value)) return value;
@@ -202,6 +204,9 @@ export const parseSimulatorJSON = (
   try {
     return deepFreeze(parseStrictJSON(input, label, { maxBytes }));
   } catch (error) {
+    if (error instanceof Error && /is not valid UTF-8/.test(error.message)) {
+      throw new Error(`${label} is not valid UTF-8`, { cause: error });
+    }
     if (error instanceof Error && /duplicate object key/.test(error.message)) {
       throw new Error(`${label} contains duplicate JSON fields`, { cause: error });
     }
@@ -307,17 +312,6 @@ const assertNonNegativeInteger = (value, label) => {
   if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${label} is invalid`);
 };
 
-const sameJSONValue = (left, right) => {
-  if (Object.is(left, right)) return true;
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((value, index) => sameJSONValue(value, right[index]));
-  }
-  if (!isPlainObject(left) || !isPlainObject(right)) return false;
-  const leftKeys = Object.keys(left).sort();
-  const rightKeys = Object.keys(right).sort();
-  return leftKeys.length === rightKeys.length && leftKeys.every((key, index) => key === rightKeys[index] && sameJSONValue(left[key], right[key]));
-};
-
 const readonlyMap = (map) => Object.freeze({
   size: map.size,
   get: (key) => map.get(key),
@@ -330,8 +324,7 @@ const readonlyMap = (map) => Object.freeze({
 
 const sha256Hex = async (value, cryptoImpl) => {
   if (!cryptoImpl?.subtle) throw new Error("fleet evidence digest verification is unavailable");
-  const digest = new Uint8Array(await cryptoImpl.subtle.digest("SHA-256", new TextEncoder().encode(value)));
-  return [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return sha256BytesHex(new TextEncoder().encode(value), cryptoImpl);
 };
 
 const readBoundedBytes = async (response, maxBytes, label, signal) => {
@@ -409,13 +402,7 @@ export const readBoundedJSONResponse = async (response, {
   if (!Number.isSafeInteger(declaredLength)) throw new Error(`${label} content length is invalid`);
   if (declaredLength > maxBytes) throw new Error(`${label} exceeds its size limit`);
   const bytes = await readBoundedBytes(response, maxBytes, label, signal);
-  let text;
-  try {
-    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-  } catch {
-    throw new Error(`${label} is not valid UTF-8`);
-  }
-  return parseSimulatorJSON(text, label, { maxBytes });
+  return parseSimulatorJSON(bytes, label, { maxBytes });
 };
 
 export const fetchSimulatorJSON = async (url, {

@@ -80,7 +80,8 @@ test("source guard: the touch-scroll restore relies on a private field the pinne
   assert.match(vendor, /this\._sphericalDelta = new Spherical\(\);/);
   assert.match(vendor, /this\.domElement\.addEventListener\( 'pointercancel', this\._onPointerUp \);/);
   assert.match(controller, /controls\._sphericalDelta\?\.set\(0, 0, 0\);/);
-  assert.match(controller, /canvas\.addEventListener\("pointercancel", \(event\) => \{/);
+  assert.match(controller, /canvas\.addEventListener\("pointercancel", handleTouchPointerCancel\);/);
+  assert.match(controller, /canvas\.removeEventListener\("pointercancel", handleTouchPointerCancel\);/);
 });
 
 test("source guard: starting quality comes from the page and the renderer's own context, applied through Detail", async () => {

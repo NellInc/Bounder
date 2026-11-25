@@ -22,19 +22,25 @@ export const createLatestRequestGate = () => {
   };
 };
 
+const millisecondsToNanoseconds = (value, label) => {
+  if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(`${label} is invalid`);
+  const whole = Math.trunc(value);
+  return BigInt(whole) * 1_000_000n + BigInt(Math.round((value - whole) * 1_000_000));
+};
+
 export const classifyAuthority = (validity, now = Date.now()) => {
   let nowNanoseconds;
   if (typeof now === "string") nowNanoseconds = parseRFC3339(now, "authority evaluation time").epochNanoseconds;
   else if (typeof now === "bigint") nowNanoseconds = now;
   else if (isPlainObject(now) && typeof now.epochNanoseconds === "bigint") nowNanoseconds = now.epochNanoseconds;
-  else if (typeof now === "number" && Number.isFinite(now)) nowNanoseconds = BigInt(Math.round(now * 1_000_000));
+  else if (typeof now === "number" && Number.isFinite(now)) nowNanoseconds = millisecondsToNanoseconds(now, "authority evaluation time");
   else throw new Error("authority evaluation time is invalid");
   const notBefore = typeof validity?.notBeforeNanoseconds === "bigint"
     ? validity.notBeforeNanoseconds
-    : BigInt(Math.round(validity?.notBefore * 1_000_000));
+    : millisecondsToNanoseconds(validity?.notBefore, "authority notBefore");
   const expiresAt = typeof validity?.expiresAtNanoseconds === "bigint"
     ? validity.expiresAtNanoseconds
-    : BigInt(Math.round(validity?.expiresAt * 1_000_000));
+    : millisecondsToNanoseconds(validity?.expiresAt, "authority expiresAt");
   if (nowNanoseconds < notBefore) return "not-yet-valid";
   if (nowNanoseconds >= expiresAt) return "expired";
   return "current";

@@ -1,8 +1,9 @@
+import { createReadStream } from "node:fs";
 import { createServer } from "node:http";
 import * as nodeFs from "node:fs/promises";
 import { extname, join, relative, resolve, sep } from "node:path";
 
-import { isMainModule } from "./lib/system-model.mjs";
+import { isMainModule } from "./lib/cli-helpers.mjs";
 
 // Static server for browser acceptance against the built _site. It replaces `python3 -m
 // http.server`, whose listen backlog of five and HTTP/1.0 connection-per-request behaviour
@@ -27,10 +28,12 @@ export const MIME_TYPES = Object.freeze({
   ".map": "application/json; charset=utf-8",
   ".md": "text/markdown; charset=utf-8",
   ".mjs": "text/javascript; charset=utf-8",
+  ".mp4": "video/mp4",
   ".pdf": "application/pdf",
   ".png": "image/png",
   ".svg": "image/svg+xml",
   ".txt": "text/plain; charset=utf-8",
+  ".vtt": "text/vtt; charset=utf-8",
   ".webmanifest": "application/manifest+json",
   ".webp": "image/webp",
   ".woff": "font/woff",
@@ -93,10 +96,40 @@ export async function resolveRequest(root, target, fsApi = nodeFs) {
     return { status: 301, location: `${url.pathname}/${url.search}` };
   }
   if (!info.isFile()) return { status: 404 };
-  return { status: 200, path: realCandidate };
+  return { status: 200, path: realCandidate, size: info.size };
 }
 
-const STATUS_TEXT = Object.freeze({ 400: "Bad request\n", 404: "Not found\n", 405: "Method not allowed\n", 500: "Internal server error\n" });
+const STATUS_TEXT = Object.freeze({
+  400: "Bad request\n",
+  404: "Not found\n",
+  405: "Method not allowed\n",
+  416: "Range not satisfiable\n",
+  500: "Internal server error\n"
+});
+
+export function parseByteRange(header, size) {
+  if (typeof header !== "string" || !header.startsWith("bytes=")) return { kind: "none" };
+  const spec = header.slice(6).trim();
+  if (!spec || spec.includes(",")) return { kind: "none" };
+  const match = /^(\d*)-(\d*)$/.exec(spec);
+  if (!match || (!match[1] && !match[2])) return { kind: "none" };
+  if (size === 0) return { kind: "unsatisfiable" };
+  let start;
+  let end;
+  if (!match[1]) {
+    const suffix = Number(match[2]);
+    if (!Number.isSafeInteger(suffix) || suffix === 0) return { kind: "unsatisfiable" };
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= size || start > end) {
+      return { kind: "unsatisfiable" };
+    }
+  }
+  return { kind: "range", start, end };
+}
 
 async function notFoundBody(root, fsApi) {
   try {
@@ -116,7 +149,50 @@ function send(response, method, status, headers, body = Buffer.alloc(0)) {
   response.end(method === "HEAD" ? undefined : body);
 }
 
-export function createRequestHandler({ root, fsApi = nodeFs, logger = console } = {}) {
+function streamFile(response, method, path, size, rangeHeader, openStream) {
+  const range = parseByteRange(rangeHeader, size);
+  if (range.kind === "unsatisfiable") {
+    send(response, method, 416, {
+      "Accept-Ranges": "bytes",
+      "Content-Range": `bytes */${size}`,
+      "Content-Type": MIME_TYPES[".txt"]
+    }, Buffer.from(STATUS_TEXT[416]));
+    return Promise.resolve();
+  }
+  const partial = range.kind === "range";
+  const start = partial ? range.start : 0;
+  const end = partial ? range.end : size - 1;
+  const length = partial ? end - start + 1 : size;
+  const headers = {
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Accept-Ranges": "bytes",
+    "Content-Type": contentTypeFor(path),
+    "Content-Length": length,
+    ...(partial ? { "Content-Range": `bytes ${start}-${end}/${size}` } : {})
+  };
+  if (method === "HEAD" || length === 0) {
+    response.writeHead(partial ? 206 : 200, headers);
+    response.end();
+    return Promise.resolve();
+  }
+  return new Promise((resolvePromise, rejectPromise) => {
+    const stream = openStream(path, partial ? { start, end } : undefined);
+    stream.once("error", (error) => rejectPromise(error));
+    stream.once("open", () => {
+      response.writeHead(partial ? 206 : 200, headers);
+      const done = () => {
+        if (!stream.destroyed) stream.destroy();
+        resolvePromise();
+      };
+      response.once("close", done);
+      response.once("finish", done);
+      stream.pipe(response);
+    });
+  });
+}
+
+export function createRequestHandler({ root, fsApi = nodeFs, openStream = createReadStream, logger = console } = {}) {
   if (typeof root !== "string" || root.length === 0) throw new TypeError("root must be a non-empty path");
   const absoluteRoot = resolve(root);
   return async function handle(request, response) {
@@ -128,8 +204,7 @@ export function createRequestHandler({ root, fsApi = nodeFs, logger = console } 
       }
       const resolved = await resolveRequest(absoluteRoot, request.url ?? "/", fsApi);
       if (resolved.status === 200) {
-        const body = await fsApi.readFile(resolved.path);
-        send(response, method, 200, { "Content-Type": contentTypeFor(resolved.path) }, body);
+        await streamFile(response, method, resolved.path, resolved.size, request.headers?.range, openStream);
       } else if (resolved.status === 301) {
         send(response, method, 301, { Location: resolved.location, "Content-Type": MIME_TYPES[".txt"] });
       } else if (resolved.status === 404) {

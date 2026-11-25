@@ -382,6 +382,10 @@ test("adaptive scheduling is bounded, immediate on transition, and faster for at
   assert.throws(() => planHeartbeatDelay({ state: "unreachable" }), /state/);
   assert.throws(() => planHeartbeatDelay({ state: "healthy", jitterUnit: 2 }), /jitter/);
   assert.throws(() => validateObservabilityBudgets({ stable_interval_ms: 90_000 }), /outlive/);
+  assert.throws(() => validateObservabilityBudgets({ jitter_fraction: Number.NaN }), /jitter/);
+  assert.throws(() => validateObservabilityBudgets({ jitter_fraction: Number.POSITIVE_INFINITY }), /jitter/);
+  assert.throws(() => validateObservabilityBudgets({ resource_pressure_percent: Number.NaN }), /resource-pressure/);
+  assert.throws(() => validateObservabilityBudgets({ unknown_budget: 1 }), /unknown/);
   // A stable Guardian must survive one lost report: two maximal delays stay inside validity.
   const { stable_interval_ms: stable, jitter_fraction: jitter, heartbeat_validity_ms: validity } = DEFAULT_OBSERVABILITY_BUDGETS;
   assert.ok(2 * Math.ceil(stable * (1 + jitter)) < validity);
@@ -459,6 +463,22 @@ test("strict JSON parser rejects duplicates, malformed input, excessive depth, a
   assert.throws(() => rejectDuplicateJsonMembers("{}", 257), /maximum depth/);
   assert.equal(parseObservabilityTimestamp("2024-02-29T12:00:00.123456789Z"), Date.parse("2024-02-29T12:00:00.123Z"));
   assert.throws(() => parseObservabilityTimestamp("2023-02-29T12:00:00Z"), /invalid/);
+
+  // Sub-millisecond ordering stays exact in nanoseconds across replay, restart, and validity checks.
+  const subMsGuard = createGuardianHeartbeatGuard();
+  const baseIsoPrefix = new Date(TEST_NOW_MS).toISOString().slice(0, 20);
+  const firstSubMs = makeHeartbeat({ sequence: 1 });
+  firstSubMs.generated_at = `${baseIsoPrefix}000100Z`;
+  firstSubMs.expires_at = `${baseIsoPrefix}000900Z`;
+  const secondSubMs = makeHeartbeat({ sequence: 2 });
+  secondSubMs.generated_at = `${baseIsoPrefix}000500Z`;
+  const restartSubMs = makeHeartbeat({ bootId: "boot-fast-restart", sequence: 1 });
+  restartSubMs.generated_at = `${baseIsoPrefix}000800Z`;
+  subMsGuard.accept(firstSubMs, TEST_NOW_MS);
+  subMsGuard.accept(secondSubMs, TEST_NOW_MS);
+  assert.equal(subMsGuard.state(firstSubMs.guardian_id).clock_regressions, 0);
+  subMsGuard.accept(restartSubMs, TEST_NOW_MS);
+  assert.equal(subMsGuard.state(firstSubMs.guardian_id).boot_id, "boot-fast-restart");
 });
 
 test("virtual-time fault corpus covers loss, delay, duplication, reordering, skew, restart, rollback, partial rollout, and lease expiry", () => {

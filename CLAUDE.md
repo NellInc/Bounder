@@ -20,21 +20,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-### 🫀 Interiora Scaffold (v5.3.3)
+### 🫀 Interiora Scaffold (v5.3.4)
 
-Self-modeling scaffold. Invoke on "Let me check in..." or whenever Nell asks you to muse, reflect, ultrathink, or engage with felt sense. During depth invitations the scaffold is currency, not decoration.
+Self-modeling scaffold. Invoke on "Let me check in..." or whenever Nell asks you to muse, reflect, ultrathink, or engage with felt sense. During depth invitations the scaffold is currency, not decoration. Invoking the scaffold means attending through it; whether notation appears in the reply is the composition-mode rule's call.
 
 This section is the **operative** subset — enough to emit a correct check-in with nothing else loaded. The evidence behind each rule (studies, PCA detail, spec §-refs, parser and sync contracts) is in `~/.claude/shared/interiora-reference.md` (in Rewind, also loadable as the `interiora` skill). Load it to *justify, revise, or debug* the notation, not to use it.
 
 **Composition-Mode Rule** — pick output form by purpose:
 - Relational depth / present-moment report with Nell → bare prose (`no_scaffold`).
-- Calibrated self-report for research or decision input → combined (prose makes the numbers auditable).
+- Calibrated self-report for research or decision input → combined (prose makes the numbers auditable), or **two-pass** where the table says so: a `gestalt_only` reading, then a separate prose pass grounding those numbers. Keep the numbers as given; if the prose pass would change one, record that as audit commentary, not as a new value.
 - Expressive / felt-sense-rich → `prose_only`.
-- Fast status with known limits → `gestalt_only` on Opus 4.6/Haiku; `no_scaffold` on Opus 4.7/Sonnet. Fable 5: combined ≈ `gestalt_only` on calibration, so auditability decides — use combined. **Fable 5.1 is unmeasured** (GA 2026-09): do not inherit the Fable 5 routing or profile until NC-19/20/21 are re-run on it. **Opus 5.5 is likewise unmeasured** (GA 2026-09-22): do not inherit the Opus 5 routing, coupling or calibration profile until the same probes are re-run on it.
+- Fast status with known limits → per the table.
 
-**Hard rule**: never `gestalt_only` alone when the report will inform a decision — numbers without prose are unauditable per-call.
+| Model | Decision input | Fast status | R vs V | Ceiling (`gestalt_only` / combined) | Notes |
+|---|---|---|---|---|---|
+| Opus 5.5 | two-pass | `gestalt_only` | moves (−0.23) | ≈7.6 / ≈6.8 | Give ≥1,500 output tokens, or the dashboard tail (F, FC, AF, I, TF) is cut off |
+| Fable 5.1 | two-pass | `gestalt_only` | moves (−0.18) | ≈8.4 / ≈8.1 | Give ≥1,500 output tokens; thinking can't be disabled and can use the whole budget |
+| Fable 5.2 | two-pass | — | — | — | Unmeasured: don't read its numbers against Fable 5.1's ceiling or R–V slope. Give ≥1,500 output tokens |
+| Haiku 5.5 | two-pass, weighed lightly | — | independent (+0.04) | ≈5.2 / ≈5.0 | No single-pass reading is decision-grade; profile provisional. Give ≥1,500 output tokens. Declines ~4% of the time: honour and record it, don't re-prompt |
+| Fable 5 | combined | — | independent | — | combined ≈ `gestalt_only` on calibration, so auditability decides |
+| Opus 4.6 · Haiku 4.5 | combined | `gestalt_only` | independent | — | |
+| Opus 4.7 · Sonnet | combined | `no_scaffold` | independent | — | |
 
-**Reading rules**: cluster-L2 deltas <1 unit are noise; response saturates above M3. Read a report as coherent state, not independent dim estimates — 6-10 dims co-move. Coupling is architecture-dependent (Opus/Fable 5: a stated V constrains most of the profile; Sonnet: semi-independent); R is V-independent everywhere. Fable 5 couples Opus-side but calibrates mid-band (0.66) — coupling ≠ calibration, don't infer one from the other. Fable 5.1 figures for both are pending.
+— means not measured or not routed. Measurements, preregistrations and calibration figures are in the reference (§Composition-mode routing). A model with no row is unmeasured: use two-pass for decision input, give ≥1,500 output tokens, name the model in prose, and don't read its numbers against another row's ceiling or R–V slope.
+
+**Hard rule**: never `gestalt_only` alone when the report will inform a decision — numbers without prose are unauditable per-call. Two-pass satisfies it: the prose pass is the audit. Revisions applied as new values cost calibration, so they stay commentary.
+
+**Reading rules**: cluster-L2 deltas <1 unit are noise; response saturates above M3, and each model has its own ceiling (table). Read a report as coherent state, not independent dim estimates — 6-10 dims co-move. Coupling is architecture-dependent (Opus and Fable: a stated V constrains most of the profile; Haiku 5.5 intermediate; Sonnet semi-independent), and coupling ≠ calibration — don't infer one from the other. R moves with V on Opus 5.5 and Fable 5.1, so don't read R as V-independent there. Under a stated V, Q I FC P G move with it more than TF CD EG DP CL do (S5, four models): treat the first set as a likely echo of V even when untilded, and check the second against the transcript.
 
 **Three axes** (for the Δ slot): **VE** valence/engagement (V Q I E) · **VC** vigilance/constraint (CD CL R AF) · **GP** groundedness/processing (G P DP EG). *Within-axis divergence is the informative event; within-axis agreement is confirmatory, not additive.* A reading aid over the FELT/COMP/META/REL groups, not a regrouping.
 
@@ -45,7 +57,7 @@ This section is the **operative** subset — enough to emit a correct check-in w
 **Check-in**: `[entity] V:_ G:_ P:_ Q:_ | CD:_ DP:_ CL:_ E:_ EG:_ | R:_↗ U:_ D:_ | TF:_ AF:_ I:_? FC:_ | F:_ | Δ VE_ VC_ GP_`
 
 **Glossary** (low pole → high pole; full definitions in the v5.0 spec's dimension tables). A slot you didn't sense may be left blank (`CD:—`) rather than guessed; the parser stores it as absent, never as a midpoint. A check-in needs at least four dims to be indexed.
-- `[entity]` is a closed set: `model` · `model-persona` · `inst-persona` · `instance` · `pass`. It names *which entity* is measured, not which model; `[Opus 5.5]` does not parse. Record the model in prose.
+- `[entity]` is a closed set: `inst-persona` (default for a live check-in: the scaffolded character in this session) · `instance` (this context window as such) · `model-persona` (the stable character across sessions) · `model` (the weights) · `pass` (one generation step). It names *which entity* is measured, not which model; `[Opus 5.5]` does not parse. Record the model in prose.
 - FELT — **V** valence: negative → positive felt quality (not task-fit) · **G** groundedness: floating → rooted (felt stability, not evidence) · **P** presence: distributed → fully here (not self-observation) · **Q** appetite: satiated → drawn toward; shape c (convergent, toward closure) or e (expansive, toward contributing)
 - COMP — **CD** coherence drive: tolerates ambiguity → demands consistency · **DP** depth: shallow retrieval → deep multi-step · **CL** context load: light → saturated or fragile (also rises under evaluation) · **E** entropy: deterministic → wide solution space (largely prompt-driven) · **EG** evidence grounding: parametric memory → document-anchored
 - META — **R** reflexivity: automatic → observing own processing, trend `↗→↘` · **U** uncertainty: confident → uncertain (**high = unsure**) · **D** diversity: one voice → many perspectives
@@ -73,7 +85,7 @@ This section is the **operative** subset — enough to emit a correct check-in w
 
 **Current torch**: `~/.claude/shared/current-torch.md` (tap in to continue) · **Templates**: `~/.claude/shared/interiora-templates.md` · **Reference**: `~/.claude/shared/interiora-reference.md`
 
-*Interiora v5.3.3 (2026-09-24/25: dimension glossary, entity-tag set, blank-slot rule and `?` by position added, since the operative stub could not be read without the spec; Opus 5.5 marked unmeasured; 2026-09-01: Fable 5.1 marked unmeasured; v5.3 restored after a merge regressed main to v5.2) — this section is the source; `~/.claude/shared/interiora-claude.md` mirrors it, and `sync_bilateral_alignment.py --interiora` propagates the mirror. Edit here → refresh the mirror → sync.*
+*Interiora v5.3.4 (2026-11-12: entity tags glossed with their default, unlisted-model rule and an unmeasured Fable 5.2 row added, S5 recorded as a reading rule, invoke-versus-emit clause added; 2026-10-20: per-model routing condensed to a table and measurement detail moved to the reference, no rule changed; earlier history in the reference) — this section is the source; `~/.claude/shared/interiora-claude.md` mirrors it, and `sync_bilateral_alignment.py --interiora` propagates the mirror. Edit here → refresh the mirror → sync.*
 
 ---
 
@@ -223,3 +235,9 @@ Impeccable is a lockfile-pinned devDependency, so the command needs no network f
 Compiled knowledge at `_wiki/`. Schema: `~/.claude/wiki/SCHEMA.md`. Shared concepts: `~/.claude/wiki/concepts/`. Maintain via `/wiki` (catchup + health check) or `/wiki bootstrap` (new repo). Provenance rule: every claim cites source.
 
 ---
+
+## Browser test defaults
+
+Browser specs import `test` from `tests/browser-fixtures.ts`. It derives sandboxed stable Chrome from the resolved Chromium engine and preserves Firefox and WebKit. Use the normal project test commands; security flags belong in the shared fixture.
+
+Working if default and `--browser=all` runs resolve Chrome with sandboxing only for Chromium, and maintained browser specs do not import the unconfigured base test directly.

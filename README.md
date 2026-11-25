@@ -2,7 +2,7 @@
 
 This repository contains the public website for [bounder.io](https://www.bounder.io/).
 
-Bounder is an open reference architecture for trustworthy physical interlocks — the last check between a digital decision and a machine that moves. The website presents the current project, integration model, interactive simulator, development status, and roadmap towards hardware validation.
+Bounder is an open reference architecture for trustworthy physical interlocks: the last check between a digital decision and a machine that moves. The website presents the current project, integration model, interactive simulator, development status, and roadmap towards hardware validation.
 
 The public source here is the website and JavaScript browser laboratory. The canonical Go decision engine is maintained in the private producer repository `NellInc/Bounder-from-org`, which is not publicly readable. Public fixtures support local verification; independent producer regeneration requires access to that separate checkout. See the [developer contract guide](guides/INTEGRATION.md#developer-contract-walkthrough) for signed bytes, examples, and failure semantics.
 
@@ -50,7 +50,7 @@ the build actually publishes.
 | `schemas/` | Published JSON Schemas for policy, envelope, profile, checkpoint, receipt, receipt bundle, round trip, resilience evidence, observability, evidence provenance, release manifest v2 and the manipulator profile preview |
 | `guides/INTEGRATION.md` | Creed Space Fleet to Bounder contract, browser verification and platform-adapter guide |
 | `release/` | Immutable SHA-256 integrity manifests for each sealed reference release |
-| `assets/` | Published brand mark, wordmark, touch icon and self-hosted fallback font (SIL Open Font License) |
+| `assets/` | Published brand mark, wordmark, touch icon, self-hosted fallback font (SIL Open Font License), and the two-minute explainer film, poster and English captions (`assets/video/`, all rights reserved) |
 | `images/` | Published photography and the social card, credited in `images/CREDITS.md` |
 | `vendor/three/` | Pinned, self-hosted Three.js 0.180.0 runtime and licence |
 | `.well-known/security.txt` | Machine-readable vulnerability-reporting route (RFC 9116) |
@@ -63,7 +63,7 @@ the build actually publishes.
 | `sitemap.xml` and `robots.txt` | Search discovery |
 | `CNAME` | `www.bounder.io` custom domain |
 | `README.md`, `SECURITY.md`, `CHANGELOG.md` and `VERSION` | Project overview, disclosure policy, release notes and current version |
-| `LICENSE` and `NOTICE` | Apache-2.0 project licence and attribution notice; the Bounder name, wordmark and mark are not licensed |
+| `LICENSE` and `NOTICE` | Apache-2.0 project licence and attribution notice; the Bounder name, wordmark, mark, explainer film and poster are excluded from Apache-2.0 |
 
 Repository-only material is not published: `tests/` holds the unit, contract and
 browser suites; `scripts/` holds the build, verification and release tooling;
@@ -75,7 +75,7 @@ snapshot, not the source for new content. GitHub Pages must be configured with
 **GitHub Actions** as its source: `.github/workflows/deploy-pages.yml` runs
 `npm run verify` and publishes only the allowlisted `_site` artifact described
 under [Deployment](#deployment). Do not switch the Pages source to a branch and
-folder — that bypasses the allowlist and would publish `docs/`, `tests/`, and
+folder, because that bypasses the allowlist and would publish `docs/`, `tests/`, and
 repository automation.
 
 ## Preview

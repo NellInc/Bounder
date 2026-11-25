@@ -53,6 +53,7 @@ if (framedByOtherOrigin()) {
   link.textContent = 'Open the contact page in its own window';
   notice.append('This form does not work inside another site. ', link, '.');
   form.hidden = true;
+  for (const element of formIntro) element.hidden = true;
   form.before(notice);
 }
 
@@ -66,6 +67,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (pending || !form.reportValidity()) return;
   pending = true;
+  form.setAttribute('aria-busy', 'true');
   submit.disabled = true;
   hostedSubmit.disabled = true;
   submitLabel.textContent = 'Sending enquiry…';
@@ -98,6 +100,7 @@ form.addEventListener('submit', async (event) => {
   } finally {
     clearTimeout(timeout);
     pending = false;
+    form.removeAttribute('aria-busy');
     submit.disabled = false;
     hostedSubmit.disabled = false;
     submitLabel.textContent = idleLabel;

@@ -1,3 +1,4 @@
+import { decodeBase64, sha256Hex as sha256BytesHex } from "../crypto/encoding.js";
 import { parseStrictJSON } from "../json/policy-json.js";
 
 export const HEARTBEAT_VERSION = "creedspace-bounder-guardian-heartbeat/v1";
@@ -107,7 +108,11 @@ function safeAdd(left, right, label) {
   return value;
 }
 
-export function parseObservabilityTimestamp(value, label = "timestamp") {
+const NS_PER_MS = 1_000_000n;
+const BUDGET_KEYS = Object.freeze(Object.keys(DEFAULT_OBSERVABILITY_BUDGETS));
+const msToNs = (milliseconds) => BigInt(milliseconds) * NS_PER_MS;
+
+function parseObservabilityInstant(value, label = "timestamp") {
   if (typeof value !== "string") throw new Error(`${label} is invalid`);
   const match = UTC_TIMESTAMP.exec(value);
   if (!match) throw new Error(`${label} is invalid`);
@@ -123,9 +128,23 @@ export function parseObservabilityTimestamp(value, label = "timestamp") {
   if (year < 1 || month < 1 || month > 12 || day < 1 || day > monthDays[month - 1] || hour > 23 || minute > 59 || second > 59) {
     throw new Error(`${label} is invalid`);
   }
-  const milliseconds = Date.parse(`${yearText}-${monthText}-${dayText}T${hourText}:${minuteText}:${secondText}.${fraction.padEnd(3, "0").slice(0, 3) || "000"}Z`);
+  const wholeSecondsMs = Date.parse(`${yearText}-${monthText}-${dayText}T${hourText}:${minuteText}:${secondText}.000Z`);
+  if (!Number.isSafeInteger(wholeSecondsMs)) throw new Error(`${label} is invalid`);
+  const paddedFraction = fraction.padEnd(9, "0");
+  const milliseconds = wholeSecondsMs + Number(paddedFraction.slice(0, 3));
   if (!Number.isSafeInteger(milliseconds)) throw new Error(`${label} is invalid`);
-  return milliseconds;
+  return {
+    milliseconds,
+    epochNanoseconds: BigInt(wholeSecondsMs) * NS_PER_MS + BigInt(paddedFraction)
+  };
+}
+
+export function parseObservabilityTimestamp(value, label = "timestamp") {
+  return parseObservabilityInstant(value, label).milliseconds;
+}
+
+export function parseObservabilityTimestampNs(value, label = "timestamp") {
+  return parseObservabilityInstant(value, label).epochNanoseconds;
 }
 
 function encodedBytes(value) {
@@ -134,6 +153,9 @@ function encodedBytes(value) {
 
 export function validateObservabilityBudgets(overrides = {}) {
   if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) throw new Error("observability budgets are invalid");
+  for (const key of Object.keys(overrides)) {
+    if (!BUDGET_KEYS.includes(key)) throw new Error(`observability budget key ${key} is unknown`);
+  }
   const budgets = { ...DEFAULT_OBSERVABILITY_BUDGETS, ...overrides };
   if (budgets.scope !== DEFAULT_OBSERVABILITY_BUDGETS.scope) throw new Error("observability budget scope is invalid");
   for (const key of [
@@ -141,10 +163,10 @@ export function validateObservabilityBudgets(overrides = {}) {
     "heartbeat_validity_ms", "healthy_interval_ms", "stable_interval_ms", "attention_interval_ms",
     "audit_backlog_count", "audit_backlog_age_ms", "aggregation_10000_max_cpu_ms"
   ]) assertSafeInteger(budgets[key], `observability budget ${key}`, 1);
-  if (typeof budgets.jitter_fraction !== "number" || budgets.jitter_fraction < 0 || budgets.jitter_fraction > 0.25) {
+  if (typeof budgets.jitter_fraction !== "number" || !Number.isFinite(budgets.jitter_fraction) || budgets.jitter_fraction < 0 || budgets.jitter_fraction > 0.25) {
     throw new Error("observability jitter budget is invalid");
   }
-  if (typeof budgets.resource_pressure_percent !== "number" || budgets.resource_pressure_percent < 50 || budgets.resource_pressure_percent > 100) {
+  if (typeof budgets.resource_pressure_percent !== "number" || !Number.isFinite(budgets.resource_pressure_percent) || budgets.resource_pressure_percent < 50 || budgets.resource_pressure_percent > 100) {
     throw new Error("observability resource-pressure budget is invalid");
   }
   if (!(budgets.attention_interval_ms <= budgets.healthy_interval_ms && budgets.healthy_interval_ms <= budgets.stable_interval_ms)) {
@@ -162,24 +184,24 @@ export function validateObservabilityBudgets(overrides = {}) {
   return Object.freeze(budgets);
 }
 
-// `atMs` governs the absolute deadlines (policy expiry and continuity lease), which Fleet may
+// `atNs` governs the absolute deadlines (policy expiry and continuity lease), which Fleet may
 // re-check at observation time. Evidence age is a rolling Guardian-local reading: Fleet cannot
-// see evidence refreshed after the heartbeat, so it is judged at `evidenceAtMs`, which Fleet
+// see evidence refreshed after the heartbeat, so it is judged at `evidenceAtNs`, which Fleet
 // classification pins to the heartbeat's own generated_at.
-function deriveGuardianStateUnchecked(heartbeat, atMs, budgets, evidenceAtMs = atMs) {
+function deriveGuardianStateUnchecked(heartbeat, atNs, budgets, evidenceAtNs = atNs) {
   if (heartbeat.checkpoint.rollback_detected) return Object.freeze({ state: "held", reason: "rollback_detected" });
   if (!heartbeat.policy.verified) return Object.freeze({ state: "held", reason: "policy_unverified" });
-  if (parseObservabilityTimestamp(heartbeat.policy.expires_at, "policy expiry") <= atMs) {
+  if (parseObservabilityTimestampNs(heartbeat.policy.expires_at, "policy expiry") <= atNs) {
     return Object.freeze({ state: "held", reason: "policy_expired" });
   }
-  if (parseObservabilityTimestamp(heartbeat.continuity_lease_expires_at, "continuity lease expiry") <= atMs) {
+  if (parseObservabilityTimestampNs(heartbeat.continuity_lease_expires_at, "continuity lease expiry") <= atNs) {
     return Object.freeze({ state: "held", reason: "continuity_lease_expired" });
   }
   if (STATE_REASONS.recovering.includes(heartbeat.reason)) {
     return Object.freeze({ state: "recovering", reason: heartbeat.reason });
   }
-  const evidenceAge = evidenceAtMs - parseObservabilityTimestamp(heartbeat.evidence.freshest_at, "freshest evidence time");
-  if (evidenceAge > heartbeat.evidence.required_max_age_ms) {
+  const evidenceAgeNs = evidenceAtNs - parseObservabilityTimestampNs(heartbeat.evidence.freshest_at, "freshest evidence time");
+  if (evidenceAgeNs > msToNs(heartbeat.evidence.required_max_age_ms)) {
     return Object.freeze({ state: "degraded", reason: "evidence_lag" });
   }
   if (heartbeat.audit.queued >= budgets.audit_backlog_count || heartbeat.audit.oldest_queued_age_ms >= budgets.audit_backlog_age_ms) {
@@ -195,12 +217,14 @@ function deriveGuardianStateUnchecked(heartbeat, atMs, budgets, evidenceAtMs = a
 }
 
 export function deriveGuardianOperationalState(heartbeat, {
-  atMs = parseObservabilityTimestamp(heartbeat?.generated_at, "heartbeat generated_at"),
+  atMs,
   budgets: budgetOverrides = {}
 } = {}) {
-  if (!Number.isSafeInteger(atMs)) throw new Error("Guardian state clock is invalid");
+  const atNs = atMs === undefined
+    ? parseObservabilityTimestampNs(heartbeat?.generated_at, "heartbeat generated_at")
+    : (Number.isSafeInteger(atMs) ? msToNs(atMs) : (() => { throw new Error("Guardian state clock is invalid"); })());
   const budgets = validateObservabilityBudgets(budgetOverrides);
-  return deriveGuardianStateUnchecked(heartbeat, atMs, budgets);
+  return deriveGuardianStateUnchecked(heartbeat, atNs, budgets);
 }
 
 function validateLatency(value, label) {
@@ -228,29 +252,30 @@ export function validateGuardianHeartbeat(heartbeat, {
   assertBootId(snapshot.boot_id);
   assertSafeInteger(snapshot.sequence, "heartbeat sequence", 1);
 
-  const generatedAt = parseObservabilityTimestamp(snapshot.generated_at, "heartbeat generated_at");
-  const expiresAt = parseObservabilityTimestamp(snapshot.expires_at, "heartbeat expires_at");
-  if (generatedAt > nowMs + MAX_FUTURE_SKEW_MS || expiresAt <= generatedAt || expiresAt - generatedAt > budgets.heartbeat_validity_ms) {
+  const nowNs = msToNs(nowMs);
+  const generatedAt = parseObservabilityTimestampNs(snapshot.generated_at, "heartbeat generated_at");
+  const expiresAt = parseObservabilityTimestampNs(snapshot.expires_at, "heartbeat expires_at");
+  if (generatedAt > nowNs + msToNs(MAX_FUTURE_SKEW_MS) || expiresAt <= generatedAt || expiresAt - generatedAt > msToNs(budgets.heartbeat_validity_ms)) {
     throw new Error("heartbeat validity window is invalid");
   }
-  if (!allowExpired && expiresAt <= nowMs) throw new Error("heartbeat is expired");
+  if (!allowExpired && expiresAt <= nowNs) throw new Error("heartbeat is expired");
 
   exactKeys(snapshot.policy, ["policy_id", "digest", "sequence", "expires_at", "verified"], "heartbeat policy");
   assertIdentity(snapshot.policy.policy_id, "heartbeat policy id");
   if (typeof snapshot.policy.digest !== "string" || !SHA256.test(snapshot.policy.digest)) throw new Error("heartbeat policy digest is invalid");
   assertSafeInteger(snapshot.policy.sequence, "heartbeat policy sequence", 1);
-  parseObservabilityTimestamp(snapshot.policy.expires_at, "heartbeat policy expires_at");
+  parseObservabilityTimestampNs(snapshot.policy.expires_at, "heartbeat policy expires_at");
   if (typeof snapshot.policy.verified !== "boolean") throw new Error("heartbeat policy verification state is invalid");
 
   exactKeys(snapshot.checkpoint, ["sequence", "persisted_at", "rollback_detected"], "heartbeat checkpoint");
   assertSafeInteger(snapshot.checkpoint.sequence, "heartbeat checkpoint sequence");
-  const checkpointAt = parseObservabilityTimestamp(snapshot.checkpoint.persisted_at, "heartbeat checkpoint persisted_at");
+  const checkpointAt = parseObservabilityTimestampNs(snapshot.checkpoint.persisted_at, "heartbeat checkpoint persisted_at");
   if (checkpointAt > generatedAt) throw new Error("heartbeat checkpoint is from the future");
   if (typeof snapshot.checkpoint.rollback_detected !== "boolean") throw new Error("heartbeat checkpoint rollback state is invalid");
 
-  parseObservabilityTimestamp(snapshot.continuity_lease_expires_at, "heartbeat continuity lease expiry");
+  parseObservabilityTimestampNs(snapshot.continuity_lease_expires_at, "heartbeat continuity lease expiry");
   exactKeys(snapshot.evidence, ["freshest_at", "required_max_age_ms"], "heartbeat evidence");
-  const evidenceAt = parseObservabilityTimestamp(snapshot.evidence.freshest_at, "heartbeat evidence freshest_at");
+  const evidenceAt = parseObservabilityTimestampNs(snapshot.evidence.freshest_at, "heartbeat evidence freshest_at");
   if (evidenceAt > generatedAt) throw new Error("heartbeat evidence is from the future");
   assertSafeInteger(snapshot.evidence.required_max_age_ms, "heartbeat evidence maximum age", 1);
   if (snapshot.evidence.required_max_age_ms > 3_600_000) throw new Error("heartbeat evidence maximum age is too large");
@@ -304,9 +329,10 @@ function assertReceivedAt(receivedAtMs, nowMs) {
 
 // Liveness is the earlier of the Guardian-declared expiry and the Fleet receive time plus the
 // validity window, so a Guardian clock running fast cannot stretch its own reachability.
-function heartbeatLivenessExpiry(heartbeat, receivedAtMs, budgets) {
-  const declared = parseObservabilityTimestamp(heartbeat.expires_at, "heartbeat expires_at");
-  return Math.min(declared, receivedAtMs + budgets.heartbeat_validity_ms);
+function heartbeatLivenessExpiryNs(heartbeat, receivedAtMs, budgets) {
+  const declared = parseObservabilityTimestampNs(heartbeat.expires_at, "heartbeat expires_at");
+  const capped = msToNs(receivedAtMs + budgets.heartbeat_validity_ms);
+  return declared < capped ? declared : capped;
 }
 
 export function classifyGuardianHeartbeat(heartbeat, {
@@ -322,11 +348,12 @@ export function classifyGuardianHeartbeat(heartbeat, {
 }
 
 function classifyValidatedGuardianHeartbeat(validated, nowMs, budgets, receivedAtMs) {
-  if (heartbeatLivenessExpiry(validated, receivedAtMs, budgets) <= nowMs) {
+  const nowNs = msToNs(nowMs);
+  if (heartbeatLivenessExpiryNs(validated, receivedAtMs, budgets) <= nowNs) {
     return Object.freeze({ state: "unreachable", reason: "heartbeat_expired" });
   }
-  const generatedAt = parseObservabilityTimestamp(validated.generated_at, "heartbeat generated_at");
-  return deriveGuardianStateUnchecked(validated, nowMs, budgets, generatedAt);
+  const generatedAt = parseObservabilityTimestampNs(validated.generated_at, "heartbeat generated_at");
+  return deriveGuardianStateUnchecked(validated, nowNs, budgets, generatedAt);
 }
 
 export function createGuardianHeartbeatGuard({
@@ -351,7 +378,7 @@ export function createGuardianHeartbeatGuard({
       }
       const validated = validateGuardianHeartbeat(heartbeat, { nowMs, budgets });
       const previous = guardians.get(validated.guardian_id);
-      const generatedAt = parseObservabilityTimestamp(validated.generated_at, "heartbeat generated_at");
+      const generated = parseObservabilityInstant(validated.generated_at, "heartbeat generated_at");
       if (!previous && guardians.size >= budgets.fleet_max_guardians) throw new Error("Guardian heartbeat guard capacity is exhausted");
       let clockRegression = false;
       if (previous) {
@@ -363,9 +390,9 @@ export function createGuardianHeartbeatGuard({
           // back under a higher sequence is a Guardian clock correction, recorded as a diagnostic
           // rather than a lockout, so a corrected clock is not silenced for the skew window.
           if (validated.sequence <= previous.sequence) throw new Error("Guardian heartbeat sequence was replayed or reordered");
-          clockRegression = generatedAt <= previous.generatedAt;
+          clockRegression = generated.epochNanoseconds <= previous.generatedAtNs;
         } else {
-          if (generatedAt <= previous.generatedAt) throw new Error("Guardian heartbeat time was replayed or reordered");
+          if (generated.epochNanoseconds <= previous.generatedAtNs) throw new Error("Guardian heartbeat time was replayed or reordered");
           if (previous.retiredBoots.has(validated.boot_id)) throw new Error("Guardian heartbeat boot epoch was replayed");
           if (previous.retiredBoots.size >= maxBootHistory) throw new Error("Guardian heartbeat boot history is exhausted");
         }
@@ -378,7 +405,8 @@ export function createGuardianHeartbeatGuard({
         bootId: validated.boot_id,
         retiredBoots,
         sequence: validated.sequence,
-        generatedAt,
+        generatedAt: generated.milliseconds,
+        generatedAtNs: generated.epochNanoseconds,
         receivedAt: nowMs,
         clockRegressions: Math.min(MAX_SAFE_INTEGER, (previous?.clockRegressions || 0) + Number(clockRegression)),
         policySequence: validated.policy.sequence,
@@ -526,7 +554,8 @@ function aggregateFleet({
   const checkpointSequences = { minimum: null, maximum: null };
   const decisions = { evaluated: 0, allowed: 0, held: 0, failures: 0, latency_ms: { p50_max: 0, p95_max: 0, p99_max: 0, max: 0 } };
   const audit = { queued: 0, oldest_queued_age_ms: 0 };
-  let earliestExpiry = nowMs + budgets.heartbeat_validity_ms;
+  const nowNs = msToNs(nowMs);
+  let earliestExpiryNs = nowNs + msToNs(budgets.heartbeat_validity_ms);
 
   for (const guardianId of expectedById.keys()) {
     const heartbeat = heartbeatById.get(guardianId);
@@ -540,12 +569,12 @@ function aggregateFleet({
     // The snapshot expires at the first deadline that would change any Guardian's classification:
     // its liveness, its signed policy expiry, or its continuity lease. A snapshot therefore cannot
     // keep certifying health after a policy or lease it summarises has lapsed.
-    for (const deadline of [
-      heartbeatLivenessExpiry(heartbeat, received, budgets),
-      parseObservabilityTimestamp(heartbeat.policy.expires_at, "heartbeat policy expires_at"),
-      parseObservabilityTimestamp(heartbeat.continuity_lease_expires_at, "heartbeat continuity lease expiry")
+    for (const deadlineNs of [
+      heartbeatLivenessExpiryNs(heartbeat, received, budgets),
+      parseObservabilityTimestampNs(heartbeat.policy.expires_at, "heartbeat policy expires_at"),
+      parseObservabilityTimestampNs(heartbeat.continuity_lease_expires_at, "heartbeat continuity lease expiry")
     ]) {
-      if (deadline > nowMs) earliestExpiry = Math.min(earliestExpiry, deadline);
+      if (deadlineNs > nowNs && deadlineNs < earliestExpiryNs) earliestExpiryNs = deadlineNs;
     }
     updateRange(policySequences, heartbeat.policy.sequence);
     updateRange(checkpointSequences, heartbeat.checkpoint.sequence);
@@ -559,6 +588,8 @@ function aggregateFleet({
     audit.queued = safeAdd(audit.queued, heartbeat.audit.queued, "Fleet audit queue");
     audit.oldest_queued_age_ms = Math.max(audit.oldest_queued_age_ms, heartbeat.audit.oldest_queued_age_ms);
   }
+
+  const earliestExpiry = Number(earliestExpiryNs / NS_PER_MS);
 
   const complete = heartbeatById.size === expectedById.size;
   const healthy = complete && states.healthy === expectedById.size && decisions.failures === 0;
@@ -621,9 +652,10 @@ export function validateFleetSnapshot(value, {
   if (encodedBytes(snapshot) > budgets.snapshot_max_bytes) throw new Error("Fleet snapshot exceeds its byte budget");
   if (snapshot.version !== FLEET_SNAPSHOT_VERSION || snapshot.visibility !== "fleet-private-aggregate") throw new Error("Fleet snapshot metadata is invalid");
   assertIdentity(snapshot.fleet_id, "Fleet snapshot id");
-  const generatedAt = parseObservabilityTimestamp(snapshot.generated_at, "Fleet snapshot generated_at");
-  const expiresAt = parseObservabilityTimestamp(snapshot.expires_at, "Fleet snapshot expires_at");
-  if (generatedAt > nowMs + MAX_FUTURE_SKEW_MS || expiresAt <= nowMs || expiresAt <= generatedAt || expiresAt - generatedAt > budgets.heartbeat_validity_ms) {
+  const nowNs = msToNs(nowMs);
+  const generatedAt = parseObservabilityTimestampNs(snapshot.generated_at, "Fleet snapshot generated_at");
+  const expiresAt = parseObservabilityTimestampNs(snapshot.expires_at, "Fleet snapshot expires_at");
+  if (generatedAt > nowNs + msToNs(MAX_FUTURE_SKEW_MS) || expiresAt <= nowNs || expiresAt <= generatedAt || expiresAt - generatedAt > msToNs(budgets.heartbeat_validity_ms)) {
     throw new Error("Fleet snapshot validity window is invalid");
   }
   assertSafeInteger(snapshot.expected_guardians, "Fleet expected Guardian count", 1);
@@ -749,9 +781,7 @@ function stableJson(value) {
 }
 
 async function sha256Hex(value, cryptoImpl = globalThis.crypto) {
-  if (!cryptoImpl?.subtle) throw new Error("Web Crypto is unavailable");
-  const digest = await cryptoImpl.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return sha256BytesHex(new TextEncoder().encode(value), cryptoImpl);
 }
 
 function eventTypeForState(state, previousState) {
@@ -805,8 +835,8 @@ export async function deriveFleetEvents({
     throw new Error("Fleet event heartbeats do not identify the same Guardian");
   }
   if (previous && current) {
-    const previousAt = parseObservabilityTimestamp(previous.generated_at, "previous heartbeat generated_at");
-    const currentAt = parseObservabilityTimestamp(current.generated_at, "current heartbeat generated_at");
+    const previousAt = parseObservabilityTimestampNs(previous.generated_at, "previous heartbeat generated_at");
+    const currentAt = parseObservabilityTimestampNs(current.generated_at, "current heartbeat generated_at");
     const sameBoot = current.boot_id === previous.boot_id;
     if ((sameBoot ? current.sequence <= previous.sequence : currentAt <= previousAt) || current.policy.sequence < previous.policy.sequence || current.checkpoint.sequence < previous.checkpoint.sequence) {
       throw new Error("Fleet event heartbeats are replayed, reordered, or rolled back");
@@ -885,18 +915,7 @@ export function planHeartbeatDelay({
 }
 
 function decodeCanonicalBase64(value, label, maxBytes) {
-  if (typeof value !== "string" || value.length === 0 || value.length % 4 !== 0 || value.length > 4 * Math.ceil(maxBytes / 3)) {
-    throw new Error(`${label} is not canonical base64`);
-  }
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) throw new Error(`${label} is not canonical base64`);
-  let binary;
-  try {
-    binary = atob(value);
-  } catch {
-    throw new Error(`${label} is not canonical base64`);
-  }
-  if (btoa(binary) !== value) throw new Error(`${label} is not canonical base64`);
-  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  const bytes = decodeBase64(value, label, { maxBytes: Math.max(maxBytes, 1) });
   if (bytes.byteLength > maxBytes) throw new Error(`${label} is too large`);
   return bytes;
 }

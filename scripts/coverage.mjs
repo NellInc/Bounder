@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { isMainModule } from "./lib/system-model.mjs";
+import { isMainModule } from "./lib/cli-helpers.mjs";
 
 // The unit-coverage gate, in two tiers.
 //

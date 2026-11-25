@@ -172,8 +172,13 @@ export const verifyEnvelope = async (vector, { cryptoImpl = globalThis.crypto } 
     const valid = await cryptoImpl.subtle.verify({ name: "Ed25519" }, key, signatureBytes, payloadBytes);
     if (!valid) throw new Error("Ed25519 signature verification failed");
   } catch (error) {
-    if (error instanceof Error && /untrusted|verification failed|cannot verify/.test(error.message)) throw withStage(error, "signature");
-    throw withStage(new Error("this browser cannot verify Ed25519 signatures"), "signature");
+    if (error?.name === "NotSupportedError") {
+      throw withStage(new Error("this browser cannot verify Ed25519 signatures"), "signature");
+    }
+    if (error instanceof Error && /untrusted|verification failed|cannot verify/.test(error.message)) {
+      throw withStage(error, "signature");
+    }
+    throw withStage(error instanceof Error ? error : new Error("Ed25519 signature verification failed"), "signature");
   }
 
   try {

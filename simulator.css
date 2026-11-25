@@ -730,7 +730,6 @@
 .rule-stack {
   margin: 1rem 0 0;
   padding: 0;
-  border-right: 1px solid var(--line-light);
   list-style: none;
 }
 
@@ -784,7 +783,6 @@
   grid-template-columns: min(7.5rem, 40%) minmax(0, 1fr);
   gap: 0.8rem;
   padding: 0.7rem 0.75rem;
-  border-top: 1px solid var(--line-light);
   border-bottom: 1px solid var(--line);
 }
 
@@ -894,6 +892,10 @@
 }
 
 /* Fleet evidence */
+.evidence-disclosure > section.fleet-control-panel {
+  border: 1px solid transparent;
+}
+
 .fleet-control-panel {
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(430px, 1.2fr);
@@ -902,6 +904,7 @@
   transition: border-color 180ms ease, background 180ms ease;
 }
 
+.evidence-disclosure > section.fleet-control-panel.is-active,
 .fleet-control-panel.is-active {
   background: #252b20;
   border-color: var(--signal);
@@ -966,7 +969,7 @@
 }
 
 .fleet-metrics dt {
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.58);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
@@ -1388,7 +1391,10 @@
 }
 
 .resilience-download {
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
+  min-height: 44px;
   padding: 0.7rem 0.85rem;
   color: var(--signal);
   border: 1px solid var(--line-light);
@@ -1471,7 +1477,7 @@
 .resilience-detail > span,
 .resilience-detail dt,
 .resilience-scrubber > span {
-  color: rgba(255, 255, 255, 0.46);
+  color: rgba(255, 255, 255, 0.58);
   font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.07em;
@@ -1551,7 +1557,7 @@
 }
 
 .continuity-proof-heading span {
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.58);
 }
 
 .continuity-proof-heading strong {
@@ -1610,7 +1616,7 @@
 }
 
 .resilience-transport button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0.5rem 0.7rem;
   color: white;
   background: transparent;
@@ -1812,7 +1818,7 @@
   .operator-tour-actions button:last-child { grid-column: auto; border-top: 0; border-left: 1px solid color-mix(in srgb, var(--ink) 42%, transparent); }
   .simulator-grid { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 1.2rem; }
   .decision-panel { padding-left: 1.2rem; }
-  .rule-stack { border-right: 0; border-bottom: 1px solid var(--line-light); }
+  .rule-stack { border-bottom: 1px solid var(--line); }
   .fleet-control-panel { grid-template-columns: 1fr; }
   .fleet-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fleet-filters label:first-child { grid-column: 1 / -1; }

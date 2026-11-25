@@ -1225,7 +1225,8 @@
         ".gitignore",
         "scripts/validate-system.mjs",
         "tests/generated-control.test.js",
-        ".npmrc",
+        "scripts/lib/cli-helpers.mjs",
+        "scripts/chrome_path.cjs",
         ".nvmrc",
         "package-lock.json",
         "tests/tooling-hygiene.test.js",
@@ -1440,6 +1441,7 @@
         "simulator.html",
         "simulator.css",
         "tests/simulator-world.test.js",
+        "tests/browser-fixtures.ts",
         "tests/browser/**",
         "simulator/**",
         "ui/fleet-view.js",
@@ -1682,7 +1684,7 @@
     "wiki_index": "_wiki/index.md",
     "wiki_log": "_wiki/log.md",
     "holds": [
-      "The decision producer is private NellInc/Bounder-from-org. Sealed manifests v1.1.2 to v1.2.4 name producer commit d058ae1 with discovery_ref master, but that commit is not on master: it is reachable only from branch codex/agent-ergonomic-system until the owner merges it. Sealing now refuses a producer commit that the derivation run did not see on origin/master. Public regeneration still requires repository access or a public mirror or reviewable source bundle.",
+      "The decision producer is private NellInc/Bounder-from-org. Historical sealed manifests v1.1.2 to v1.2.4 retain producer commit d058ae1 (never merged to master; its contract change was later merged on master for v1.2.5 onwards), and sealing refuses any producer commit that the derivation run did not see on origin/master. Public regeneration still requires repository access or a public mirror or reviewable source bundle.",
       "The Fleet backend owner and deployed Guardian heartbeat integration remain unverified.",
       "Do not present reference observability budgets as deployed Guardian or Fleet performance.",
       "Do not publish, tag, push, deploy, or mutate live external state without explicit authority."

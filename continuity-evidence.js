@@ -1,4 +1,5 @@
-import { DuplicateJsonMemberError, parseUniqueJson } from "./runtime/json/strict-json.js";
+import { decodeBase64 as decodeCanonicalBase64 } from "./runtime/crypto/encoding.js";
+import { parseStrictJSON } from "./runtime/json/policy-json.js";
 
 const ENVELOPE_VERSION = "bounder-continuity-envelope/v1";
 const EVIDENCE_VERSION = "bounder-continuity-evidence/v1";
@@ -7,6 +8,7 @@ const EXPECTED_HOST = "bounder-fleet-continuity-staging.onrender.com";
 const EXPECTED_ORIGIN = `https://${EXPECTED_HOST}`;
 const MAX_RESPONSE_BYTES = 32 * 1024;
 const MAX_PAYLOAD_BYTES = 32 * 1024;
+const MAX_STREAM_CHUNKS = 256;
 const ED25519_SIGNATURE_BYTES = 64;
 const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const MAX_VALIDITY_MS = 30 * 60 * 1000;
@@ -24,23 +26,23 @@ const exactKeys = (value, expected, label) => {
 };
 
 const decodeBase64 = (value, label, maxBytes) => {
-  if (typeof value !== "string" || value.length === 0 || value.length % 4 !== 0) {
-    throw new Error(`${label} is not canonical base64`);
+  if (typeof value === "string" && value.length > 4 * Math.ceil(maxBytes / 3)) {
+    throw new Error(`${label} is too large`);
   }
-  if (value.length > 4 * Math.ceil(maxBytes / 3)) throw new Error(`${label} is too large`);
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) throw new Error(`${label} is not canonical base64`);
-  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
-  const decodedLength = (value.length / 4) * 3 - padding;
-  if (decodedLength > maxBytes) throw new Error(`${label} is too large`);
-  let binary;
-  try {
-    binary = atob(value);
-  } catch {
-    throw new Error(`${label} is not canonical base64`);
-  }
-  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-  if (btoa(binary) !== value) throw new Error(`${label} is not canonical base64`);
+  const bytes = decodeCanonicalBase64(value, label, { maxBytes: Math.max(maxBytes, value?.length || 1) });
+  if (bytes.byteLength > maxBytes) throw new Error(`${label} is too large`);
   return bytes;
+};
+
+const parseStrictContinuityJSON = (input, label, maxBytes) => {
+  try {
+    return parseStrictJSON(input, label, { maxBytes, maxDepth: 32 });
+  } catch (error) {
+    if (error instanceof Error && /duplicate object key/.test(error.message)) {
+      throw new Error(`${label} contains duplicate JSON fields`);
+    }
+    throw new Error(`${label} is not valid JSON`);
+  }
 };
 
 const decodeHex = (value, label) => {
@@ -184,13 +186,7 @@ export const verifyContinuityEnvelope = async ({
     throw error;
   }
   if (!signatureValid) throw new Error("continuity evidence signature is invalid");
-  let evidence;
-  try {
-    evidence = parseUniqueJson(new TextDecoder("utf-8", { fatal: true }).decode(payloadBytes));
-  } catch (error) {
-    if (error instanceof DuplicateJsonMemberError) throw new Error("continuity payload contains duplicate JSON fields");
-    throw new Error("continuity payload is not valid JSON");
-  }
+  const evidence = parseStrictContinuityJSON(payloadBytes, "continuity payload", MAX_PAYLOAD_BYTES);
   if (nowMs === undefined && typeof clock !== "function") throw new Error("continuity evidence clock is invalid");
   const verificationTime = nowMs === undefined ? clock() : nowMs;
   const verified = validateContinuityEvidence(evidence, verificationTime);
@@ -226,6 +222,7 @@ const readBoundedBody = async (response, maxBytes, signal) => {
   signal?.addEventListener("abort", cancelForAbort, { once: true });
   const chunks = [];
   let total = 0;
+  let chunkCount = 0;
   try {
     if (signal?.aborted) {
       cancelForAbort();
@@ -237,6 +234,11 @@ const readBoundedBody = async (response, maxBytes, signal) => {
       if (!(value instanceof Uint8Array) || value.byteLength === 0) {
         cancelReader("continuity feed body is invalid");
         throw new Error("continuity feed body is invalid");
+      }
+      chunkCount += 1;
+      if (chunkCount > MAX_STREAM_CHUNKS) {
+        cancelReader("continuity feed contains too many chunks");
+        throw new Error("continuity feed contains too many chunks");
       }
       if (value.byteLength > maxBytes - total) {
         cancelReader("continuity feed is too large");
@@ -297,12 +299,7 @@ export const fetchContinuityEnvelope = async (url, {
     if (!Number.isSafeInteger(declaredLength)) throw new Error("continuity feed content length is invalid");
     if (declaredLength > MAX_RESPONSE_BYTES) throw new Error("continuity feed is too large");
     const body = await readBoundedBody(response, MAX_RESPONSE_BYTES, controller.signal);
-    try {
-      return parseUniqueJson(body);
-    } catch (error) {
-      if (error instanceof DuplicateJsonMemberError) throw new Error("continuity feed contains duplicate JSON fields");
-      throw new Error("continuity feed is not valid JSON");
-    }
+    return parseStrictContinuityJSON(body, "continuity feed", MAX_RESPONSE_BYTES);
   })();
   let settled = false;
   let rejectTimeout;

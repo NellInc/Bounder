@@ -3,7 +3,7 @@
 <!-- wiki:type = domain -->
 <!-- wiki:scope = bounder -->
 <!-- wiki:created = 2026-05-23 -->
-<!-- wiki:updated = 2026-09-26 -->
+<!-- wiki:updated = 2026-11-25 -->
 <!-- wiki:status = active -->
 
 ## Summary
@@ -12,7 +12,7 @@ Bounder is an open reference architecture for local, auditable physical interloc
 
 ## Domain Problem
 
-The system addresses the last decision boundary before a requested digital action changes physical state. It evaluates signed authority, current policy, local state, and fresh evidence immediately before that transition. (`index.html:340 "a small, inspectable gate at that boundary"`; `guides/INTEGRATION.md:9-14`)
+The system addresses the last decision boundary before a requested digital action changes physical state. It evaluates signed authority, current policy, local state, and fresh evidence immediately before that transition. (`index.html:352 "a small, inspectable gate at that boundary"`; `guides/INTEGRATION.md:9-14`)
 
 The pattern covers aircraft, ground robots, autonomous boats, warehouse vehicles, inspection platforms, and fixed machinery. Each class supplies different local evidence and requires a separately engineered safe response. (`guides/INTEGRATION.md:172 "Fixed machinery"`)
 

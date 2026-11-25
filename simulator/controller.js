@@ -3,6 +3,11 @@ import { OrbitControls } from "three/addons/OrbitControls.js";
 import { BUILDING_SPECS, PROTECTION_BOUNDARIES, ROUTE_STOPS, WORLD_BOUNDS } from "../simulator-world.js";
 import { createTownScene } from "./scene.js";
 import { renderFleetRows } from "../ui/fleet-view.js";
+import {
+  markAffectedGuardians as markAffectedGuardianRows,
+  renderContinuityProof as renderContinuityProofCard,
+  renderResilienceTimeline as renderResilienceTimelineList
+} from "../ui/resilience-view.js";
 import { asSentence } from "../ui/text.js";
 import { glossAdapterOutput, glossReason, outcomeHeadline, stageBadge } from "../ui/receipt-copy.js";
 import { loadPilotEvidence } from "../staging-feed.js";
@@ -16,7 +21,6 @@ import {
   MAX_RESILIENCE_EVENT_CHARACTERS,
   RESILIENCE_CONTRACTS,
   createResilienceStreamSequence,
-  resolveAffectedGuardianIDs,
   resolveResilienceStreamURL
 } from "../runtime/resilience/contracts.js";
 import {
@@ -120,8 +124,9 @@ try {
   throw error;
 }
 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-renderer.shadowMap.enabled = true;
+const startingQualityReason = softwareRenderer(renderer.getContext()) ? 'software-renderer' : constrainedDevice ? 'constrained-device' : '';
+renderer.setPixelRatio(startingQualityReason ? 1 : Math.min(window.devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = !startingQualityReason;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -160,7 +165,7 @@ controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
 // that ends in pointerup (a deliberate drag) or gains a second finger is left alone.
 const activeTouches = new Set();
 let touchSnapshot;
-canvas.addEventListener("pointerdown", (event) => {
+const handleTouchPointerDown = (event) => {
   if (event.pointerType !== "touch") {
     touchSnapshot = undefined;
     return;
@@ -170,17 +175,17 @@ canvas.addEventListener("pointerdown", (event) => {
   touchSnapshot = activeTouches.size === 1
     ? { position: camera.position.clone(), target: controls.target.clone(), tween: cameraTween }
     : undefined;
-}, { capture: true });
-canvas.addEventListener("pointerup", (event) => {
+};
+const handleTouchPointerUp = (event) => {
   activeTouches.delete(event.pointerId);
   if (activeTouches.size === 0) touchSnapshot = undefined;
-});
+};
 // Registered after OrbitControls, so it runs after the controls have released the pointer.
-canvas.addEventListener("pointercancel", (event) => {
+const handleTouchPointerCancel = (event) => {
   activeTouches.delete(event.pointerId);
   const snapshot = touchSnapshot;
   touchSnapshot = undefined;
-  if (event.pointerType !== "touch" || !snapshot || activeTouches.size > 0) return;
+  if (!rendererOperational || event.pointerType !== "touch" || !snapshot || activeTouches.size > 0) return;
   // _sphericalDelta is private to the pinned vendor copy (tests/simulator-presentation.test.js
   // guards its presence): clearing it stops damping from replaying the tilt.
   controls._sphericalDelta?.set(0, 0, 0);
@@ -189,7 +194,10 @@ canvas.addEventListener("pointercancel", (event) => {
   cameraTween = snapshot.tween;
   controls.update();
   scheduleAnimation();
-});
+};
+canvas.addEventListener("pointerdown", handleTouchPointerDown, { capture: true });
+canvas.addEventListener("pointerup", handleTouchPointerUp);
+canvas.addEventListener("pointercancel", handleTouchPointerCancel);
 
 const navigationCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE"]);
 const pressedNavigationKeys = new Set();
@@ -275,6 +283,9 @@ canvas.addEventListener("blur", handleCanvasBlur);
 window.addEventListener("blur", releaseNavigationKeys);
 
 const releaseCanvasInput = () => {
+  canvas.removeEventListener("pointerdown", handleTouchPointerDown, { capture: true });
+  canvas.removeEventListener("pointerup", handleTouchPointerUp);
+  canvas.removeEventListener("pointercancel", handleTouchPointerCancel);
   canvas.removeEventListener("pointerdown", handleCanvasPointerDown);
   canvas.removeEventListener("keydown", handleCanvasKeyDown);
   canvas.removeEventListener("keyup", handleCanvasKeyUp);
@@ -335,9 +346,10 @@ const {
   droneTether,
   bounderEnvelope,
   fleetDrones,
-  rotors,
+  leadRotors,
+  fleetRotors,
   showRoute
-} = createTownScene({ scene, colours, stage });
+} = createTownScene({ scene, colours, stage, shadows: !startingQualityReason });
 
 const scenarioPresentation = Object.freeze({
   safe: { stop: ROUTE_STOPS.safe, initial: "All reviewed constraints currently pass." },
@@ -446,20 +458,6 @@ const renderFleetEvidence = (evidence) => {
 const resilienceRoute = Object.freeze(Object.fromEntries(Object.entries(RESILIENCE_CONTRACTS).map(([id, contract]) => [id, contract.route])));
 const resilienceRule = Object.freeze(Object.fromEntries(Object.entries(RESILIENCE_CONTRACTS).map(([id, contract]) => [id, contract.rule])));
 
-const continuityFrames = Object.freeze({
-  "coherent-snapshot-rollback": [
-    { status: "Floors agree", local: "Current durable receipt floor", fleet: "Matching signed receipt floor", lease: "05:00 signed", authority: "ACTIVE", held: false },
-    { status: "Rollback exposed", local: "Coherent older snapshot", fleet: "Newer signed receipt floor", lease: "Revoked", authority: "FROZEN", held: true },
-    { status: "Durable hold", local: "Rollback marker persisted", fleet: "Recorded signed proof", lease: "None", authority: "HOLD", held: true },
-    { status: "Reconciliation required", local: "Awaiting floor adoption", fleet: "Hold receipt recorded", lease: "New policy required", authority: "HOLD", held: true }
-  ],
-  "continuity-lease-expiry": [
-    { status: "Lease current", local: "Durable floors coherent", fleet: "Matching signed floors", lease: "05:00 signed", authority: "ACTIVE", held: false },
-    { status: "Lease elapsed", local: "Durable floors coherent", fleet: "Last signed floor retained", lease: "00:00 expired", authority: "FROZEN", held: true },
-    { status: "Offline authority ended", local: "Expiry hold persisted", fleet: "Reconnection pending", lease: "Expired", authority: "HOLD", held: true },
-    { status: "Fresh checkpoint required", local: "No authority restored", fleet: "Hold receipt recorded", lease: "Renewal required", authority: "HOLD", held: true }
-  ]
-});
 let selectedResilience;
 let resilienceCursor = -1;
 let resilienceTimers = [];
@@ -482,63 +480,9 @@ const clearResilienceTransport = () => {
   return resilienceTransportGeneration;
 };
 
-// Recorded codes break only after an underscore, so a narrow timeline never splits a word.
-// The element's text stays exactly the recorded code.
-const appendBreakableCode = (element, value) => {
-  String(value).split(/(?<=_)/).forEach((part, index) => {
-    if (index) element.append(document.createElement("wbr"));
-    element.append(part);
-  });
-};
-
-const renderResilienceTimeline = () => {
-  if (!selectedResilience) return;
-  const fragment = document.createDocumentFragment();
-  selectedResilience.events.forEach((event, index) => {
-    const item = document.createElement("li");
-    item.className = "resilience-event";
-    item.classList.toggle("is-reached", index <= resilienceCursor);
-    item.classList.toggle("is-current", index === resilienceCursor);
-    if (index === resilienceCursor) item.setAttribute("aria-current", "step");
-    item.classList.toggle("is-fault", event.status === "fault");
-    item.classList.toggle("is-held", event.status === "held");
-    const time = document.createElement("time");
-    time.textContent = `${(event.at_ms / 1000).toFixed(2)} s`;
-    const label = document.createElement("b");
-    label.textContent = event.kind;
-    const code = document.createElement("code");
-    appendBreakableCode(code, event.code);
-    item.title = event.message;
-    item.append(time, label, code);
-    fragment.append(item);
-  });
-  resilienceEvents.replaceChildren(fragment);
-};
-
-const renderContinuityProof = (cursor = resilienceCursor) => {
-  const frames = selectedResilience && continuityFrames[selectedResilience.id];
-  continuityProof.hidden = !frames;
-  if (!frames) return;
-  const frame = frames[Math.max(0, Math.min(cursor, frames.length - 1))];
-  continuityProof.classList.toggle("is-held", frame.held);
-  continuityProof.dataset.checkpointState = frame.held ? "held" : "verified";
-  resilienceFields["checkpoint-status"].textContent = frame.status;
-  resilienceFields["local-floor"].textContent = frame.local;
-  resilienceFields["fleet-floor"].textContent = frame.fleet;
-  resilienceFields.lease.textContent = frame.lease;
-  resilienceFields.authority.textContent = frame.authority;
-};
-
-const markAffectedGuardians = (device) => {
-  const nodes = [...fleetNodes.querySelectorAll(".fleet-node")];
-  const guardianIDs = nodes.map((node) => node.dataset.deviceId);
-  const affected = device ? new Set(resolveAffectedGuardianIDs(device, guardianIDs, fleetGuardianAliases)) : new Set();
-  for (const node of nodes) {
-    const isAffected = affected.has(node.dataset.deviceId);
-    node.classList.toggle("is-affected", isAffected);
-    node.setAttribute("aria-label", `${node.dataset.baseLabel}${isAffected ? "; affected by selected fault" : ""}`);
-  }
-};
+const renderResilienceTimeline = () => renderResilienceTimelineList(resilienceEvents, selectedResilience, resilienceCursor);
+const renderContinuityProof = (cursor = resilienceCursor) => renderContinuityProofCard(continuityProof, resilienceFields, selectedResilience, cursor);
+const markAffectedGuardians = (device) => markAffectedGuardianRows(fleetNodes, device, fleetGuardianAliases);
 
 // Fleet fixtures record short device IDs; the visible Fleet list shows their pilot aliases.
 const displayDeviceID = (id) => {
@@ -598,6 +542,7 @@ const applyResilienceEvent = (event) => {
     phaseElement.textContent = "Receipt recorded";
     outcomeElement.textContent = "Audited";
     adapterOutput.textContent = "Safe state retained";
+    setRuleState(resilienceRule[selectedResilience.id], held);
   }
   statusCode.textContent = event.code;
   showDecisionCode(event.code);
@@ -1097,8 +1042,13 @@ const selectScenario = (name, { camera: cameraMove = "animate", revealButton = t
   applyAtmosphere(name);
   syncBoundaryLegend(name);
   showRoute(curves[name]);
-  drone.position.copy(curves[name].getPointAt(progress));
-  setEnvelopeHeld(false);
+  const point = curves[name].getPointAt(progress);
+  const tangent = curves[name].getTangentAt(Math.min(progress, 1));
+  drone.position.copy(point);
+  droneAnchor.copy(point);
+  drone.rotation.y = Math.atan2(-tangent.z, tangent.x);
+  drone.rotation.z = name === "weather" ? -0.14 : 0;
+  setEnvelopeHeld(!receipt.allowed);
   setDecision(receipt, scenarioPresentation[name], true);
   // A visitor's own choice or a shared link opens "More scenarios" so the pressed button shows;
   // the tour and fault replay do not, so the stage they describe stays where it was.
@@ -1110,8 +1060,9 @@ const selectScenario = (name, { camera: cameraMove = "animate", revealButton = t
     const pose = scenarioPose(name);
     moveCamera(pose.position, pose.target, { animate: cameraMove === "animate" });
     stage.dataset.cameraView = name === "safe" ? "overview" : "scenario";
+    const explaining = stage.classList.contains("is-explaining");
     for (const button of root.querySelectorAll("[data-camera]")) {
-      button.setAttribute("aria-pressed", String(name === "safe" && button.dataset.camera === "overview"));
+      button.setAttribute("aria-pressed", String(!explaining && name === "safe" && button.dataset.camera === "overview"));
     }
   }
   scheduleAnimation();
@@ -1340,7 +1291,10 @@ const update = (delta, elapsed) => {
     guardian.rotation.y = formationHeading;
     guardian.rotation.z = windPitch;
   }
-  if (playing && !reduceMotion) for (const rotor of rotors) rotor.rotation.y += delta * 22;
+  if (playing && !reduceMotion) {
+    for (const rotor of leadRotors) rotor.rotation.y += delta * 22;
+    if (fleetMode) for (const rotor of fleetRotors) rotor.rotation.y += delta * 22;
+  }
   if (playing && !reduceMotion) ambientClouds.position.x = Math.sin(elapsed * 0.00008) * 0.55;
   if (weatherGroup.visible && playing && !reduceMotion) {
     const { minX, maxX } = windStreaks.userData.span;
@@ -1412,6 +1366,7 @@ const resize = () => {
   if (!rendererOperational) return;
   const width = stage.clientWidth;
   const height = stage.clientHeight;
+  if (width <= 0 || height <= 0) return;
   const size = `${width}x${height}@${renderer.getPixelRatio()}`;
   const sizeChanged = size !== appliedSize;
   if (sizeChanged) {
@@ -1650,8 +1605,9 @@ playButton.addEventListener("click", () => {
 });
 fleetButton.addEventListener("click", () => {
   if (!fleetEvidence) return;
+  userSelectedScenario = true;
   setFleetMode(!fleetMode);
-  if (operatorTour.hidden && userSelectedScenario) syncSelectionURL();
+  if (operatorTour.hidden) syncSelectionURL();
 });
 tourButton.addEventListener("click", () => operatorTour.hidden ? openOperatorTour() : closeOperatorTour());
 operatorTour.addEventListener("keydown", (event) => {
@@ -1696,8 +1652,9 @@ document.addEventListener("visibilitychange", () => {
     setPlaying(false);
     pressedNavigationKeys.clear();
     syncNavigationState();
+    const resilienceActive = resilienceTimers.length > 0 || Boolean(resilienceSource);
     clearResilienceTransport();
-    if (selectedResilience) resilienceFields.transport.textContent = "Paused while this page is hidden";
+    if (selectedResilience && resilienceActive) resilienceFields.transport.textContent = "Paused while this page is hidden";
     stopAnimation("hidden");
   } else {
     lastTime = 0;
@@ -1926,6 +1883,10 @@ qualityControl.addEventListener('change', () => {
   // with or without shadows; marking every material for update makes that explicit.
   renderer.shadowMap.enabled = !low;
   sun.castShadow = !low;
+  if (low && sun.shadow.map) {
+    sun.shadow.map.dispose();
+    sun.shadow.map = null;
+  }
   renderer.shadowMap.needsUpdate = true;
   scene.traverse((object) => {
     for (const material of [object.material].flat()) if (material) material.needsUpdate = true;
@@ -1934,7 +1895,6 @@ qualityControl.addEventListener('change', () => {
   resize();
 });
 // Apply the starting quality through the same handler a visitor's choice uses.
-const startingQualityReason = softwareRenderer(renderer.getContext()) ? 'software-renderer' : constrainedDevice ? 'constrained-device' : '';
 if (startingQualityReason) {
   stage.dataset.renderQualityReason = startingQualityReason;
   qualityControl.value = 'low';

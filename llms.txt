@@ -7,10 +7,14 @@ Bounder currently provides browser simulations, policy contracts, and recorded e
 ## Architecture and laboratory
 
 - [Overview](https://www.bounder.io/): Architecture, example applications, recorded Fleet exercises, and development roadmap.
+- [Two-minute explainer film](https://www.bounder.io/#explainer): Narrated overview from organisational intent to bounded response, with English captions and transcript.
 - [Simulator](https://www.bounder.io/simulator.html): Browser verification laboratory and guided tour of protective boundaries.
+- [Integration guide](https://www.bounder.io/guides/INTEGRATION.md): Creed Space Fleet to Bounder contract walkthrough, signed bytes, and fail-safe invariants.
+- [Policy schema](https://www.bounder.io/schemas/creedspace-bounder-policy-v1.schema.json): Closed JSON Schema for signed device-bound policy projections.
+- [Recorded 100-Guardian pilot](https://www.bounder.io/data/bounder-staging-pilot.v1.json): Recorded multi-platform Fleet exercise evidence.
 
 ## Optional
 
-- [Contact](https://www.bounder.io/contact.html): Inquiries about the project.
+- [Contact](https://www.bounder.io/contact.html): Enquiries about the project.
 - [Terms](https://www.bounder.io/terms.html): Terms for the website and reference materials.
 - [Privacy](https://www.bounder.io/privacy.html): Website privacy information.

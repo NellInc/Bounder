@@ -40,6 +40,11 @@ test("every published page carries an enforceable content security policy", asyn
     assert.deepEqual(policy.get("base-uri"), ["'self'"], `${path} allows a base tag to retarget relative URLs`);
     assert.deepEqual(policy.get("object-src"), ["'none'"], `${path} allows plugin content`);
     assert.deepEqual(policy.get("style-src"), ["'self'"], `${path} allows foreign or inline styles`);
+    assert.deepEqual(
+      policy.get("form-action"),
+      path === "contact.html" ? ["'self'", "https://formspree.io"] : ["'none'"],
+      `${path} form-action does not match its declared forms`
+    );
     assert.ok(policy.get("script-src")?.includes("'self'"), `${path} lost same-origin script loading`);
     for (const forbidden of ["'unsafe-inline'", "'unsafe-eval'", "*"]) {
       assert.ok(!policy.get("script-src")?.includes(forbidden), `${path} weakened script-src with ${forbidden}`);

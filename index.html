@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'self' https://formspree.io; script-src 'self' 'sha256-wXl2mfr2gkiEcqcqH9Ptf2hLCVHniQiPPo79NZ+VDXY='; connect-src 'self' https://bounder-fleet-continuity-staging.onrender.com; frame-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self'; form-action 'none'; script-src 'self' 'sha256-wXl2mfr2gkiEcqcqH9Ptf2hLCVHniQiPPo79NZ+VDXY='; connect-src 'self' https://bounder-fleet-continuity-staging.onrender.com; frame-src 'self'">
   <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="icon" href="assets/bounder-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -150,6 +150,18 @@
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "programmingLanguage": ["HTML", "CSS", "JavaScript"],
         "author": {"@id": "https://www.bounder.io/#nell-watson"}
+      },
+      {
+        "@type": "VideoObject",
+        "@id": "https://www.bounder.io/#explainer-video",
+        "name": "Bounder: a boundary for physical action",
+        "description": "A two-minute overview of the Bounder physical-interlock architecture, from organisational intent and signed policy to local evaluation, bounded response, and inspectable evidence.",
+        "thumbnailUrl": "https://www.bounder.io/assets/video/bounder-explainer-v1.jpg",
+        "contentUrl": "https://www.bounder.io/assets/video/bounder-explainer-v1.mp4",
+        "uploadDate": "2026-10-03",
+        "duration": "PT2M",
+        "inLanguage": "en-GB",
+        "publisher": {"@id": "https://www.bounder.io/#operator"}
       }
     ]
   }
@@ -353,7 +365,7 @@
         <p>Follow authority from human intent to a bounded physical response, then explore the simulation testbed.</p>
       </div>
       <figure class="explainer-film">
-        <video id="bounder-explainer" controls playsinline preload="none" width="1920" height="1080"
+        <video id="bounder-explainer" controls playsinline preload="auto" width="1920" height="1080"
           poster="assets/video/bounder-explainer-v1.jpg" aria-label="Bounder: a boundary for physical action" aria-describedby="explainer-caption">
           <source src="assets/video/bounder-explainer-v1.mp4" type="video/mp4">
           <track kind="captions" src="assets/video/bounder-explainer-v1.vtt" srclang="en" label="English" default>
@@ -496,7 +508,7 @@
         </div>
         <span class="continuity-state" data-continuity-state role="status" aria-live="polite">Verifying live proof</span>
       </div>
-      <p class="continuity-summary" data-reveal>One hundred software Guardians across six platform classes — aerial, ground, marine, warehouse, inspection, and fixed machinery — each independently fetch policy, verify checkpoints and make protective decisions locally. When the live feed is reachable, this page verifies its signed aggregate proof in your browser; when it is not, the recorded run stands in, labelled as such. No Guardian trusts another’s word for it.</p>
+      <p class="continuity-summary" data-reveal>One hundred software Guardians across six platform classes (aerial, ground, marine, warehouse, inspection, and fixed machinery) each independently fetch policy, verify checkpoints and make protective decisions locally. When the live feed is reachable, this page verifies its signed aggregate proof in your browser; when it is not, the recorded run stands in, labelled as such. No Guardian trusts another’s word for it.</p>
       <div class="continuity-figures" data-reveal>
         <dl class="continuity-metrics continuity-metrics-live">
           <div><dt>Guardians</dt><dd data-continuity-devices>Checking</dd></div>
@@ -574,7 +586,7 @@
       <a href="contact.html">Contact</a>
       <a href="https://github.com/NellInc/Bounder" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <p class="copyright">© Nell Watson, Inc. Code and text under <span class="nowrap">Apache-2.0</span>, except the Bounder name and marks; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
+    <p class="copyright">© Nell Watson, Inc. Code and text under <span class="nowrap">Apache-2.0</span>, except the Bounder name, marks, explainer film and poster; photography under its own licence (see the <a href="https://github.com/NellInc/Bounder/blob/main/images/CREDITS.md" target="_blank" rel="noopener noreferrer">image credits <span aria-hidden="true">↗</span></a>).</p>
   </footer>
   <script src="site.js" defer></script>
   <script type="module" src="continuity-evidence.js"></script>

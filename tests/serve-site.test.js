@@ -11,6 +11,7 @@ import {
   contentTypeFor,
   createRequestHandler,
   exitWithParent,
+  parseByteRange,
   parseServeArguments,
   requestSegments,
   resolveRequest,
@@ -35,9 +36,9 @@ async function fixtureRoot(t) {
   return { parent, root };
 }
 
-function fetchRaw(port, path, method = "GET") {
+function fetchRaw(port, path, method = "GET", headers = {}) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const request = httpRequest({ host: DEFAULT_HOST, port, path, method }, (response) => {
+    const request = httpRequest({ host: DEFAULT_HOST, port, path, method, headers }, (response) => {
       const chunks = [];
       response.on("data", (chunk) => chunks.push(chunk));
       response.on("end", () => resolvePromise({ status: response.statusCode, headers: response.headers, body: Buffer.concat(chunks).toString("utf8") }));
@@ -61,8 +62,57 @@ test("module, data and page types are served with the MIME types browsers enforc
   assert.equal(contentTypeFor("assets/bounder-mark.svg"), "image/svg+xml");
   assert.equal(contentTypeFor("favicon.ico"), "image/x-icon");
   assert.equal(contentTypeFor("images/hero.WEBP"), "image/webp");
+  assert.equal(contentTypeFor("assets/video/bounder-explainer-v1.mp4"), "video/mp4");
+  assert.equal(contentTypeFor("assets/video/bounder-explainer-v1.vtt"), "text/vtt; charset=utf-8");
   assert.equal(contentTypeFor("CNAME"), "application/octet-stream");
   assert.equal(Object.isFrozen(MIME_TYPES), true);
+});
+
+test("media and file requests support single byte ranges and reject unsatisfiable ranges with 416", async (t) => {
+  assert.deepEqual(parseByteRange(undefined, 10), { kind: "none" });
+  assert.deepEqual(parseByteRange("items=0-1", 10), { kind: "none" });
+  assert.deepEqual(parseByteRange("bytes=0-1, 2-3", 10), { kind: "none" });
+  assert.deepEqual(parseByteRange("bytes=-", 10), { kind: "none" });
+  assert.deepEqual(parseByteRange("bytes=0-4", 10), { kind: "range", start: 0, end: 4 });
+  assert.deepEqual(parseByteRange("bytes=6-", 10), { kind: "range", start: 6, end: 9 });
+  assert.deepEqual(parseByteRange("bytes=-3", 10), { kind: "range", start: 7, end: 9 });
+  assert.deepEqual(parseByteRange("bytes=5-2", 10), { kind: "unsatisfiable" });
+  assert.deepEqual(parseByteRange("bytes=10-12", 10), { kind: "unsatisfiable" });
+  assert.deepEqual(parseByteRange("bytes=-0", 10), { kind: "unsatisfiable" });
+  assert.deepEqual(parseByteRange("bytes=0-0", 0), { kind: "unsatisfiable" });
+
+  const { root } = await fixtureRoot(t);
+  await writeFile(join(root, "clip.mp4"), "0123456789");
+  await writeFile(join(root, "captions.vtt"), "WEBVTT\n");
+  await writeFile(join(root, "empty.bin"), "");
+  const port = await serve(t, root);
+
+  const full = await fetchRaw(port, "/captions.vtt");
+  assert.equal(full.status, 200);
+  assert.equal(full.headers["content-type"], "text/vtt; charset=utf-8");
+  assert.equal(full.headers["accept-ranges"], "bytes");
+
+  const empty = await fetchRaw(port, "/empty.bin");
+  assert.equal(empty.status, 200);
+  assert.equal(empty.headers["content-length"], "0");
+  assert.equal(empty.body, "");
+
+  const partial = await fetchRaw(port, "/clip.mp4", "GET", { Range: "bytes=2-5" });
+  assert.equal(partial.status, 206);
+  assert.equal(partial.headers["content-type"], "video/mp4");
+  assert.equal(partial.headers["content-range"], "bytes 2-5/10");
+  assert.equal(partial.headers["content-length"], "4");
+  assert.equal(partial.body, "2345");
+
+  const suffix = await fetchRaw(port, "/clip.mp4", "HEAD", { Range: "bytes=-4" });
+  assert.equal(suffix.status, 206);
+  assert.equal(suffix.headers["content-range"], "bytes 6-9/10");
+  assert.equal(suffix.headers["content-length"], "4");
+  assert.equal(suffix.body, "");
+
+  const invalid = await fetchRaw(port, "/clip.mp4", "GET", { Range: "bytes=20-30" });
+  assert.equal(invalid.status, 416);
+  assert.equal(invalid.headers["content-range"], "bytes */10");
 });
 
 test("request targets that could leave the served tree are refused before any lookup", () => {

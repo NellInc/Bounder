@@ -937,6 +937,18 @@ test("authority classification preserves explicit instant and legacy millisecond
   for (const invalid of [null, {}, NaN, Infinity, false]) {
     assert.throws(() => classifyAuthority(validity, invalid), /authority evaluation time is invalid/);
   }
+  // Current-era epoch milliseconds exceed Number.MAX_SAFE_INTEGER when multiplied by 1e6 in float64.
+  const epochMs = Date.parse("2026-11-25T03:15:15.001Z");
+  const epochValidity = {
+    notBefore: epochMs,
+    expiresAt: epochMs + 60_000,
+    notBeforeNanoseconds: BigInt(epochMs) * 1_000_000n,
+    expiresAtNanoseconds: BigInt(epochMs + 60_000) * 1_000_000n
+  };
+  assert.equal(classifyAuthority(epochValidity, epochMs), "current");
+  assert.equal(classifyAuthority(epochValidity, epochMs - 1), "not-yet-valid");
+  assert.equal(classifyAuthority(epochValidity, epochMs + 60_000), "expired");
+  assert.equal(classifyAuthority({ notBefore: epochMs, expiresAt: epochMs + 60_000 }, epochMs), "current");
 });
 
 test("a browser without Ed25519 WebCrypto is labelled unsupported, not as a rejected vector", async () => {

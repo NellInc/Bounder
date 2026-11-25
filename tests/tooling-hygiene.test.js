@@ -40,9 +40,14 @@ function fakeChild({ pid = 4242 } = {}) {
 
 test("the toolchain pins its Node floor in exactly one place and ignores machine-local scratch", async () => {
   const manifest = JSON.parse(await readFile(join(repositoryRoot, "package.json"), "utf8"));
-  assert.match(manifest.engines?.node ?? "", /^>=22\./, "package.json declares no Node floor");
   const nvmrc = await readFile(join(repositoryRoot, ".nvmrc"), "utf8");
-  assert.equal(nvmrc, "22\n");
+  assert.match(nvmrc, /^22(?:\.\d+\.\d+)?\n$/, ".nvmrc must pin a Node 22 release line");
+  const nvmrcVersion = nvmrc.trim();
+  const nodeRange = manifest.engines?.node ?? "";
+  assert.ok(
+    /^>=22\./.test(nodeRange) || nodeRange.includes(`^${nvmrcVersion}`),
+    `package.json engines.node (${nodeRange}) disagrees with .nvmrc (${nvmrcVersion})`
+  );
   for (const name of ["deploy-pages.yml", "site-quality.yml", "receipt-drift.yml"]) {
     const workflow = await readFile(join(repositoryRoot, ".github", "workflows", name), "utf8");
     assert.doesNotMatch(workflow, /node-version: /, `${name} pins a Node version away from .nvmrc`);
@@ -83,6 +88,7 @@ test("CLI entry guards survive a checkout path that needs percent-encoding", () 
   assert.equal(isMainModule(url, spaced), true, "the guard must match a raw argv path against an encoded module URL");
   assert.equal(isMainModule(url, "/Users/nell watson/GitHub/Bounder/scripts/verify.mjs"), false);
   assert.equal(isMainModule(url, undefined), false);
+  assert.equal(isMainModule(url, ""), false);
 });
 
 test("the verified producer commit is derived from the newest sealed manifest, ordered numerically", async (t) => {
